@@ -143,7 +143,7 @@ $posts = get_posts();
                             <?php endif; ?>
                             
                             <div class="post-message">
-                                <?php echo nl2br(parse_references($post['message'])); ?>
+                                <?php echo parse_references($post['message']); ?>
                             </div>
                             
                             <!-- Respuestas -->
@@ -168,7 +168,7 @@ $posts = get_posts();
                                                 </div>
                                             <?php endif; ?>
                                             <div class="post-message">
-                                                <?php echo nl2br(parse_references($reply['message'])); ?>
+                                                <?php echo parse_references($reply['message']); ?>
                                             </div>
                                         </article>
                                     <?php endforeach; ?>

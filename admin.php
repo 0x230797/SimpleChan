@@ -200,7 +200,7 @@ $bans = is_admin() ? get_active_bans() : [];
                                     <?php endif; ?>
                                     
                                     <div class="post-message">
-                                        <?php echo nl2br(htmlspecialchars($post['message'])); ?>
+                                        <?php echo parse_references($post['message']); ?>
                                     </div>
                                     
                                     <?php if ($post['image_filename']): ?>

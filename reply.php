@@ -93,7 +93,7 @@ $replies = get_replies($post_id);
                     </div>
                 <?php endif; ?>
                 <div class="post-message">
-                    <?php echo nl2br(parse_references($post['message'])); ?>
+                    <?php echo parse_references($post['message']); ?>
                 </div>
             </article>
         </section>
@@ -118,15 +118,15 @@ $replies = get_replies($post_id);
                                 </div>
                             <?php endif; ?>
                             <div class="post-message">
-                                <?php echo nl2br(parse_references($reply['message'])); ?>
+                                <?php echo parse_references($reply['message']); ?>
                             </div>
                         </article>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </section>
+        <h2>Responder</h2>
         <section class="reply-form">
-            <h2>Responder</h2>
             <?php if (isset($error)): ?>
                 <div class="error"><?php echo $error; ?></div>
             <?php endif; ?>

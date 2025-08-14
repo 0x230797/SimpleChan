@@ -182,22 +182,26 @@ function parse_references($text) {
     // Spoiler: [spoiler]texto[/spoiler]
     $text = preg_replace('/\[spoiler\](.+?)\[\/spoiler\]/is', '<span class="spoiler">$1</span>', $text);
     // Referencias >>id
-    $text = preg_replace('/>>([0-9]+)/', '<a href="#post-$1" class="ref-link">&gt;&gt;$1</a>', $text);
+    $text = preg_replace('/>>([0-9]+)/', '<a href="#post-$1" class="ref-link">&gt;&gt;$1</a><br>', $text);
 
     // Greentext SOLO en líneas que no contienen etiquetas HTML
-    $text = preg_replace_callback('/^([^<\n]*)(>[^\s].*)$/m', function($m) {
-        if (strpos($m[0], '<') !== false) return $m[0];
-        return $m[1] . '<span class="greentext">' . htmlspecialchars($m[2]) . '</span>';
+    $text = preg_replace_callback('/^([^<\n]*)(>[^\s][^<]*?)(<br>|$)/m', function($m) {
+        if (strpos($m[1], '<') !== false) return $m[0];
+        return $m[1] . '<span class="greentext">' . htmlspecialchars($m[2]) . '</span>' . ($m[3] === '<br>' ? '<br>' : '');
     }, $text);
+    
     // Pinktext: soporta < y &lt; al inicio de línea
-    $text = preg_replace_callback('/^([^<\n]*)(<[^\s].*)$/m', function($m) {
-        if (strpos($m[0], '<') !== false) return $m[0];
-        return $m[1] . '<span class="pinktext">' . htmlspecialchars($m[2]) . '</span>';
+    $text = preg_replace_callback('/^([^<\n]*)(<[^\s][^<]*?)(<br>|$)/m', function($m) {
+        if (strpos($m[1], '<') !== false) return $m[0];
+        return $m[1] . '<span class="pinktext">' . htmlspecialchars($m[2]) . '</span>' . ($m[3] === '<br>' ? '<br>' : '');
     }, $text);
-    $text = preg_replace_callback('/^([^<\n]*)&lt;([^\s].*)$/m', function($m) {
-        if (strpos($m[0], '<') !== false) return $m[0];
-        return $m[1] . '<span class="pinktext">&lt;' . htmlspecialchars($m[2]) . '</span>';
+    
+    $text = preg_replace_callback('/^([^<\n]*)&lt;([^\s][^<]*?)(<br>|$)/m', function($m) {
+        if (strpos($m[1], '<') !== false) return $m[0];
+        return $m[1] . '<span class="pinktext">&lt;' . htmlspecialchars($m[2]) . '</span>' . ($m[3] === '<br>' ? '<br>' : '');
     }, $text);
-    return $text;
+    
+    // Convertir saltos de línea restantes en <br>
+    return str_replace("\n", "<br>", $text);
 }
 ?>

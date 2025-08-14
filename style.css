@@ -206,10 +206,6 @@ article,
 .rules-message div {
     margin-bottom: 1em;
 }
-.rules-message span,
-.post-message span {
-    font-size: small;
-}
 
 .danger {
     border-color: #6f1c1c;
@@ -218,8 +214,7 @@ article,
 
 /* Respuestas */
 .replies {
-    margin-left: 20px;
-    margin-top: 15px;
+    margin: 0;
 }
 
 .btn-reply {
@@ -234,8 +229,7 @@ article,
 }
 
 .reply-form {
-    margin-left: 20px;
-    margin-top: 10px;
+    margin: 0;
     background-color: #333;
     border: 1px solid #555;
     padding: 10px;
@@ -253,12 +247,10 @@ article,
 
 .greentext {
     color: #228B22;
-    font-weight: bold;
 }
 
 .pinktext {
     color: #e75480;
-    font-weight: bold;
 }
 
 /* Admin */
@@ -368,11 +360,11 @@ footer {
     }
     
     .replies {
-        margin-left: 10px;
+        margin: 0;
     }
     
     .reply-form {
-        margin-left: 10px;
+        margin: 0;
     }
     
     .post-image img {
