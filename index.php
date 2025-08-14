@@ -67,7 +67,6 @@ $posts = get_posts();
         <nav>
             <a href="index.php">Inicio</a>
             <a href="reglas.php">Reglas</a>
-            <a href="admin.php">Panel de Admin</a>
         </nav>
     </header>
 
@@ -93,8 +92,8 @@ $posts = get_posts();
                 </div>
                 
                 <div class="form-group">
-                    <label for="subject">Asunto (opcional):</label>
-                    <input type="text" id="subject" name="subject" maxlength="100">
+                    <label for="subject">Asunto:</label>
+                    <input type="text" id="subject" name="subject" maxlength="100" required>
                 </div>
                 
                 <div class="form-group">
@@ -103,8 +102,9 @@ $posts = get_posts();
                 </div>
                 
                 <div class="form-group">
-                    <label for="image">Imagen (opcional):</label>
-                    <input type="file" id="image" name="image" accept="image/*">
+                    <label for="image">Imagen:</label>
+                    <input type="file" id="image" name="image" accept="image/*" required>
+                        <em>Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 2MB.</em>
                 </div>
                 
                 <div class="form-buttons">
@@ -128,7 +128,8 @@ $posts = get_posts();
                                     <span class="post-subject"><?php echo htmlspecialchars($post['subject']); ?></span>
                                 <?php endif; ?>
                                 <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($post['created_at'])); ?></span>
-                                <span class="post-number">No. <?php echo $post['id']; ?></span>
+                                <span class="post-number"><a href="reply.php?post_id=<?php echo $post['id']; ?>&ref=<?php echo $post['id']; ?>">No. <?php echo $post['id']; ?></a></span>
+                                <a href="reply.php?post_id=<?php echo $post['id']; ?>" class="btn-reply">Responder</a>
                             </div>
                             
                             <?php if ($post['image_filename']): ?>
@@ -140,47 +141,23 @@ $posts = get_posts();
                             <?php endif; ?>
                             
                             <div class="post-message">
-                                <?php echo nl2br(htmlspecialchars($post['message'])); ?>
-                            </div>
-                            
-                            <div class="post-actions">
-                                <button onclick="toggleReplyForm(<?php echo $post['id']; ?>)">Responder</button>
-                            </div>
-                            
-                            <!-- Formulario de respuesta (oculto por defecto) -->
-                            <div class="reply-form" id="reply-form-<?php echo $post['id']; ?>" style="display: none;">
-                                <form method="POST" enctype="multipart/form-data">
-                                    <input type="hidden" name="parent_id" value="<?php echo $post['id']; ?>">
-                                    <div class="form-group">
-                                        <input type="text" name="name" placeholder="Anónimo" maxlength="50">
-                                    </div>
-                                    <div class="form-group">
-                                        <textarea name="message" required rows="3" placeholder="Tu respuesta..."></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <input type="file" name="image" accept="image/*">
-                                    </div>
-                                    <div class="form-buttons">
-                                        <button type="submit" name="submit_post">Responder</button>
-                                        <button type="button" onclick="toggleReplyForm(<?php echo $post['id']; ?>)" class="btn-cancel">Cancelar</button>
-                                    </div>
-                                </form>
+                                <?php echo nl2br(parse_references($post['message'])); ?>
                             </div>
                             
                             <!-- Respuestas -->
                             <?php
                             $replies = get_replies($post['id']);
                             if (!empty($replies)):
+                                $last_replies = array_slice($replies, -3);
                             ?>
                                 <div class="replies">
-                                    <?php foreach ($replies as $reply): ?>
+                                    <?php foreach ($last_replies as $reply): ?>
                                         <article class="reply" id="post-<?php echo $reply['id']; ?>">
                                             <div class="post-header">
                                                 <span class="post-name"><?php echo htmlspecialchars($reply['name']); ?></span>
                                                 <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($reply['created_at'])); ?></span>
-                                                <span class="post-number">No. <?php echo $reply['id']; ?></span>
+                                                <span class="post-number"><a href="reply.php?post_id=<?php echo $reply['parent_id'] ? $reply['parent_id'] : $reply['id']; ?>&ref=<?php echo $reply['id']; ?>">No. <?php echo $reply['id']; ?></a></span>
                                             </div>
-                                            
                                             <?php if ($reply['image_filename']): ?>
                                                 <div class="post-image">
                                                     <img src="<?php echo UPLOAD_DIR . $reply['image_filename']; ?>" 
@@ -188,9 +165,8 @@ $posts = get_posts();
                                                          onclick="toggleImageSize(this)">
                                                 </div>
                                             <?php endif; ?>
-                                            
                                             <div class="post-message">
-                                                <?php echo nl2br(htmlspecialchars($reply['message'])); ?>
+                                                <?php echo nl2br(parse_references($reply['message'])); ?>
                                             </div>
                                         </article>
                                     <?php endforeach; ?>

@@ -55,6 +55,14 @@ function create_post($name, $subject, $message, $image_filename, $image_original
     }
 }
 
+// Función para obtener un post por su id
+function get_post($post_id) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT * FROM posts WHERE id = ? AND is_deleted = 0 LIMIT 1");
+    $stmt->execute([$post_id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
 // Función para obtener posts
 function get_posts($limit = 50) {
     global $pdo;
@@ -159,5 +167,14 @@ function unban_ip($ban_id) {
     } catch (PDOException $e) {
         return false;
     }
+}
+
+// Función para convertir >>id en enlaces HTML en los mensajes
+function parse_references($text) {
+    // Primero, desescapar los > para que funcione el regex
+    $text = str_replace('&gt;', '>', $text);
+    // Luego, convertir >>id en enlace
+    $text = preg_replace('/>>([0-9]+)/', '<a href="#post-$1" class="ref-link">&gt;&gt;$1</a>', $text);
+    return $text;
 }
 ?>

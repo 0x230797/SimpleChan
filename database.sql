@@ -6,7 +6,7 @@ USE simplechan_db;
 CREATE TABLE posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) DEFAULT 'Anónimo',
-    subject VARCHAR(100),
+    subject TEXT NOT NULL,
     message TEXT NOT NULL,
     image_filename VARCHAR(255),
     image_original_name VARCHAR(255),

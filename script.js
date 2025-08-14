@@ -249,3 +249,15 @@ function toggleAdminSection(sectionId) {
         section.style.display = section.style.display === 'none' ? 'block' : 'none';
     }
 }
+
+// Función para insertar automáticamente >>id en el textarea al hacer click en el número de post/respuesta.
+function insertReference(id) {
+    var textarea = document.querySelector('textarea[name="message"]');
+    if (textarea) {
+        var ref = '>>' + id + '\n';
+        if (textarea.value.indexOf(ref) === -1) {
+            textarea.value += ref;
+            textarea.focus();
+        }
+    }
+}

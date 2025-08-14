@@ -211,14 +211,6 @@ article,
     font-size: small;
 }
 
-.post-actions {
-    margin-top: 10px;
-}
-
-.post-actions button {
-    margin-right: 10px;
-}
-
 .danger {
     border-color: #6f1c1c;
     background-color: #221111;
@@ -228,6 +220,10 @@ article,
 .replies {
     margin-left: 20px;
     margin-top: 15px;
+}
+
+.btn-reply {
+    text-decoration: none;
 }
 
 .reply {
