@@ -246,8 +246,19 @@ article,
     color: transparent;
     cursor: pointer;
 }
+
 .spoiler:hover {
     color: #fff;
+}
+
+.greentext {
+    color: #228B22;
+    font-weight: bold;
+}
+
+.pinktext {
+    color: #e75480;
+    font-weight: bold;
 }
 
 /* Admin */
