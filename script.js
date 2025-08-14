@@ -261,3 +261,43 @@ function insertReference(id) {
         }
     }
 }
+
+// Función para insertar formato en el textarea activo
+function insertFormat(type, btn) {
+    // Buscar el textarea más cercano al botón
+    let textarea;
+    if (btn) {
+        // reply.php: buscar el textarea en el mismo form
+        const form = btn.closest('form');
+        textarea = form ? form.querySelector('textarea[name="message"]') : document.querySelector('textarea[name="message"]');
+    } else {
+        // index.php: solo hay un textarea principal
+        textarea = document.getElementById('message') || document.querySelector('textarea[name="message"]');
+    }
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    let selected = textarea.value.substring(start, end);
+    let before = textarea.value.substring(0, start);
+    let after = textarea.value.substring(end);
+    let insertText = '';
+    switch(type) {
+        case 'bold':
+            insertText = `**${selected || 'texto'}**`;
+            break;
+        case 'italic':
+            insertText = `*${selected || 'texto'}*`;
+            break;
+        case 'strike':
+            insertText = `~~${selected || 'texto'}~~`;
+            break;
+        case 'spoiler':
+            insertText = `[spoiler]${selected || 'texto'}[/spoiler]`;
+            break;
+    }
+    textarea.value = before + insertText + after;
+    // Reposicionar el cursor
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = before.length + insertText.length;
+}

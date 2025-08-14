@@ -241,6 +241,15 @@ article,
     padding: 10px;
 }
 
+.spoiler {
+    background: #1a1a1a;
+    color: transparent;
+    cursor: pointer;
+}
+.spoiler:hover {
+    color: #fff;
+}
+
 /* Admin */
 .admin-panel {
     background-color: #2d2d2d;

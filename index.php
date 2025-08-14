@@ -90,23 +90,25 @@ $posts = get_posts();
                     <label for="name">Nombre (opcional):</label>
                     <input type="text" id="name" name="name" placeholder="Anónimo" maxlength="50">
                 </div>
-                
                 <div class="form-group">
                     <label for="subject">Asunto:</label>
                     <input type="text" id="subject" name="subject" maxlength="100" required>
                 </div>
-                
+                <div class="form-group">
+                    <button type="button" onclick="insertFormat('bold')" title="Negrita"><b>B</b></button>
+                    <button type="button" onclick="insertFormat('italic')" title="Cursiva"><i>I</i></button>
+                    <button type="button" onclick="insertFormat('strike')" title="Tachado"><s>T</s></button>
+                    <button type="button" onclick="insertFormat('spoiler')" title="Spoiler">SPOILER</button>
+                </div>
                 <div class="form-group">
                     <label for="message">Mensaje:</label>
                     <textarea id="message" name="message" required rows="4" cols="50"></textarea>
                 </div>
-                
                 <div class="form-group">
                     <label for="image">Imagen:</label>
                     <input type="file" id="image" name="image" accept="image/*" required>
                         <em>Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 2MB.</em>
                 </div>
-                
                 <div class="form-buttons">
                     <button type="submit" name="submit_post">Publicar</button>
                 </div>

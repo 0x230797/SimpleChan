@@ -173,7 +173,15 @@ function unban_ip($ban_id) {
 function parse_references($text) {
     // Primero, desescapar los > para que funcione el regex
     $text = str_replace('&gt;', '>', $text);
-    // Luego, convertir >>id en enlace
+    // Negrita: **texto**
+    $text = preg_replace('/\*\*(.+?)\*\*/s', '<b>$1</b>', $text);
+    // Cursiva: *texto*
+    $text = preg_replace('/\*(.+?)\*/s', '<em>$1</em>', $text);
+    // Tachado: ~~texto~~
+    $text = preg_replace('/~~(.+?)~~/s', '<s>$1</s>', $text);
+    // Spoiler: [spoiler]texto[/spoiler]
+    $text = preg_replace('/\[spoiler\](.+?)\[\/spoiler\]/is', '<span class="spoiler">$1</span>', $text);
+    // Referencias >>id
     $text = preg_replace('/>>([0-9]+)/', '<a href="#post-$1" class="ref-link">&gt;&gt;$1</a>', $text);
     return $text;
 }

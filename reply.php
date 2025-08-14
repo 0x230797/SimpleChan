@@ -135,6 +135,12 @@ $replies = get_replies($post_id);
                     <input type="text" name="name" placeholder="Anónimo" maxlength="50">
                 </div>
                 <div class="form-group">
+                    <button type="button" onclick="insertFormat('bold', this)" title="Negrita"><b>B</b></button>
+                    <button type="button" onclick="insertFormat('italic', this)" title="Cursiva"><i>I</i></button>
+                    <button type="button" onclick="insertFormat('strike', this)" title="Tachado"><s>T</s></button>
+                    <button type="button" onclick="insertFormat('spoiler', this)" title="Spoiler">SPOILER</button>
+                </div>
+                <div class="form-group">
                     <textarea name="message" required rows="3" placeholder="Tu respuesta..."></textarea>
                 </div>
                 <div class="form-group">
