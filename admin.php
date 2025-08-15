@@ -239,9 +239,14 @@ if (isset($post_id) && $post_id > 0) {
                     <?php else: ?>
                         <div class="posts-admin">
                             <?php foreach ($posts as $post): ?>
+                                <?php
+                                // Obtener el tablón asociado al post
+                                $board = isset($post['board_id']) ? get_board_by_id($post['board_id']) : null;
+                                ?>
                                 <div class="post-admin <?php echo $post['is_deleted'] ? 'deleted' : ''; ?>">
                                     <div class="post-header">
-                                        <strong>ID: <?php echo $post['id']; ?></strong>
+                                        <span>Tablón: <?php echo htmlspecialchars($board['name']); ?></span>
+                                        - <span>ID: <?php echo $post['id']; ?></span>
                                         <?php if ($post['parent_id']): ?>
                                             (Respuesta a: <?php echo $post['parent_id']; ?>)
                                         <?php endif; ?>

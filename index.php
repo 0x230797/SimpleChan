@@ -38,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
     $subject = clean_input($_POST['subject'] ?? '');
     $message = clean_input($_POST['message'] ?? '');
     $parent_id = isset($_POST['parent_id']) ? (int)$_POST['parent_id'] : null;
+    $board_id = isset($_POST['board_id']) ? (int)$_POST['board_id'] : null;
     
     if (empty($message)) {
         $error = 'El mensaje no puede estar vacío.';
@@ -57,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
         }
         
         if (!isset($error)) {
-            if (create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id)) {
+            if (create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id, $board_id)) {
                 // Redirigir para evitar reenvío
                 header('Location: ' . $_SERVER['PHP_SELF'] . '?post_success=1');
                 exit;
@@ -69,6 +70,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
 }
 
 $posts = get_posts();
+$popular_posts = get_recent_and_replied_posts(8);
+
+// Obtener todos los tablones y organizarlos por categoría
+$boards = get_all_boards();
+$boards_by_category = [];
+
+// Organizar los tablones por categoría
+foreach ($boards as $board) {
+    $category = $board['category'] ?? 'Sin categoría';
+    if (!isset($boards_by_category[$category])) {
+        $boards_by_category[$category] = [];
+    }
+    $boards_by_category[$category][] = $board;
+}
+
+$site_stats = get_site_stats();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -83,209 +100,103 @@ $posts = get_posts();
     <header>
         <h1>SimpleChan</h1>
         <p>Imageboard Anónimo Simple</p>
-        <nav>
-            <a href="index.php">Inicio</a>
-            <a href="reglas.php">Reglas</a>
-            <?php if (is_admin()): ?>
-                <a href="admin.php">Administración</a>
-            <?php endif; ?>
-        </nav>
     </header>
 
     <main>
 
-        <!-- Mostrar mensaje de éxito si el reporte fue enviado -->
-        <?php if (isset($_GET['report_success']) && $_GET['report_success'] == 1): ?>
-            <div class="success">¡Gracias por reportar! El reporte ha sido enviado al administrador.</div>
-        <?php endif; ?>
-
-        <!-- Botón para mostrar formulario -->
-        <section class="create-post-toggle">
-            [ <button onclick="toggleCreatePostForm()" id="toggle-post-btn" class="btn-create-post">
-                Crear publicación
-            </button> ]
-        </section>
-
-        <!-- Formulario para nuevo post -->
-        <section class="post-form" id="create-post-form" style="display: none;">
-            <h2>Crear nuevo publicación</h2>
-            <?php if (isset($error)): ?>
-                <div class="error"><?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <form method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="name">Nombre (opcional):</label>
-                    <?php if (is_admin()): ?>
-                        <input type="text" id="name" name="name" value="Administrador" readonly class="admin-name" style="background:#f7e5e5;">
-                    <?php else: ?>
-                        <input type="text" id="name" name="name" placeholder="Anónimo" maxlength="50">
-                    <?php endif; ?>
+        <!-- Lista de tablones -->
+        <div class="box-outer top-box" id="boards">
+            <div class="box-inner">
+                <div class="boxbar">
+                    <h2>Tablones</h2>
                 </div>
-                <div class="form-group">
-                    <label for="subject">Asunto:</label>
-                    <input type="text" id="subject" name="subject" maxlength="100" required>
-                </div>
-                <div class="form-group">
-                    <label for="button">Formatos:</label>
-                    <button type="button" onclick="insertFormat('bold')" title="Negrita"><b>B</b></button>
-                    <button type="button" onclick="insertFormat('italic')" title="Cursiva"><i>I</i></button>
-                    <button type="button" onclick="insertFormat('strike')" title="Tachado"><s>T</s></button>
-                    <button type="button" onclick="insertFormat('subline')" title="Sublinea"><u>S</u></button>
-                    <button type="button" onclick="insertFormat('spoiler')" title="Spoiler">SPOILER</button>
-                    <?php if (is_admin()): ?>
-                        <button type="button" onclick="insertFormat('h1', this)" title="Título grande">H1</button>
-                        <button type="button" onclick="insertFormat('h2', this)" title="Título mediano">H2</button>
-                        <button type="button" onclick="insertFormat('color', this)" title="Color de texto">Color</button>
-                        <button type="button" onclick="insertFormat('center', this)" title="Centrar texto">Centrar</button>
-                    <?php endif; ?>
-                </div>
-                <div class="form-group">
-                    <label for="message">Mensaje:</label>
-                    <textarea id="message" name="message" required rows="5" placeholder="Tu publicación..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="image">Imagen:</label>
-                    <?php if (is_admin()): ?>
-                        <input type="file" id="image" name="image" accept="image/*">
-                    <?php else: ?>
-                        <input type="file" id="image" name="image" accept="image/*" required>
-                    <?php endif; ?>
-                    <span style="font-size:12px;color:rgb(102, 102, 102);text-align:right">Formatos permitidos: JPG, JPEG, PNG, GIF, WEBP. Tamaño máximo: 5MB.</span>
-                    <br>
-                    <span style="font-size:12px;color:rgb(102, 102, 102);text-align:right">Antes de hacer una publicación, recuerda leer las <a href="reglas.php">reglas</a>.</span>
-                </div>
-                <div class="form-buttons">
-                    <button type="submit" name="submit_post">Crear publicación</button>
-                </div>
-            </form>
-        </section>
-
-        <!-- Lista de posts -->
-        <section class="posts">
-            <h2>Publicaciones</h2>
-            <?php if (empty($posts)): ?>
-                <p>No hay posts aún. ¡Sé el primero en publicar!</p>
-            <?php else: ?>
-                <?php foreach ($posts as $post): ?>
-                    <?php if ($post['parent_id'] === null): // Solo mostrar posts principales ?>
-                        <article class="post" id="post-<?php echo $post['id']; ?>">
-                            <div class="post-header">
-                                <?php
-                                if ($post['name'] === 'Administrador') {
-                                    echo '<span class="admin-name">Administrador</span>';
-                                } else {
-                                    echo '<span class="post-name">' . htmlspecialchars($post['name']) . '</span>';
-                                }
-                                ?>
-                                <?php if (!empty($post['subject'])): ?>
-                                    <span class="post-subject">
-                                        <?php echo htmlspecialchars($post['subject']); ?>
-                                    </span>
+                <div class="boxcontent">
+                    <?php foreach ($boards_by_category as $category => $boards): ?>
+                        <?php 
+                        $has_nsfw = false;
+                        foreach ($boards as $board) {
+                            if (!empty($board['nsfw_label'])) {
+                                $has_nsfw = true;
+                                break;
+                            }
+                        }
+                        ?>
+                        <div class="column">
+                            <u>
+                                <?php echo htmlspecialchars($category); ?>
+                                <?php if ($has_nsfw): ?>
+                                    <span class="nsfw-label">(NSFW)</span>
                                 <?php endif; ?>
-                                <span class="post-date">
-                                    <?php echo date('d/m/Y H:i:s', strtotime($post['created_at'])); ?>
-                                </span>
-                                <span class="post-number">
-                                    <a href="reply.php?post_id=<?php echo $post['id']; ?>&ref=<?php echo $post['id']; ?>">No. <?php echo $post['id']; ?></a>
-                                </span>
-                                [<a href="reply.php?post_id=<?php echo $post['id']; ?>" class="btn-reply">Responder</a>]
-                                <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
-                                    [<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]
-                                    <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position: absolute;z-index: 10;background: #f7e5e5;border: 1px solid rgb(136 0 0);padding: 10px;min-width: 150px;">
-                                        <form method="POST" action="index.php" style="margin:0;">
-                                            <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
-                                            <label style="display:block;margin-bottom:5px;">Motivo:</label>
-                                            <select name="report_reason" style="width:100%;margin-bottom:5px;">
-                                                <option value="spam">Spam</option>
-                                                <option value="contenido ilegal">Contenido ilegal</option>
-                                                <option value="acoso">Acoso</option>
-                                                <option value="otro">Otro</option>
-                                            </select>
-                                            <input type="text" name="report_details" placeholder="Detalles (opcional)" style="width:100%;margin-bottom:5px;">
-                                            <button type="submit" name="submit_report" style="width:100%;background:#800;color:#fff;padding: 2px;">Enviar reporte</button>
-                                        </form>
-                                    </nav>
+                            </u>
+                            <ul>
+                                <?php foreach ($boards as $board): ?>
+                                    <li>
+                                        <a href="boards.php?board=<?php echo urlencode($board['short_id']); ?>" class="boardlink">
+                                            <?php echo htmlspecialchars($board['name']); ?>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Publicaciones -->
+        <div class="box-outer top-box" id="popular-threads">
+            <div class="box-inner">
+                <div class="boxbar">
+                    <h2>Publicaciones Populares</h2>
+                </div>
+                <div class="boxcontent">
+                    <div id="c-threads">
+                        <?php foreach ($popular_posts as $post): ?>
+                            <div class="c-thread">
+                                <div class="c-board">
+                                    <?php echo htmlspecialchars($post['board_name']); ?>
                                 </div>
-                                <?php if ($post['is_pinned']): ?>
-                                    <img src="assets/imgs/sticky.gif" alt="Fijado">
+                                <a href="reply.php?post_id=<?php echo $post['id']; ?>" class="boardlink">
+                                <?php if (!empty($post['image_filename'])): ?>
+                                    <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
+                                        <div class="post-image">
+                                            <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
+                                                alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
+                                                onclick="toggleImageSize(this)">
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="post-image">
+                                            <img src="assets/imgs/filedeleted.gif" 
+                                                alt="Imagen no disponible">
+                                        </div>
+                                    <?php endif; ?>
                                 <?php endif; ?>
-                                <?php if ($post['is_locked']): ?>
-                                    <img src="assets/imgs/closed.gif" alt="Bloqueado">
-                                <?php endif; ?>
-                                <?php if (is_admin()): ?>
-                                    <form method="POST" action="admin_actions.php" style="display:inline;">
-                                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
-                                        <?php if ($post['is_locked']): ?>
-                                            [<button type="submit" name="unlock_post" class="btn-unlock">Desbloquear</button>]
-                                        <?php else: ?>
-                                            [<button type="submit" name="lock_post" class="btn-lock">Bloquear</button>]
-                                        <?php endif; ?>
-                                        <?php if ($post['is_pinned']): ?>
-                                            [<button type="submit" name="unpin_post" class="btn-unpin">Desfijar</button>]
-                                        <?php else: ?>
-                                            [<button type="submit" name="pin_post" class="btn-pin">Fijar</button>]
-                                        <?php endif; ?>
-                                    </form>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <?php if (!empty($post['image_filename'])): ?>
-                                <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
-                                    <div class="post-image">
-                                        <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
-                                             alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
-                                             onclick="toggleImageSize(this)">
-                                    </div>
-                                <?php else: ?>
-                                    <div class="post-image">
-                                        <img src="assets/imgs/filedeleted.gif" 
-                                             alt="Imagen no disponible">
-                                    </div>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                            
-                            <div class="post-message">
-                                <?php echo parse_references($post['message'], $post['name'] === 'Administrador'); ?>
-                            </div>
-                            
-                            <!-- Respuestas -->
-                            <?php
-                            $replies = get_replies($post['id']);
-                            if (!empty($replies)):
-                                $last_replies = array_slice($replies, -5); // 5: Número de respuestas a mostrar
-                            ?>
-                                <div class="replies">
-                                    <?php foreach ($last_replies as $reply): ?>
-                                        <article class="reply" id="post-<?php echo $reply['id']; ?>">
-                                            <div class="post-header">
-                                                <?php
-                                                if ($reply['name'] === 'Administrador') {
-                                                    echo '<span class="admin-name">Administrador</span>';
-                                                } else {
-                                                    echo '<span class="post-name">' . htmlspecialchars($reply['name']) . '</span>';
-                                                }
-                                                ?>
-                                                <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($reply['created_at'])); ?></span>
-                                                <span class="post-number"><a href="reply.php?post_id=<?php echo $reply['parent_id'] ? $reply['parent_id'] : $reply['id']; ?>&ref=<?php echo $reply['id']; ?>">No. <?php echo $reply['id']; ?></a></span>
-                                            </div>
-                                            <?php if ($reply['image_filename']): ?>
-                                                <div class="post-image">
-                                                    <img src="<?php echo UPLOAD_DIR . $reply['image_filename']; ?>" alt="<?php echo htmlspecialchars($reply['image_original_name']); ?>" onclick="toggleImageSize(this)">
-                                                </div>
-                                            <?php endif; ?>
-                                            <div class="post-message">
-                                                <?php echo parse_references($reply['message'], $reply['name'] === 'Administrador'); ?>
-                                            </div>
-                                        </article>
-                                    <?php endforeach; ?>
+                                </a>
+                                <div class="c-teaser">
+                                    <b><?php echo htmlspecialchars($post['subject'] ?? 'Sin título'); ?></b>:<br>
+                                    <?php echo htmlspecialchars_decode(substr($post['message'], 0, 50)); ?>...
                                 </div>
-                            <?php endif; ?>
-                        </article>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </section>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadisticas -->
+        <div class="box-outer top-box" id="site-stats">
+            <div class="box-inner">
+                <div class="boxbar">
+                    <h2>Estadísticas del Sitio</h2>
+                </div>
+                <div class="boxcontent">
+                    <div class="stat-cell"><b>Total de Publicaciones:</b> <?php echo number_format($site_stats['total_posts']); ?></div>
+                    <div class="stat-cell"><b>Usuarios Únicos:</b> <?php echo number_format($site_stats['unique_users']); ?></div>
+                    <div class="stat-cell"><b>Peso Total de Archivos:</b> <?php echo $site_stats['total_size']; ?></div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <footer>

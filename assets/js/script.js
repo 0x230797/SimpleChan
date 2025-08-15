@@ -1,37 +1,90 @@
-// Función para mostrar/ocultar formulario de crear post
-function toggleCreatePostForm() {
-    const form = document.getElementById('create-post-form');
-    const button = document.getElementById('toggle-post-btn');
+// Función mejorada para mostrar/ocultar formularios
+function toggleCreateForm(type = 'post') {
+    const formPost = document.getElementById('create-post');
+    const buttonPost = document.getElementById('toggle-post');
+    const formReply = document.getElementById('create-reply');
+    const buttonReply = document.getElementById('toggle-reply');
     
-    if (form.style.display === 'none') {
-        form.style.display = 'block';
-        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        button.textContent = 'Cancelar';
-        button.classList.add('btn-cancel-mode');
-        
-        // Enfocar en el primer campo (nombre)
-        setTimeout(() => {
-            const nameInput = form.querySelector('#name');
-            if (nameInput) nameInput.focus();
-        }, 300);
-    } else {
-        form.style.display = 'none';
-        button.textContent = 'Crear nuevo post';
-        button.classList.remove('btn-cancel-mode');
-        
-        // Limpiar formulario al ocultar
-        const formElement = form.querySelector('form');
-        if (formElement) {
-            formElement.reset();
-            // Actualizar estilos de los campos de nombre
-            const nameInputs = formElement.querySelectorAll('input[name="name"]');
-            nameInputs.forEach(input => {
-                if (input.value.trim() === '') {
-                    input.classList.add('anonymous-style');
-                }
-            });
+    if (type === 'post') {
+        if (formPost && buttonPost) {
+            toggleSingleForm(formPost, buttonPost, 'Crear publicación', 'Cancelar', 'btn-cancel');
+        }
+        // Ocultar el formulario de respuesta si está visible y existe
+        if (formReply && buttonReply) {
+            hideSingleForm(formReply, buttonReply, 'Crear Respuesta', 'btn-cancel');
+        }
+    } else if (type === 'reply') {
+        if (formReply && buttonReply) {
+            toggleSingleForm(formReply, buttonReply, 'Crear Respuesta', 'Cancelar', 'btn-cancel');
+        }
+        // Ocultar el formulario de post si está visible y existe
+        if (formPost && buttonPost) {
+            hideSingleForm(formPost, buttonPost, 'Crear publicación', 'btn-cancel');
         }
     }
+}
+
+// Función auxiliar para alternar un formulario específico
+function toggleSingleForm(form, button, showText, hideText, cancelClass) {
+    if (!form || !button) return;
+    
+    const isHidden = form.style.display === 'none' || form.style.display === '';
+    
+    if (isHidden) {
+        showSingleForm(form, button, hideText, cancelClass);
+    } else {
+        hideSingleForm(form, button, showText, cancelClass);
+    }
+}
+
+// Función auxiliar para mostrar un formulario
+function showSingleForm(form, button, hideText, cancelClass) {
+    if (!form || !button) return;
+    
+    form.style.display = 'block';
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    button.textContent = hideText;
+    button.classList.add(cancelClass);
+    
+    // Enfocar en el primer campo de entrada disponible
+    setTimeout(() => {
+        const nameInput = form.querySelector('input[name="name"]:not([readonly])') || 
+                         form.querySelector('input[name="name"]') || 
+                         form.querySelector('textarea[name="message"]');
+        if (nameInput) nameInput.focus();
+    }, 300);
+}
+
+// Función auxiliar para ocultar un formulario
+function hideSingleForm(form, button, showText, cancelClass) {
+    if (!form || !button) return;
+    
+    form.style.display = 'none';
+    button.textContent = showText;
+    button.classList.remove(cancelClass);
+    
+    // Limpiar formulario al ocultar
+    const formElement = form.querySelector('form');
+    if (formElement) {
+        formElement.reset();
+        
+        // Actualizar estilos de los campos de nombre si es necesario
+        const nameInputs = formElement.querySelectorAll('input[name="name"]:not([readonly])');
+        nameInputs.forEach(input => {
+            if (input.value.trim() === '') {
+                input.classList.add('anonymous-style');
+            }
+        });
+    }
+}
+
+// Funciones específicas que pueden ser llamadas desde los botones
+function toggleCreatePost() {
+    toggleCreateForm('post');
+}
+
+function toggleCreateReply() {
+    toggleCreateForm('reply');
 }
 
 // Función para alternar el tamaño de las imágenes
@@ -135,7 +188,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mostrar formulario si hay error
     const errorDiv = document.querySelector('.error');
     if (errorDiv) {
-        toggleCreatePostForm();
+        // Determinar qué tipo de formulario mostrar basado en la página actual
+        if (document.getElementById('create-post')) {
+            toggleCreateForm('post');
+        } else if (document.getElementById('create-reply')) {
+            toggleCreateForm('reply');
+        }
     }
     
     const postForms = document.querySelectorAll('form');

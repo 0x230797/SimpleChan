@@ -67,6 +67,20 @@ header nav a:hover {
     text-decoration: underline;
 }
 
+nav ul {
+    list-style: none;
+    display: flex;
+    margin: 0 5px;
+}
+
+nav ul li {
+    display: inline;
+}
+
+nav ul li a {
+    padding: 0 5px;
+}
+
 /* Main content */
 main {
     max-width: 800px;
@@ -243,15 +257,19 @@ article,
     background-color: #ffcece;
 }
 
-/* Botón de reportes */
-.create-post-toggle,
+/* Botones sin estilos */
+.create-post,
 .btn-create-post,
-.btn-cancel-mode {
+.create-reply,
+.btn-create-reply,
+.btn-cancel {
     font-size: xx-large !important;
     font-weight: 700;
+    text-align: center;
 }
 .btn-create-post,
-.btn-cancel-mode,
+.btn-create-reply,
+.btn-cancel,
 .btn-report,
 .btn-unlock,
 .btn-lock,
@@ -266,7 +284,8 @@ article,
     padding: 0;
 }
 .btn-create-post:hover,
-.btn-cancel-mode:hover,
+.btn-create-reply:hover,
+.btn-cancel:hover,
 .btn-report:hover,
 .btn-unlock:hover,
 .btn-lock:hover,
@@ -275,6 +294,123 @@ article,
     color: #e00;
     text-decoration: underline;
     background: none;
+}
+
+/* Tablones */
+#boards,
+#popular-threads,
+#site-stats {
+    border: 1px solid #800;
+    padding-bottom: 5px;
+}
+
+.boxbar {
+    background: #fca;
+    padding: 0 10px;
+}
+
+.nsfw-label {
+    color: red;
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+#boards .boxcontent {
+    display: flex;
+    width: 100%;
+}
+
+#boards .column {
+    display: flex;
+    flex-direction: column;
+    width: 20%;
+}
+
+#boards .column u {
+    display: table-cell;
+    font-size: small;
+    font-weight: 600;
+    padding: 5px 10px 0;
+}
+
+#boards .column ul {
+    display: table-cell;
+    padding: 0 10px;
+}
+
+#boards .column ul li {
+    font-size: small;
+    list-style: none;
+    margin: 0;
+}
+
+#boards .column ul li a {
+    text-decoration: none;
+}
+
+#boards .column ul li a:hover {
+    text-decoration: underline;
+}
+
+/* Publicaciones recientes y actualizadas */
+#popular-threads {
+    margin-top: 10px;
+    width: 100%;
+    overflow: hidden;
+}
+
+#c-threads {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: auto;
+    gap: 10px;
+    justify-items: center;
+    align-items: start;
+    width: 100%;
+    margin: 0 auto;
+}
+
+#popular-threads .c-thread {
+    box-sizing: border-box;
+    padding: 10px;
+    text-align: center;
+}
+
+#popular-threads .c-thread .c-board {
+    font-weight: 600;
+    font-size: small;
+}
+
+#popular-threads .c-thread .c-thumb {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 5px;
+    border: 1px solid #800;
+}
+
+#popular-threads .c-thread .c-teaser {
+    font-size: 12px;
+}
+
+/* Estadísticas del sitio */
+#site-stats {
+    margin-top: 10px;
+    width: 100%;
+    overflow: hidden;
+}
+
+#site-stats .boxcontent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+#site-stats .stat-cell {
+    flex: 1 1 calc(33.333% - 10px);
+    font-size: small;
+    padding: 10px;
+    text-align: center;
 }
 
 /* Respuestas */

@@ -13,6 +13,111 @@ function is_user_banned() {
     return $ban !== false ? $ban : false;
 }
 
+// Función para obtener un tablón por su nombre
+function get_board_by_name($name) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT * FROM boards WHERE BINARY name = ? LIMIT 1");
+    $stmt->execute([$name]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Función para obtener un tablón por su short_id
+function get_board_by_short_id($short_id) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT * FROM boards WHERE BINARY short_id = ? LIMIT 1");
+    $stmt->execute([$short_id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Función para obtener un tablón por su ID
+function get_board_by_id($id) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT * FROM boards WHERE id = ? LIMIT 1");
+    $stmt->execute([$id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Función para obtener los posts de un tablón específico
+function get_posts_by_board($board_id, $limit = 50) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT * FROM posts WHERE board_id = ? AND is_deleted = 0 ORDER BY created_at DESC LIMIT " . (int)$limit);
+    $stmt->execute([$board_id]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Función para obtener todos los tablones disponibles
+function get_all_boards() {
+    global $pdo;
+    $stmt = $pdo->query("SELECT *, IF(is_nsfw = 1, 'NSFW', '') AS nsfw_label FROM boards ORDER BY id ASC");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Función para obtener publicaciones recientes y publicaciones con respuestas recientes
+function get_recent_and_replied_posts($limit = 8) {
+    global $pdo;
+
+    // Obtener publicaciones recientes con el nombre del tablón
+    $recent_posts_query = "SELECT p.*, b.name AS board_name FROM posts p
+                            JOIN boards b ON p.board_id = b.id
+                            ORDER BY p.created_at DESC LIMIT :limit";
+    $stmt_recent = $pdo->prepare($recent_posts_query);
+    $stmt_recent->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt_recent->execute();
+    $recent_posts = $stmt_recent->fetchAll(PDO::FETCH_ASSOC);
+
+    // Obtener publicaciones con respuestas recientes con el nombre del tablón
+    $replied_posts_query = "SELECT p.*, b.name AS board_name FROM posts p
+                            JOIN boards b ON p.board_id = b.id
+                            JOIN posts r ON p.id = r.parent_id
+                            GROUP BY p.id
+                            ORDER BY MAX(r.created_at) DESC
+                            LIMIT :limit";
+    $stmt_replied = $pdo->prepare($replied_posts_query);
+    $stmt_replied->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt_replied->execute();
+    $replied_posts = $stmt_replied->fetchAll(PDO::FETCH_ASSOC);
+
+    // Combinar y eliminar duplicados
+    $combined_posts = array_merge($recent_posts, $replied_posts);
+    $unique_posts = array_unique($combined_posts, SORT_REGULAR);
+
+    // Limitar el número total de publicaciones
+    return array_slice($unique_posts, 0, $limit);
+}
+
+// Función para obtener estadísticas del sitio
+function get_site_stats() {
+    global $pdo;
+
+    // Obtener el total de publicaciones
+    $total_posts_query = "SELECT COUNT(*) AS total_posts FROM posts";
+    $total_posts = $pdo->query($total_posts_query)->fetchColumn();
+
+    // Obtener el total de usuarios únicos que han publicado
+    $unique_users_query = "SELECT COUNT(DISTINCT ip_address) AS unique_users FROM posts";
+    $unique_users = $pdo->query($unique_users_query)->fetchColumn();
+
+    // Calcular el peso total de los archivos subidos
+    $total_size_query = "SELECT SUM(LENGTH(image_filename)) AS total_size FROM posts WHERE image_filename IS NOT NULL";
+    $total_size_bytes = $pdo->query($total_size_query)->fetchColumn();
+
+    // Convertir el tamaño total a un formato legible (MB, GB, TB, etc.)
+    $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    $total_size = $total_size_bytes;
+    $unit_index = 0;
+    while ($total_size >= 1024 && $unit_index < count($units) - 1) {
+        $total_size /= 1024;
+        $unit_index++;
+    }
+    $total_size_formatted = number_format($total_size, 2) . ' ' . $units[$unit_index];
+
+    return [
+        'total_posts' => $total_posts,
+        'unique_users' => $unique_users,
+        'total_size' => $total_size_formatted
+    ];
+}
+
 // Función para subir imagen
 function upload_image($file) {
     if ($file['size'] > MAX_FILE_SIZE) {
@@ -39,7 +144,7 @@ function upload_image($file) {
 }
 
 // Función para crear un post
-function create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id = null) {
+function create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id = null, $board_id) {
     global $pdo;
     
     // Asegurar que el nombre nunca esté vacío
@@ -53,8 +158,8 @@ function create_post($name, $subject, $message, $image_filename, $image_original
     }
     
     try {
-        $stmt = $pdo->prepare("INSERT INTO posts (name, subject, message, image_filename, image_original_name, ip_address, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        return $stmt->execute([$name, $subject, $message, $image_filename, $image_original_name, get_user_ip(), $parent_id]);
+        $stmt = $pdo->prepare("INSERT INTO posts (name, subject, message, image_filename, image_original_name, ip_address, parent_id, board_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        return $stmt->execute([$name, $subject, $message, $image_filename, $image_original_name, get_user_ip(), $parent_id, $board_id]);
     } catch (PDOException $e) {
         return false;
     }
@@ -335,5 +440,17 @@ function validate_admin_formats($message, $is_admin) {
     }
 
     return true;
+}
+
+// Función para actualizar la imagen de un post en la base de datos
+function update_post_image($post_id, $image_filename) {
+    global $pdo;
+
+    try {
+        $stmt = $pdo->prepare("UPDATE posts SET image_filename = ? WHERE id = ?");
+        return $stmt->execute([$image_filename, $post_id]);
+    } catch (PDOException $e) {
+        return false;
+    }
 }
 ?>
