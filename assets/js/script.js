@@ -319,7 +319,10 @@ function insertFormat(type, btn) {
             insertText = `*${selected || 'texto'}*`;
             break;
         case 'strike':
-            insertText = `~~${selected || 'texto'}~~`;
+            insertText = `~${selected || 'texto'}~`;
+            break;
+        case 'subline':
+            insertText = `_${selected || 'texto'}_`;
             break;
         case 'spoiler':
             insertText = `[spoiler]${selected || 'texto'}[/spoiler]`;

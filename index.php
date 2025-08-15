@@ -131,6 +131,7 @@ $posts = get_posts();
                     <button type="button" onclick="insertFormat('bold')" title="Negrita"><b>B</b></button>
                     <button type="button" onclick="insertFormat('italic')" title="Cursiva"><i>I</i></button>
                     <button type="button" onclick="insertFormat('strike')" title="Tachado"><s>T</s></button>
+                    <button type="button" onclick="insertFormat('subline')" title="Sublinea"><u>S</u></button>
                     <button type="button" onclick="insertFormat('spoiler')" title="Spoiler">SPOILER</button>
                     <?php if (is_admin()): ?>
                         <button type="button" onclick="insertFormat('h1', this)" title="Título grande">H1</button>

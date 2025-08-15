@@ -194,6 +194,7 @@ $replies = get_replies($post_id);
                     <button type="button" onclick="insertFormat('bold', this)" title="Negrita"><b>B</b></button>
                     <button type="button" onclick="insertFormat('italic', this)" title="Cursiva"><i>I</i></button>
                     <button type="button" onclick="insertFormat('strike', this)" title="Tachado"><s>T</s></button>
+                    <button type="button" onclick="insertFormat('subline', this)" title="Sublinea"><u>S</u></button>
                     <button type="button" onclick="insertFormat('spoiler', this)" title="Spoiler">SPOILER</button>
                     <?php if (is_admin()): ?>
                         <button type="button" onclick="insertFormat('h1', this)" title="Título grande">H1</button>

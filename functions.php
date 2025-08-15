@@ -256,7 +256,8 @@ function parse_references($text, $is_admin = false) {
             // Aplicar formatos de texto
             $line = preg_replace('/\*\*(.+?)\*\*/s', '<b>$1</b>', $line);
             $line = preg_replace('/\*(.+?)\*/s', '<em>$1</em>', $line);
-            $line = preg_replace('/~~(.+?)~~/s', '<s>$1</s>', $line);
+            $line = preg_replace('/~(.+?)~/s', '<s>$1</s>', $line);
+            $line = preg_replace('/_(.+?)_/s', '<u>$1</u>', $line);
             $line = preg_replace('/\[spoiler\](.+?)\[\/spoiler\]/is', '<span class="spoiler">$1</span>', $line);
         }
         

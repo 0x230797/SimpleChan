@@ -86,9 +86,9 @@
                         <span>Me complace anunciar que agregamos nuevos formatos de texto para hacer que las publicaciones y respuestas se vean mucho mejor.</span>
                         <br><br>
                         <div>• ¿Cómo escribir en <b>negrita</b>?: **tu texto aquí**</div>
-                        <div>• ¿Cómo subrayar?: _tu texto aquí_</div>
+                        <div>• ¿Cómo <u>subrayar</u>?: _tu texto aquí_</div>
                         <div>• ¿Cómo escribir en <em>cursiva</em>?: *tu texto aquí*</div>
-                        <div>• ¿Cómo escribir en <s>tachado</s>?: ~~tu texto aquí~~</div>
+                        <div>• ¿Cómo escribir en <s>tachado</s>?: ~tu texto aquí~</div>
                         <div>• ¿Cómo escribir <span class="greentext">&gt;texto verde</span>?: Escribe ">" (sin las comillas) delante del texto. El texto verde sirve para citar, ironizar o abreviar una historia, no lo uses sólo "para que quede más bonito en verde".</div>
                         <div>• ¿Cómo escribir <span class="pinktext">&lt;texto rosa</span>?: Escribe "<" (sin las comillas) delante del texto. El texto rosa sirve para enfatizar algo, no lo uses sólo "para que quede más bonito en rosa".</div>
                     </div>
