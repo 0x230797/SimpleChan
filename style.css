@@ -109,7 +109,7 @@ main {
     border: 1px solid #800;
     font-size: 14px;
     background-color: #fff;
-    color: #000;
+    color: #800;
 }
 
 .form-group input:focus, .form-group textarea:focus {
@@ -224,6 +224,14 @@ article,
 .rules-message ,
 .post-message {
     margin: 10px 0;
+}
+
+.post-message h1 {
+    font-size: xx-large;
+}
+
+.post-message h2 {
+    font-size: x-large;
 }
 
 .rules-message div {
@@ -445,21 +453,6 @@ input[type="file"] {
 /* Placeholder text para inputs */
 input::placeholder, textarea::placeholder {
     color: #800;
-}
-
-/* Estilo especial para campos de nombre */
-input[name="name"] {
-    transition: color 0.2s ease, font-style 0.2s ease;
-}
-
-input[name="name"]:focus {
-    color: #800 !important;
-    font-style: normal !important;
-}
-
-input[name="name"].anonymous-style {
-    color: #800;
-    font-style: italic;
 }
 
 .admin-name {

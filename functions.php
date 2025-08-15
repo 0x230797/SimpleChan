@@ -188,38 +188,95 @@ function unban_ip($ban_id) {
 }
 
 // Función para convertir >>id en enlaces HTML en los mensajes
-function parse_references($text) {
-    // Primero, desescapar los > para que funcione el regex
-    $text = str_replace('&gt;', '>', $text);
-    // Negrita: **texto**
-    $text = preg_replace('/\*\*(.+?)\*\*/s', '<b>$1</b>', $text);
-    // Cursiva: *texto*
-    $text = preg_replace('/\*(.+?)\*/s', '<em>$1</em>', $text);
-    // Tachado: ~~texto~~
-    $text = preg_replace('/~~(.+?)~~/s', '<s>$1</s>', $text);
-    // Spoiler: [spoiler]texto[/spoiler]
-    $text = preg_replace('/\[spoiler\](.+?)\[\/spoiler\]/is', '<span class="spoiler">$1</span>', $text);
-    // Referencias >>id
-    $text = preg_replace('/>>([0-9]+)/', '<a href="#post-$1" class="ref-link">&gt;&gt;$1</a><br>', $text);
+function parse_references($text, $is_admin = false) {
+    // 1. Primero procesar entidades HTML y preparar el texto
+    if ($is_admin) {
+        // Convertir entidades HTML a caracteres reales primero
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        // Luego convertir etiquetas HTML escapadas a etiquetas reales
+        $text = preg_replace('/&lt;(h1|h2|span|div)([^&]*)&gt;/i', '<$1$2>', $text);
+        $text = preg_replace('/&lt;\/(h1|h2|span|div)&gt;/i', '</$1>', $text);
+    } else {
+        // Para usuarios normales, solo desescapar >
+        $text = str_replace('&gt;', '>', $text);
+    }
 
-    // Greentext SOLO en líneas que no contienen etiquetas HTML
-    $text = preg_replace_callback('/^([^<\n]*)(>[^\s][^<]*?)(<br>|$)/m', function($m) {
-        if (strpos($m[1], '<') !== false) return $m[0];
-        return $m[1] . '<span class="greentext">' . htmlspecialchars($m[2]) . '</span>' . ($m[3] === '<br>' ? '<br>' : '');
-    }, $text);
+    // 2. Separar por líneas para procesar formato
+    $lines = preg_split('/\r?\n/', $text);
     
-    // Pinktext: soporta < y &lt; al inicio de línea
-    $text = preg_replace_callback('/^([^<\n]*)(<[^\s][^<]*?)(<br>|$)/m', function($m) {
-        if (strpos($m[1], '<') !== false) return $m[0];
-        return $m[1] . '<span class="pinktext">' . htmlspecialchars($m[2]) . '</span>' . ($m[3] === '<br>' ? '<br>' : '');
-    }, $text);
+    foreach ($lines as &$line) {
+        // Verificar si la línea ya contiene HTML válido
+        $has_html = preg_match('/<[^>]+>/', $line);
+        
+        // Solo aplicar formatos de texto si no hay HTML o si es admin
+        if (!$has_html || $is_admin) {
+            // Aplicar formatos de texto
+            $line = preg_replace('/\*\*(.+?)\*\*/s', '<b>$1</b>', $line);
+            $line = preg_replace('/\*(.+?)\*/s', '<em>$1</em>', $line);
+            $line = preg_replace('/~~(.+?)~~/s', '<s>$1</s>', $line);
+            $line = preg_replace('/\[spoiler\](.+?)\[\/spoiler\]/is', '<span class="spoiler">$1</span>', $line);
+        }
+        
+        // Convertir referencias >>id en enlaces (siempre)
+        $line = preg_replace('/>>([0-9]+)/', '<a href="#post-$1" class="ref-link">&gt;&gt;$1</a>', $line);
+        
+        // Verificar nuevamente si hay HTML después de los formatos
+        $has_html_after = preg_match('/<[^>]+>/', $line);
+        
+        // Aplicar greentext y pinktext solo si no hay HTML
+        if (!$has_html_after) {
+            // Greentext: líneas que empiezan con >
+            if (preg_match('/^>(.*)$/', $line, $matches)) {
+                $line = '<span class="greentext">&gt;' . htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8') . '</span>';
+            }
+            // Pinktext: líneas que empiezan con <
+            elseif (preg_match('/^<(.*)$/', $line, $matches)) {
+                $line = '<span class="pinktext">&lt;' . htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8') . '</span>';
+            }
+            // Pinktext para &lt; ya escapado
+            elseif (preg_match('/^&lt;(.*)$/', $line, $matches)) {
+                $line = '<span class="pinktext">&lt;' . htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8') . '</span>';
+            }
+        }
+        
+        // Para administradores, cerrar etiquetas abiertas automáticamente
+        if ($is_admin && $has_html_after) {
+            // Array para rastrear etiquetas abiertas
+            $open_tags = [];
+            
+            // Buscar etiquetas de apertura
+            if (preg_match_all('/<(h1|h2|div|span)([^>]*)>/i', $line, $open_matches, PREG_SET_ORDER)) {
+                foreach ($open_matches as $match) {
+                    $open_tags[] = $match[1];
+                }
+            }
+            
+            // Buscar etiquetas de cierre
+            if (preg_match_all('/<\/(h1|h2|div|span)>/i', $line, $close_matches, PREG_SET_ORDER)) {
+                foreach ($close_matches as $match) {
+                    $key = array_search($match[1], $open_tags);
+                    if ($key !== false) {
+                        unset($open_tags[$key]);
+                    }
+                }
+            }
+            
+            // Cerrar etiquetas que quedaron abiertas
+            foreach (array_reverse($open_tags) as $tag) {
+                $line .= '</' . $tag . '>';
+            }
+        }
+    }
     
-    $text = preg_replace_callback('/^([^<\n]*)&lt;([^\s][^<]*?)(<br>|$)/m', function($m) {
-        if (strpos($m[1], '<') !== false) return $m[0];
-        return $m[1] . '<span class="pinktext">&lt;' . htmlspecialchars($m[2]) . '</span>' . ($m[3] === '<br>' ? '<br>' : '');
-    }, $text);
+    // 3. Unir líneas con <br>
+    $text = implode('<br>', $lines);
+
+    // 4. Para usuarios normales, eliminar etiquetas HTML avanzadas
+    if (!$is_admin) {
+        $text = preg_replace('/<\/?(?:h1|h2|div)(?:[^>]*)>/i', '', $text);
+    }
     
-    // Convertir saltos de línea restantes en <br>
-    return str_replace("\n", "<br>", $text);
+    return $text;
 }
 ?>

@@ -87,9 +87,6 @@ $posts = get_posts();
         </nav>
     </header>
 
-    <?php if (is_admin()): ?>
-        <div class="admin-name" style="text-align:center;margin-bottom:10px;">Sesión de <b>Administrador</b> activa</div>
-    <?php endif; ?>
     <main>
         <?php if (isset($report_success) && $report_success): ?>
             <div class="success">¡Gracias por reportar! El reporte ha sido enviado al administrador.</div>
@@ -127,6 +124,12 @@ $posts = get_posts();
                     <button type="button" onclick="insertFormat('italic')" title="Cursiva"><i>I</i></button>
                     <button type="button" onclick="insertFormat('strike')" title="Tachado"><s>T</s></button>
                     <button type="button" onclick="insertFormat('spoiler')" title="Spoiler">SPOILER</button>
+                    <?php if (is_admin()): ?>
+                        <button type="button" onclick="insertFormat('h1', this)" title="Título grande">H1</button>
+                        <button type="button" onclick="insertFormat('h2', this)" title="Título mediano">H2</button>
+                        <button type="button" onclick="insertFormat('color', this)" title="Color de texto">Color</button>
+                        <button type="button" onclick="insertFormat('center', this)" title="Centrar texto">Centrar</button>
+                    <?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label for="message">Mensaje:</label>
@@ -134,7 +137,11 @@ $posts = get_posts();
                 </div>
                 <div class="form-group">
                     <label for="image">Imagen:</label>
-                    <input type="file" id="image" name="image" accept="image/*" required>
+                    <?php if (is_admin()): ?>
+                        <input type="file" id="image" name="image" accept="image/*">
+                    <?php else: ?>
+                        <input type="file" id="image" name="image" accept="image/*" required>
+                    <?php endif; ?>
                         <span style="font-size:12px;color:rgb(102, 102, 102);text-align:right">Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB.</span>
                 </div>
                 <div class="form-buttons">
@@ -194,7 +201,7 @@ $posts = get_posts();
                             <?php endif; ?>
                             
                             <div class="post-message">
-                                <?php echo parse_references($post['message']); ?>
+                                <?php echo parse_references($post['message'], $post['name'] === 'Administrador'); ?>
                             </div>
                             
                             <!-- Respuestas -->
@@ -225,7 +232,7 @@ $posts = get_posts();
                                                 </div>
                                             <?php endif; ?>
                                             <div class="post-message">
-                                                <?php echo parse_references($reply['message']); ?>
+                                                <?php echo parse_references($reply['message'], $reply['name'] === 'Administrador'); ?>
                                             </div>
                                         </article>
                                     <?php endforeach; ?>

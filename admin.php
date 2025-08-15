@@ -240,7 +240,7 @@ $reports = is_admin() ? get_all_reports() : [];
                                     <?php endif; ?>
 
                                     <div class="post-message">
-                                        <?php echo parse_references($post['message']); ?>
+                                        <?php echo parse_references($post['message'], true); ?>
                                     </div>
                                     
                                     <div class="post-actions">

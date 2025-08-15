@@ -324,6 +324,40 @@ function insertFormat(type, btn) {
         case 'spoiler':
             insertText = `[spoiler]${selected || 'texto'}[/spoiler]`;
             break;
+        case 'h1':
+            if (selected) {
+                insertText = `<h1>${selected}</h1>`;
+            } else {
+                insertText = `<h1></h1>`;
+                // Colocar el cursor entre las etiquetas
+                textarea.value = before + insertText + after;
+                textarea.focus();
+                textarea.selectionStart = textarea.selectionEnd = before.length + 4; // después de <h1>
+                return;
+            }
+            break;
+        case 'h2':
+            if (selected) {
+                insertText = `<h2>${selected}</h2>`;
+            } else {
+                insertText = `<h2></h2>`;
+                textarea.value = before + insertText + after;
+                textarea.focus();
+                textarea.selectionStart = textarea.selectionEnd = before.length + 4;
+                return;
+            }
+            break;
+        case 'color':
+            let color = prompt('Color en formato CSS (ej: red, #ff0000):', '#d00');
+            if (color) {
+                insertText = `<span style="color:${color}">${selected || 'Texto de color'}</span>`;
+            } else {
+                insertText = selected;
+            }
+            break;
+        case 'center':
+            insertText = `<div style="text-align:center">${selected || 'Texto centrado'}</div>`;
+            break;
     }
     textarea.value = before + insertText + after;
     // Reposicionar el cursor

@@ -75,9 +75,7 @@ $replies = get_replies($post_id);
             <a href="reglas.php">Reglas</a>
         </nav>
     </header>
-    <?php if (is_admin()): ?>
-        <div class="admin-name" style="text-align:center;margin-bottom:10px;">Sesión de <b>Administrador</b> activa</div>
-    <?php endif; ?>
+
     <main>
         <section>
             <h2>Publicación</h2>
@@ -104,7 +102,7 @@ $replies = get_replies($post_id);
                     </div>
                 <?php endif; ?>
                 <div class="post-message">
-                    <?php echo parse_references($post['message']); ?>
+                    <?php echo parse_references($post['message'], $post['name'] === 'Administrador'); ?>
                 </div>
             </article>
         </section>
@@ -135,7 +133,7 @@ $replies = get_replies($post_id);
                                 </div>
                             <?php endif; ?>
                             <div class="post-message">
-                                <?php echo parse_references($reply['message']); ?>
+                                <?php echo parse_references($reply['message'], $reply['name'] === 'Administrador'); ?>
                             </div>
                         </article>
                     <?php endforeach; ?>
@@ -162,6 +160,12 @@ $replies = get_replies($post_id);
                     <button type="button" onclick="insertFormat('italic', this)" title="Cursiva"><i>I</i></button>
                     <button type="button" onclick="insertFormat('strike', this)" title="Tachado"><s>T</s></button>
                     <button type="button" onclick="insertFormat('spoiler', this)" title="Spoiler">SPOILER</button>
+                    <?php if (is_admin()): ?>
+                        <button type="button" onclick="insertFormat('h1', this)" title="Título grande">H1</button>
+                        <button type="button" onclick="insertFormat('h2', this)" title="Título mediano">H2</button>
+                        <button type="button" onclick="insertFormat('color', this)" title="Color de texto">Color</button>
+                        <button type="button" onclick="insertFormat('center', this)" title="Centrar texto">Centrar</button>
+                    <?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label for="message">Mensaje:</label>
