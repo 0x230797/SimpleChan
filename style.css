@@ -150,7 +150,8 @@ article,
 }
 
 .rules-header,
-.post-header {
+.post-header,
+.post-subject {
     margin-bottom: 10px;
     font-size: 13px;
 }
@@ -169,7 +170,6 @@ article,
 .post-subject {
     font-weight: bold;
     color: #cc1105;
-    margin-left: 5px;
 }
 
 .post-date, .post-number {
@@ -193,9 +193,32 @@ article,
     border: 1px solid #800;
 }
 
-.post-image img.fullsize {
+.post.fullsize {
+    overflow: visible !important;
+}
+
+.post-image.fullsize {
+    max-height: 100%;
+    margin-right: 0;
+    margin-bottom: 10px;
+    max-width: none !important;
+}
+
+.post-image.fullsize img.fullsize {
+    width: 100%;
     max-width: 100%;
     max-height: none;
+    display: block;
+    margin: 0 auto;
+}
+
+.post-image.fullsize + .post-message {
+    clear: both;
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    position: relative;
+    z-index: 2;
 }
 
 .rules-message ,
@@ -208,8 +231,8 @@ article,
 }
 
 .danger {
-    border-color: #6f1c1c;
-    background-color: #221111;
+    border-color: #800;
+    background-color: #ffcece;
 }
 
 /* Botón de reportes */
@@ -315,6 +338,24 @@ article,
     padding: 10px;
     margin-bottom: 10px;
     background-color: #f7e5e5;
+}
+
+.post-admin .post-image {
+    float: none;
+    margin: 0;
+    max-width: 200px;
+    max-height: 200px;
+    flex-shrink: 0;
+    margin-bottom: 10px;
+}
+
+.post-admin .post-image img {
+    display: block;
+    border: 1px solid #800;
+}
+
+.post-admin .post-message {
+    margin-bottom: 10px;
 }
 
 .post-admin.deleted {

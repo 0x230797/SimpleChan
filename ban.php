@@ -64,22 +64,17 @@ if (isset($ban_info['expires_at']) && $ban_info['expires_at']) {
     <link rel="stylesheet" href="style.css">
     <style>
         .ban-notice {
-            max-width: 700px;
             margin: 50px auto;
-            padding: 30px;
-            background-color: #4d2d2d;
-            border: 2px solid #ff6b6b;
-            border-radius: 12px;
+            padding: 30px 0;
+            background-color: #f7e5e5;
+            border: 1px solid #800;
             text-align: center;
-            color: #e0e0e0;
-            box-shadow: 0 4px 20px rgba(255, 107, 107, 0.1);
+            color: #800;
         }
         
         .ban-notice h2 {
-            color: #ff6b6b;
             margin-bottom: 25px;
             font-size: 28px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         
         .ban-notice p {
@@ -89,18 +84,7 @@ if (isset($ban_info['expires_at']) && $ban_info['expires_at']) {
         }
         
         .ban-notice strong {
-            color: #fff;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            color: #800;
         }
         
         /* Auto-refresh cada 30 segundos para bans temporales */
@@ -109,8 +93,7 @@ if (isset($ban_info['expires_at']) && $ban_info['expires_at']) {
             content: "Esta página se actualizará automáticamente cada 30 segundos";
             display: block;
             text-align: center;
-            background-color: #333;
-            color: #ccc;
+            color: #800;
             padding: 5px;
             font-size: 12px;
         }
@@ -144,7 +127,7 @@ if (isset($ban_info['expires_at']) && $ban_info['expires_at']) {
                 const counter = document.createElement('p');
                 counter.innerHTML = 'Página se actualizará en <span id="refresh-counter">30</span> segundos';
                 counter.style.fontSize = '12px';
-                counter.style.color = '#888';
+                counter.style.color = '#800';
                 counter.style.marginTop = '20px';
                 banActions.appendChild(counter);
                 updateCounter();
@@ -161,6 +144,7 @@ if (isset($ban_info['expires_at']) && $ban_info['expires_at']) {
     
     <main>
         <?php echo $ban_message; ?>
+        <div class="ban-actions"></div>
     </main>
     
     <footer>

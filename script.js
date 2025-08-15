@@ -37,6 +37,15 @@ function toggleCreatePostForm() {
 // Función para alternar el tamaño de las imágenes
 function toggleImageSize(img) {
     img.classList.toggle('fullsize');
+    var container = img.closest('.post-image');
+    if (container) {
+        container.classList.toggle('fullsize');
+        // Agregar clase al contenedor del post para asegurar el ancho completo
+        var post = img.closest('.post');
+        if (post) {
+            post.classList.toggle('fullsize');
+        }
+    }
 }
 
 // Función para mostrar/ocultar formulario de respuesta

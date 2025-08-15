@@ -27,6 +27,7 @@ if (isset($_GET['logout'])) {
 
 // Procesar acciones de admin
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $redirect = false;
     // Procesar reporte de usuario
     if (isset($_POST['submit_report']) && isset($_POST['report_post_id'])) {
         $post_id = (int)$_POST['report_post_id'];
@@ -36,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($post_id > 0 && !empty($reason)) {
             if (create_report($post_id, $reason, $details, $reporter_ip)) {
                 $success = 'Reporte enviado correctamente.';
+                $redirect = true;
             } else {
                 $error = 'Error al enviar el reporte.';
             }
@@ -49,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $post_id = (int)($_POST['post_id'] ?? 0);
             if ($post_id > 0 && delete_post($post_id)) {
                 $success = 'Post eliminado correctamente.';
+                $redirect = true;
             } else {
                 $error = 'Error al eliminar el post.';
             }
@@ -59,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $duration = isset($_POST['duration']) && !empty($_POST['duration']) ? (int)$_POST['duration'] : null;
             if (!empty($ip_address) && ban_ip($ip_address, $reason, $duration)) {
                 $success = 'IP baneada correctamente.';
+                $redirect = true;
             } else {
                 $error = 'Error al banear la IP o IP vacía.';
             }
@@ -67,10 +71,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ban_id = (int)($_POST['ban_id'] ?? 0);
             if ($ban_id > 0 && unban_ip($ban_id)) {
                 $success = 'IP desbaneada correctamente.';
+                $redirect = true;
             } else {
                 $error = 'Error al desbanear la IP.';
             }
         }
+    }
+    if ($redirect) {
+        header('Location: admin.php');
+        exit;
     }
 }
 
@@ -216,10 +225,6 @@ $reports = is_admin() ? get_all_reports() : [];
                                         </div>
                                     <?php endif; ?>
                                     
-                                    <div class="post-message">
-                                        <?php echo parse_references($post['message']); ?>
-                                    </div>
-                                    
                                     <?php if ($post['image_filename']): ?>
                                         <div class="post-image">
                                             <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
@@ -227,6 +232,10 @@ $reports = is_admin() ? get_all_reports() : [];
                                                  style="max-width: 200px; max-height: 200px;">
                                         </div>
                                     <?php endif; ?>
+
+                                    <div class="post-message">
+                                        <?php echo parse_references($post['message']); ?>
+                                    </div>
                                     
                                     <div class="post-actions">
                                         <?php if (!$post['is_deleted']): ?>
@@ -235,12 +244,7 @@ $reports = is_admin() ? get_all_reports() : [];
                                                 <button type="submit" name="delete_post" onclick="return confirm('¿Eliminar este post?')">Eliminar Post</button>
                                             </form>
                                         <?php endif; ?>
-                                        
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="ip_address" value="<?php echo $post['ip_address']; ?>">
-                                            <input type="hidden" name="reason" value="Post inapropiado">
-                                            <button type="submit" name="ban_ip" onclick="return confirm('¿Banear la IP <?php echo $post['ip_address']; ?>?')">Banear IP</button>
-                                        </form>
+                                        <button type="button" class="btn-ban-ip" onclick="setBanIp('<?php echo htmlspecialchars($post['ip_address']); ?>')">Banear IP</button>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -298,5 +302,16 @@ $reports = is_admin() ? get_all_reports() : [];
     <footer>
         <p>&copy; 2025 SimpleChan - Panel de Administración</p>
     </footer>
+
+    <script>
+    function setBanIp(ip) {
+        var input = document.getElementById('ip_address');
+        if (input) {
+            input.value = ip;
+            input.focus();
+            window.scrollTo(0, input.getBoundingClientRect().top + window.scrollY - 100);
+        }
+    }
+    </script>
 </body>
 </html>
