@@ -118,6 +118,7 @@ if (isset($post_id) && $post_id > 0) {
     </header>
 
     <main>
+
         <?php if (isset($error)): ?>
             <div class="error"><?php echo $error; ?></div>
         <?php endif; ?>
@@ -242,11 +243,18 @@ if (isset($post_id) && $post_id > 0) {
                                     <?php endif; ?>
                                     
                                     <?php if ($post['image_filename']): ?>
-                                        <div class="post-image">
-                                            <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
-                                                 alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
-                                                 style="max-width: 200px; max-height: 200px;">
-                                        </div>
+                                        <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
+                                            <div class="post-image">
+                                                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
+                                                     alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
+                                                     onclick="toggleImageSize(this)">
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="post-image">
+                                                <img src="assets/imgs/filedeleted.gif" 
+                                                     alt="Imagen no disponible">
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
 
                                     <div class="post-message">
@@ -326,15 +334,5 @@ if (isset($post_id) && $post_id > 0) {
         <p>&copy; 2025 SimpleChan - Panel de Administración</p>
     </footer>
     <script src="assets/js/script.js"></script>
-    <script>
-    function setBanIp(ip) {
-        var input = document.getElementById('ip_address');
-        if (input) {
-            input.value = ip;
-            input.focus();
-            window.scrollTo(0, input.getBoundingClientRect().top + window.scrollY - 100);
-        }
-    }
-    </script>
 </body>
 </html>

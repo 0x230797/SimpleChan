@@ -367,3 +367,27 @@ function insertFormat(type, btn) {
     textarea.focus();
     textarea.selectionStart = textarea.selectionEnd = before.length + insertText.length;
 }
+
+// Manejar referencias automáticas al cargar la página
+window.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+        var textarea = document.querySelector('textarea[name="message"]');
+        if (textarea) {
+            textarea.value = '>>' + ref + '\n';
+            textarea.focus();
+        }
+    }
+});
+
+// Establece la dirección IP en el campo de entrada correspondiente y enfoca el campo.
+// Además, realiza un desplazamiento suave para que el campo sea visible en la pantalla.
+function setBanIp(ip) {
+    var input = document.getElementById('ip_address');
+     if (input) {
+        input.value = ip;
+        input.focus();
+        window.scrollTo(0, input.getBoundingClientRect().top + window.scrollY - 100);
+    }
+}

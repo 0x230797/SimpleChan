@@ -11,6 +11,8 @@ if ($ban_info) {
 }
 
 $post_id = isset($_GET['post_id']) ? (int)$_GET['post_id'] : 0;
+
+// Validar el parámetro 'post_id' para asegurarse de que sea un entero positivo antes de continuar.
 if ($post_id <= 0) {
     header('Location: index.php');
     exit;
@@ -88,6 +90,8 @@ $replies = get_replies($post_id);
     </header>
 
     <main>
+
+        <!-- Sección principal para mostrar la publicación original -->
         <section>
             <h2>Publicación</h2>
             <article class="post" id="post-<?php echo $post['id']; ?>">
@@ -100,46 +104,58 @@ $replies = get_replies($post_id);
                     }
                     ?>
                     <?php if (!empty($post['subject'])): ?>
-                        <span class="post-subject"><?php echo htmlspecialchars($post['subject']); ?></span>
+                        <span class="post-subject">
+                            <?php echo htmlspecialchars($post['subject']); ?>
+                        </span>
                     <?php endif; ?>
                     <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($post['created_at'])); ?></span>
                     <span class="post-number"><a href="#post-<?php echo $post['id']; ?>" onclick="insertReference(<?php echo $post['id']; ?>); return false;">No. <?php echo $post['id']; ?></a></span>
+                    [<a href="reply.php?post_id=<?php echo $post['id']; ?>" class="btn-reply">Responder</a>]
                     <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
-                                    <button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>
-                                    <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position: absolute;z-index: 10;background: #f7e5e5;border: 1px solid rgb(136 0 0);padding: 10px;min-width: 150px;">
-                                        <form method="POST" action="index.php" style="margin:0;">
-                                            <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
-                                            <label style="display:block;margin-bottom:5px;">Motivo:</label>
-                                            <select name="report_reason" style="width:100%;margin-bottom:5px;">
-                                                <option value="spam">Spam</option>
-                                                <option value="contenido ilegal">Contenido ilegal</option>
-                                                <option value="acoso">Acoso</option>
-                                                <option value="otro">Otro</option>
-                                            </select>
-                                            <input type="text" name="report_details" placeholder="Detalles (opcional)" style="width:100%;margin-bottom:5px;">
-                                            <button type="submit" name="submit_report" style="width:100%;background:#800;color:#fff;padding: 2px;">Enviar reporte</button>
-                                        </form>
-                                    </nav>
-                                </div>
-                                <?php if ($post['is_pinned']): ?>
-                                    <img src="assets/imgs/sticky.gif" alt="Fijado">
-                                <?php endif; ?>
-                                <?php if ($post['is_locked']): ?>
-                                    <img src="assets/imgs/closed.gif" alt="Bloqueado">
-                                <?php endif; ?>
-                </div>
-                <?php if ($post['image_filename']): ?>
-                    <div class="post-image">
-                        <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
-                             alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
-                             onclick="toggleImageSize(this)">
+                        [<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]
+                        <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position: absolute;z-index: 10;background: #f7e5e5;border: 1px solid rgb(136 0 0);padding: 10px;min-width: 150px;">
+                            <form method="POST" action="index.php" style="margin:0;">
+                                <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
+                                <label style="display:block;margin-bottom:5px;">Motivo:</label>
+                                    <select name="report_reason" style="width:100%;margin-bottom:5px;">
+                                        <option value="spam">Spam</option>
+                                        <option value="contenido ilegal">Contenido ilegal</option>
+                                        <option value="acoso">Acoso</option>
+                                        <option value="otro">Otro</option>
+                                    </select>
+                                <input type="text" name="report_details" placeholder="Detalles (opcional)" style="width:100%;margin-bottom:5px;">
+                                <button type="submit" name="submit_report" style="width:100%;background:#800;color:#fff;padding: 2px;">Enviar reporte</button>
+                            </form>
+                        </nav>
                     </div>
+                    <?php if ($post['is_pinned']): ?>
+                        <img src="assets/imgs/sticky.gif" alt="Fijado">
+                    <?php endif; ?>
+                    <?php if ($post['is_locked']): ?>
+                        <img src="assets/imgs/closed.gif" alt="Bloqueado">
+                    <?php endif; ?>
+                </div>
+                <?php if (!empty($post['image_filename']) && $post['image_filename'] !== null): ?>
+                    <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
+                        <div class="post-image">
+                            <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
+                                 alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
+                                 onclick="toggleImageSize(this)">
+                        </div>
+                    <?php else: ?>
+                        <div class="post-image">
+                            <img src="assets/imgs/filedeleted.gif" 
+                                 alt="Imagen no disponible">
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
                 <div class="post-message">
                     <?php echo parse_references($post['message'], $post['name'] === 'Administrador'); ?>
                 </div>
             </article>
         </section>
+
+        <!-- Sección para mostrar las respuestas a la publicación -->
         <section>
             <h2>Respuestas</h2>
             <?php if (empty($replies)): ?>
@@ -158,14 +174,38 @@ $replies = get_replies($post_id);
                                 ?>
                                 <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($reply['created_at'])); ?></span>
                                 <span class="post-number"><a href="#post-<?php echo $reply['id']; ?>" onclick="insertReference(<?php echo $reply['id']; ?>); return false;">No. <?php echo $reply['id']; ?></a></span>
-
-                            </div>
-                            <?php if ($reply['image_filename']): ?>
-                                <div class="post-image">
-                                    <img src="<?php echo UPLOAD_DIR . $reply['image_filename']; ?>" 
-                                         alt="<?php echo htmlspecialchars($reply['image_original_name']); ?>"
-                                         onclick="toggleImageSize(this)">
+                                [<a href="#" class="btn-reply" onclick="insertReference(<?php echo $reply['id']; ?>); return false;">Responder</a>]
+                                <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
+                                    [<button class="btn-report" onclick="toggleReportMenu(<?php echo $reply['id']; ?>)">Reportar</button>]
+                                    <nav class="report-menu" id="report-menu-<?php echo $reply['id']; ?>" style="display:none;position: absolute;z-index: 10;background: #f7e5e5;border: 1px solid rgb(136 0 0);padding: 10px;min-width: 150px;">
+                                        <form method="POST" action="reply.php?post_id=<?php echo $post_id; ?>" style="margin:0;">
+                                            <input type="hidden" name="report_post_id" value="<?php echo $reply['id']; ?>">
+                                            <label style="display:block;margin-bottom:5px;">Motivo:</label>
+                                            <select name="report_reason" style="width:100%;margin-bottom:5px;">
+                                                <option value="spam">Spam</option>
+                                                <option value="contenido ilegal">Contenido ilegal</option>
+                                                <option value="acoso">Acoso</option>
+                                                <option value="otro">Otro</option>
+                                            </select>
+                                            <input type="text" name="report_details" placeholder="Detalles (opcional)" style="width:100%;margin-bottom:5px;">
+                                            <button type="submit" name="submit_report" style="width:100%;background:#800;color:#fff;padding: 2px;">Enviar reporte</button>
+                                        </form>
+                                    </nav>
                                 </div>
+                            </div>
+                            <?php if (!empty($reply['image_filename'])): ?>
+                                <?php if (file_exists(UPLOAD_DIR . $reply['image_filename'])): ?>
+                                    <div class="post-image">
+                                        <img src="<?php echo UPLOAD_DIR . $reply['image_filename']; ?>" 
+                                             alt="<?php echo htmlspecialchars($reply['image_original_name']); ?>"
+                                             onclick="toggleImageSize(this)">
+                                    </div>
+                                <?php else: ?>
+                                    <div class="post-image">
+                                        <img src="assets/imgs/filedeleted.gif" 
+                                             alt="Imagen no disponible">
+                                    </div>
+                                <?php endif; ?>
                             <?php endif; ?>
                             <div class="post-message">
                                 <?php echo parse_references($reply['message'], $reply['name'] === 'Administrador'); ?>
@@ -175,10 +215,14 @@ $replies = get_replies($post_id);
                 </div>
             <?php endif; ?>
         </section>
+
+        <!-- Sección para que los usuarios puedan responder a la publicación -->
         <section>
             <h2>Responder</h2>
             <?php if (isset($error)): ?>
-                <div class="error"><?php echo $error; ?></div>
+                <div class="error">
+                    <?php echo $error; ?>
+                </div>
             <?php endif; ?>
             <form method="POST" enctype="multipart/form-data" class="reply-form">
                 <div class="form-group">
@@ -205,7 +249,7 @@ $replies = get_replies($post_id);
                 </div>
                 <div class="form-group">
                     <label for="message">Mensaje:</label>
-                    <textarea name="message" required rows="3" placeholder="Tu respuesta..."></textarea>
+                    <textarea name="message" required rows="5" placeholder="Tu respuesta..."></textarea>
                 </div>
                 <div class="form-group">
                     <input type="file" name="image" accept="image/*">
@@ -216,23 +260,12 @@ $replies = get_replies($post_id);
                 </div>
             </form>
         </section>
+
     </main>
+
     <footer>
         <p>&copy; 2025 SimpleChan - Imageboard Simple y Anónimo</p>
     </footer>
     <script src="assets/js/script.js"></script>
-    <script>
-        window.addEventListener('DOMContentLoaded', function() {
-            const params = new URLSearchParams(window.location.search);
-            const ref = params.get('ref');
-            if (ref) {
-                var textarea = document.querySelector('textarea[name="message"]');
-                if (textarea) {
-                    textarea.value = '>>' + ref + '\n';
-                    textarea.focus();
-                }
-            }
-        });
-    </script>
 </body>
 </html>

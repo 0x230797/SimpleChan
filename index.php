@@ -10,8 +10,7 @@ if ($ban_info) {
     exit;
 }
 
-// Procesar envío de post
-// Procesar reporte de usuario
+// Procesar envío de post y reporte de usuario
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_report']) && isset($_POST['report_post_id'])) {
     $post_id = (int)$_POST['report_post_id'];
     $reason = clean_input($_POST['report_reason'] ?? '');
@@ -94,6 +93,7 @@ $posts = get_posts();
     </header>
 
     <main>
+
         <!-- Mostrar mensaje de éxito si el reporte fue enviado -->
         <?php if (isset($_GET['report_success']) && $_GET['report_success'] == 1): ?>
             <div class="success">¡Gracias por reportar! El reporte ha sido enviado al administrador.</div>
@@ -101,12 +101,12 @@ $posts = get_posts();
 
         <!-- Botón para mostrar formulario -->
         <section class="create-post-toggle">
-            <button onclick="toggleCreatePostForm()" id="toggle-post-btn" class="btn-create-post">
-                Crear nuevo publicación
-            </button>
+            [ <button onclick="toggleCreatePostForm()" id="toggle-post-btn" class="btn-create-post">
+                Crear publicación
+            </button> ]
         </section>
 
-        <!-- Formulario para nuevo post (oculto por defecto) -->
+        <!-- Formulario para nuevo post -->
         <section class="post-form" id="create-post-form" style="display: none;">
             <h2>Crear nuevo publicación</h2>
             <?php if (isset($error)): ?>
@@ -142,7 +142,7 @@ $posts = get_posts();
                 </div>
                 <div class="form-group">
                     <label for="message">Mensaje:</label>
-                    <textarea id="message" name="message" required rows="3" placeholder="Tu publicación..."></textarea>
+                    <textarea id="message" name="message" required rows="5" placeholder="Tu publicación..."></textarea>
                 </div>
                 <div class="form-group">
                     <label for="image">Imagen:</label>
@@ -151,7 +151,9 @@ $posts = get_posts();
                     <?php else: ?>
                         <input type="file" id="image" name="image" accept="image/*" required>
                     <?php endif; ?>
-                        <span style="font-size:12px;color:rgb(102, 102, 102);text-align:right">Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB.</span>
+                    <span style="font-size:12px;color:rgb(102, 102, 102);text-align:right">Formatos permitidos: JPG, JPEG, PNG, GIF, WEBP. Tamaño máximo: 5MB.</span>
+                    <br>
+                    <span style="font-size:12px;color:rgb(102, 102, 102);text-align:right">Antes de hacer una publicación, recuerda leer las <a href="reglas.php">reglas</a>.</span>
                 </div>
                 <div class="form-buttons">
                     <button type="submit" name="submit_post">Crear publicación</button>
@@ -177,10 +179,16 @@ $posts = get_posts();
                                 }
                                 ?>
                                 <?php if (!empty($post['subject'])): ?>
-                                    <span class="post-subject"><?php echo htmlspecialchars($post['subject']); ?></span>
+                                    <span class="post-subject">
+                                        <?php echo htmlspecialchars($post['subject']); ?>
+                                    </span>
                                 <?php endif; ?>
-                                <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($post['created_at'])); ?></span>
-                                <span class="post-number"><a href="reply.php?post_id=<?php echo $post['id']; ?>&ref=<?php echo $post['id']; ?>">No. <?php echo $post['id']; ?></a></span>
+                                <span class="post-date">
+                                    <?php echo date('d/m/Y H:i:s', strtotime($post['created_at'])); ?>
+                                </span>
+                                <span class="post-number">
+                                    <a href="reply.php?post_id=<?php echo $post['id']; ?>&ref=<?php echo $post['id']; ?>">No. <?php echo $post['id']; ?></a>
+                                </span>
                                 [<a href="reply.php?post_id=<?php echo $post['id']; ?>" class="btn-reply">Responder</a>]
                                 <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
                                     [<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]
@@ -222,12 +230,19 @@ $posts = get_posts();
                                 <?php endif; ?>
                             </div>
                             
-                            <?php if ($post['image_filename']): ?>
-                                <div class="post-image">
-                                    <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
-                                         alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
-                                         onclick="toggleImageSize(this)">
-                                </div>
+                            <?php if (!empty($post['image_filename'])): ?>
+                                <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
+                                    <div class="post-image">
+                                        <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
+                                             alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
+                                             onclick="toggleImageSize(this)">
+                                    </div>
+                                <?php else: ?>
+                                    <div class="post-image">
+                                        <img src="assets/imgs/filedeleted.gif" 
+                                             alt="Imagen no disponible">
+                                    </div>
+                                <?php endif; ?>
                             <?php endif; ?>
                             
                             <div class="post-message">
@@ -236,9 +251,9 @@ $posts = get_posts();
                             
                             <!-- Respuestas -->
                             <?php
-                                $replies = get_replies($post['id']);
-                                if (!empty($replies)):
-                                    $last_replies = array_slice($replies, -5);
+                            $replies = get_replies($post['id']);
+                            if (!empty($replies)):
+                                $last_replies = array_slice($replies, -5); // 5: Número de respuestas a mostrar
                             ?>
                                 <div class="replies">
                                     <?php foreach ($last_replies as $reply): ?>
@@ -256,9 +271,7 @@ $posts = get_posts();
                                             </div>
                                             <?php if ($reply['image_filename']): ?>
                                                 <div class="post-image">
-                                                    <img src="<?php echo UPLOAD_DIR . $reply['image_filename']; ?>" 
-                                                         alt="<?php echo htmlspecialchars($reply['image_original_name']); ?>"
-                                                         onclick="toggleImageSize(this)">
+                                                    <img src="<?php echo UPLOAD_DIR . $reply['image_filename']; ?>" alt="<?php echo htmlspecialchars($reply['image_original_name']); ?>" onclick="toggleImageSize(this)">
                                                 </div>
                                             <?php endif; ?>
                                             <div class="post-message">

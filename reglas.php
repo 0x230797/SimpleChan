@@ -1,14 +1,14 @@
 <?php
-    session_start();
-    require_once 'config.php';
-    require_once 'functions.php';
+session_start();
+require_once 'config.php';
+require_once 'functions.php';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SimpleChan - Imageboard Anónimo</title>
+    <title>Reglas - SimpleChan - Imageboard Anónimo</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>

@@ -1,7 +1,3 @@
--- Crear base de datos
-CREATE DATABASE IF NOT EXISTS simplechan_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE simplechan_db;
-
 -- Tabla de posts
 CREATE TABLE posts (
     id INT AUTO_INCREMENT PRIMARY KEY,

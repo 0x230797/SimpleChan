@@ -61,7 +61,7 @@ if (isset($ban_info['expires_at']) && $ban_info['expires_at']) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acceso Denegado - SimpleChan</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
     <style>
         .ban-notice {

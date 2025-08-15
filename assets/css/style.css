@@ -244,6 +244,14 @@ article,
 }
 
 /* Botón de reportes */
+.create-post-toggle,
+.btn-create-post,
+.btn-cancel-mode {
+    font-size: xx-large !important;
+    font-weight: 700;
+}
+.btn-create-post,
+.btn-cancel-mode,
 .btn-report,
 .btn-unlock,
 .btn-lock,
@@ -257,6 +265,8 @@ article,
     text-decoration: none;
     padding: 0;
 }
+.btn-create-post:hover,
+.btn-cancel-mode:hover,
 .btn-report:hover,
 .btn-unlock:hover,
 .btn-lock:hover,
@@ -277,6 +287,7 @@ article,
     border: 1px solid #800;
     padding: 10px;
     margin-bottom: 10px;
+    overflow: visible;
 }
 
 .reply-form {
