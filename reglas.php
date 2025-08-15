@@ -32,7 +32,7 @@
             <h2>Reglas</h2>
             <article>
                 <div class="rules-header">
-                    <span class="rules-title">Bienvenida</span>
+                    <span class="rules-title">Bienvenidos</span>
                 </div>
                 <div class="rules-message">
                     SimpleChan es un imageboard anónimo simple y libre. Para mantener un ambiente respetuoso y seguro para todos los usuarios, hemos establecido las siguientes reglas.
@@ -50,7 +50,7 @@
                     </div>
                     <div>
                         <h4>Contenido apropiado</h4>
-                        <span>Prohibido contenido pornográfico, violento explícito, gore, o cualquier material que pueda considerarse perturbador o ilegal.</span>
+                        <span>Trata de publicar algo, no tran prohibido, no queremos problemas aquí.</span>
                     </div>
                     <div>
                         <h4>No spam ni flood</h4>
@@ -69,7 +69,7 @@
                         <span>Aunque se permite el humor y las bromas, no hagas posts con la única intención de provocar, molestar o arruinar conversaciones.</span>
                     </div>
                     <div>
-                        <h4>Respeta la temática del tablón</h4>
+                        <h4>Respeta la temática de la publicación</h4>
                         <span>Mantén tus posts relevantes y coherentes. No hagas posts completamente fuera de lugar o random sin contexto.</span>
                     </div>
                     <div>
@@ -77,6 +77,21 @@
                         <span>Si recibes un ban, no intentes evadirlo usando proxies, VPNs, o cambiando de IP. Espera a que expire o contacta al administrador.</span>
                     </div>
                 </div>
+                <div class="rules-header">
+                    <span class="rules-title">Publicaciones</span>
+                </div>
+                <div class="rules-message">
+                    <div>
+                        <h4>Formatos de texto</h4>
+                        <span>Me complace anunciar que agregamos nuevos formatos de texto para hacer que las publicaciones y respuestas se vean mucho mejor.</span>
+                        <br><br>
+                        <div>• ¿Cómo escribir en <b>negrita</b>?: **tu texto aquí**</div>
+                        <div>• ¿Cómo subrayar?: _tu texto aquí_</div>
+                        <div>• ¿Cómo escribir en <em>cursiva</em>?: *tu texto aquí*</div>
+                        <div>• ¿Cómo escribir en <s>tachado</s>?: ~~tu texto aquí~~</div>
+                        <div>• ¿Cómo escribir <span class="greentext">>texto verde</span>?: Escribe ">" (sin las comillas) delante del texto. El texto verde sirve para citar, ironizar o abreviar una historia, no lo uses sólo "para que quede más bonito en verde".</div>
+                        <div>• ¿Cómo escribir <span class="pinktext">< texto rosa</span>?: Escribe "<" (sin las comillas) delante del texto. El texto rosa/rojo sirve para enfatizar algo, no lo uses sólo "para que quede más bonito en rosa".</div>
+                    </div>
             </article>
 
             <article class="danger">
