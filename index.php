@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once 'config.php';
 require_once 'functions.php';
 
@@ -86,6 +87,9 @@ $posts = get_posts();
         </nav>
     </header>
 
+    <?php if (is_admin()): ?>
+        <div class="admin-name" style="text-align:center;margin-bottom:10px;">Sesión de <b>Administrador</b> activa</div>
+    <?php endif; ?>
     <main>
         <?php if (isset($report_success) && $report_success): ?>
             <div class="success">¡Gracias por reportar! El reporte ha sido enviado al administrador.</div>
@@ -107,7 +111,11 @@ $posts = get_posts();
             <form method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="name">Nombre (opcional):</label>
-                    <input type="text" id="name" name="name" placeholder="Anónimo" maxlength="50">
+                    <?php if (is_admin()): ?>
+                        <input type="text" id="name" name="name" value="Administrador" readonly class="admin-name" style="background:#f7e5e5;">
+                    <?php else: ?>
+                        <input type="text" id="name" name="name" placeholder="Anónimo" maxlength="50">
+                    <?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label for="subject">Asunto:</label>
@@ -145,7 +153,13 @@ $posts = get_posts();
                     <?php if ($post['parent_id'] === null): // Solo mostrar posts principales ?>
                         <article class="post" id="post-<?php echo $post['id']; ?>">
                             <div class="post-header">
-                                <span class="post-name"><?php echo htmlspecialchars($post['name']); ?></span>
+                                <?php
+                                if ($post['name'] === 'Administrador') {
+                                    echo '<span class="admin-name">Administrador</span>';
+                                } else {
+                                    echo '<span class="post-name">' . htmlspecialchars($post['name']) . '</span>';
+                                }
+                                ?>
                                 <?php if (!empty($post['subject'])): ?>
                                     <span class="post-subject"><?php echo htmlspecialchars($post['subject']); ?></span>
                                 <?php endif; ?>
@@ -193,7 +207,13 @@ $posts = get_posts();
                                     <?php foreach ($last_replies as $reply): ?>
                                         <article class="reply" id="post-<?php echo $reply['id']; ?>">
                                             <div class="post-header">
-                                                <span class="post-name"><?php echo htmlspecialchars($reply['name']); ?></span>
+                                                <?php
+                                                if ($reply['name'] === 'Administrador') {
+                                                    echo '<span class="admin-name">Administrador</span>';
+                                                } else {
+                                                    echo '<span class="post-name">' . htmlspecialchars($reply['name']) . '</span>';
+                                                }
+                                                ?>
                                                 <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($reply['created_at'])); ?></span>
                                                 <span class="post-number"><a href="reply.php?post_id=<?php echo $reply['parent_id'] ? $reply['parent_id'] : $reply['id']; ?>&ref=<?php echo $reply['id']; ?>">No. <?php echo $reply['id']; ?></a></span>
                                             </div>

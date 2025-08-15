@@ -211,7 +211,13 @@ $reports = is_admin() ? get_all_reports() : [];
                                         <?php if ($post['parent_id']): ?>
                                             (Respuesta a: <?php echo $post['parent_id']; ?>)
                                         <?php endif; ?>
-                                        - <?php echo htmlspecialchars($post['name']); ?>
+                                        - <?php
+                                            if ($post['name'] === 'Administrador') {
+                                                echo '<span class="admin-name">Administrador</span>';
+                                            } else {
+                                                echo htmlspecialchars($post['name']);
+                                            }
+                                        ?>
                                         - <?php echo date('d/m/Y H:i:s', strtotime($post['created_at'])); ?>
                                         - IP: <?php echo htmlspecialchars($post['ip_address']); ?>
                                         <?php if ($post['is_deleted']): ?>

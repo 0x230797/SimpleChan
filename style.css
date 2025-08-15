@@ -142,7 +142,7 @@ section h2,
 }
 article,
 .post {
-    background-color: #f7e5e5;
+    background-color: #fff3f3;
     border: 1px solid #800;
     padding: 10px;
     margin-bottom: 20px;
@@ -359,11 +359,11 @@ article,
 }
 
 .post-admin.deleted {
-    background-color: #4d2d2d;
+    background-color: #ffbfbf;
 }
 
 .deleted-label {
-    color: #ff6b6b;
+    color: #ff0000;
     font-weight: bold;
 }
 
@@ -460,4 +460,9 @@ input[name="name"]:focus {
 input[name="name"].anonymous-style {
     color: #800;
     font-style: italic;
+}
+
+.admin-name {
+    color: red;
+    font-weight: bold;
 }

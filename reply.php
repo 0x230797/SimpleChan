@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once 'config.php';
 require_once 'functions.php';
 
@@ -74,12 +75,21 @@ $replies = get_replies($post_id);
             <a href="reglas.php">Reglas</a>
         </nav>
     </header>
+    <?php if (is_admin()): ?>
+        <div class="admin-name" style="text-align:center;margin-bottom:10px;">Sesión de <b>Administrador</b> activa</div>
+    <?php endif; ?>
     <main>
         <section>
             <h2>Publicación</h2>
             <article class="post" id="post-<?php echo $post['id']; ?>">
                 <div class="post-header">
-                    <span class="post-name"><?php echo htmlspecialchars($post['name']); ?></span>
+                    <?php
+                    if ($post['name'] === 'Administrador') {
+                        echo '<span class="admin-name">Administrador</span>';
+                    } else {
+                        echo '<span class="post-name">' . htmlspecialchars($post['name']) . '</span>';
+                    }
+                    ?>
                     <?php if (!empty($post['subject'])): ?>
                         <span class="post-subject"><?php echo htmlspecialchars($post['subject']); ?></span>
                     <?php endif; ?>
@@ -107,7 +117,13 @@ $replies = get_replies($post_id);
                     <?php foreach ($replies as $reply): ?>
                         <article class="reply" id="post-<?php echo $reply['id']; ?>">
                             <div class="post-header">
-                                <span class="post-name"><?php echo htmlspecialchars($reply['name']); ?></span>
+                                <?php
+                                if ($reply['name'] === 'Administrador') {
+                                    echo '<span class="admin-name">Administrador</span>';
+                                } else {
+                                    echo '<span class="post-name">' . htmlspecialchars($reply['name']) . '</span>';
+                                }
+                                ?>
                                 <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($reply['created_at'])); ?></span>
                                 <span class="post-number"><a href="#post-<?php echo $reply['id']; ?>" onclick="insertReference(<?php echo $reply['id']; ?>); return false;">No. <?php echo $reply['id']; ?></a></span>
                             </div>
@@ -134,7 +150,11 @@ $replies = get_replies($post_id);
             <form method="POST" enctype="multipart/form-data" class="reply-form">
                 <div class="form-group">
                     <label for="name">Nombre (opcional):</label>
-                    <input type="text" name="name" placeholder="Anónimo" maxlength="50">
+                    <?php if (is_admin()): ?>
+                        <input type="text" name="name" value="Administrador" readonly class="admin-name" style="background:#f7e5e5;">
+                    <?php else: ?>
+                        <input type="text" name="name" placeholder="Anónimo" maxlength="50">
+                    <?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label for="button">Formatos:</label>
