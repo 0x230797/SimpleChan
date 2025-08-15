@@ -76,6 +76,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Error al desbanear la IP.';
             }
         }
+        if (isset($_POST['delete_image'])) {
+            $post_id = (int)($_POST['post_id'] ?? 0);
+            if ($post_id > 0) {
+                $post = get_post($post_id);
+                if ($post && $post['image_filename']) {
+                    $image_path = UPLOAD_DIR . $post['image_filename'];
+                    if (file_exists($image_path)) {
+                        unlink($image_path);
+                    }
+                    // Actualizar el registro del post para eliminar la imagen
+                    if (update_post_image($post_id, null)) {
+                        $success = 'Imagen eliminada correctamente.';
+                        $redirect = true;
+                    } else {
+                        $error = 'Error al eliminar la imagen del post.';
+                    }
+                } else {
+                    $error = 'Post no encontrado o sin imagen asociada.';
+                }
+            } else {
+                $error = 'ID de post inválido.';
+            }
+        }
     }
     if ($redirect) {
         header('Location: admin.php');
@@ -263,12 +286,18 @@ if (isset($post_id) && $post_id > 0) {
                                     
                                     <div class="post-actions">
                                         <?php if (!$post['is_deleted']): ?>
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
-                                                <button type="submit" name="delete_post" onclick="return confirm('¿Eliminar este post?')">Eliminar Post</button>
-                                            </form>
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                                            <button type="submit" name="delete_post" onclick="return confirm('¿Eliminar este post?')">Eliminar Post</button>
+                                        </form>
                                         <?php endif; ?>
                                         <button type="button" class="btn-ban-ip" onclick="setBanIp('<?php echo htmlspecialchars($post['ip_address']); ?>')">Banear IP</button>
+                                        <?php if (!empty($post['image_filename']) && file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
+                                        <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                                            <button type="submit" name="delete_image" onclick="return confirm('¿Eliminar la imagen de este post?')">Eliminar Imagen</button>
+                                        </form>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
