@@ -13,7 +13,6 @@
         <nav>
             <a href="index.php">Inicio</a>
             <a href="reglas.php">Reglas</a>
-            <a href="admin.php">Panel de Admin</a>
         </nav>
     </header>
 

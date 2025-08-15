@@ -10,6 +10,22 @@ if ($ban_info) {
 }
 
 // Procesar envío de post
+// Procesar reporte de usuario
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_report']) && isset($_POST['report_post_id'])) {
+    $post_id = (int)$_POST['report_post_id'];
+    $reason = clean_input($_POST['report_reason'] ?? '');
+    $details = clean_input($_POST['report_details'] ?? '');
+    $reporter_ip = get_user_ip();
+    if ($post_id > 0 && !empty($reason)) {
+        if (create_report($post_id, $reason, $details, $reporter_ip)) {
+            $report_success = true;
+        } else {
+            $error = 'Error al enviar el reporte.';
+        }
+    } else {
+        $error = 'Datos de reporte inválidos.';
+    }
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
     $name = clean_input($_POST['name'] ?? '');
     // Si el nombre está vacío, usar "Anónimo"
@@ -71,6 +87,9 @@ $posts = get_posts();
     </header>
 
     <main>
+        <?php if (isset($report_success) && $report_success): ?>
+            <div class="success">¡Gracias por reportar! El reporte ha sido enviado al administrador.</div>
+        <?php endif; ?>
         <!-- Botón para mostrar formulario -->
         <section class="create-post-toggle">
             <button onclick="toggleCreatePostForm()" id="toggle-post-btn" class="btn-create-post">
@@ -95,6 +114,7 @@ $posts = get_posts();
                     <input type="text" id="subject" name="subject" maxlength="100" required>
                 </div>
                 <div class="form-group">
+                    <label for="button">Formatos:</label>
                     <button type="button" onclick="insertFormat('bold')" title="Negrita"><b>B</b></button>
                     <button type="button" onclick="insertFormat('italic')" title="Cursiva"><i>I</i></button>
                     <button type="button" onclick="insertFormat('strike')" title="Tachado"><s>T</s></button>
@@ -102,15 +122,15 @@ $posts = get_posts();
                 </div>
                 <div class="form-group">
                     <label for="message">Mensaje:</label>
-                    <textarea id="message" name="message" required rows="4" cols="50"></textarea>
+                    <textarea id="message" name="message" required rows="3" placeholder="Tu publicación..."></textarea>
                 </div>
                 <div class="form-group">
                     <label for="image">Imagen:</label>
                     <input type="file" id="image" name="image" accept="image/*" required>
-                        <em>Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 2MB.</em>
+                        <span style="font-size:12px;color:rgb(102, 102, 102);text-align:right">Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB.</span>
                 </div>
                 <div class="form-buttons">
-                    <button type="submit" name="submit_post">Publicar</button>
+                    <button type="submit" name="submit_post">Crear publicación</button>
                 </div>
             </form>
         </section>
@@ -132,6 +152,23 @@ $posts = get_posts();
                                 <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($post['created_at'])); ?></span>
                                 <span class="post-number"><a href="reply.php?post_id=<?php echo $post['id']; ?>&ref=<?php echo $post['id']; ?>">No. <?php echo $post['id']; ?></a></span>
                                 <a href="reply.php?post_id=<?php echo $post['id']; ?>" class="btn-reply">Responder</a>
+                                <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
+                                    <button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>
+                                    <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position: absolute;z-index: 10;background: #f7e5e5;border: 1px solid rgb(136 0 0);padding: 10px;min-width: 150px;">
+                                        <form method="POST" action="index.php" style="margin:0;">
+                                            <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
+                                            <label style="display:block;margin-bottom:5px;">Motivo:</label>
+                                            <select name="report_reason" style="width:100%;margin-bottom:5px;">
+                                                <option value="spam">Spam</option>
+                                                <option value="contenido ilegal">Contenido ilegal</option>
+                                                <option value="acoso">Acoso</option>
+                                                <option value="otro">Otro</option>
+                                            </select>
+                                            <input type="text" name="report_details" placeholder="Detalles (opcional)" style="width:100%;margin-bottom:5px;">
+                                            <button type="submit" name="submit_report" style="width:100%;background:#d00;color:#fff;">Enviar reporte</button>
+                                        </form>
+                                    </nav>
+                                </div>
                             </div>
                             
                             <?php if ($post['image_filename']): ?>
@@ -148,9 +185,9 @@ $posts = get_posts();
                             
                             <!-- Respuestas -->
                             <?php
-                            $replies = get_replies($post['id']);
-                            if (!empty($replies)):
-                                $last_replies = array_slice($replies, -3);
+                                $replies = get_replies($post['id']);
+                                if (!empty($replies)):
+                                    $last_replies = array_slice($replies, -5);
                             ?>
                                 <div class="replies">
                                     <?php foreach ($last_replies as $reply): ?>

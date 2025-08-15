@@ -103,6 +103,26 @@ function validatePost(form) {
 
 // Aplicar validación a todos los formularios de post
 document.addEventListener('DOMContentLoaded', function() {
+    // Menú de reportes desplegable
+    window.toggleReportMenu = function(postId) {
+        // Ocultar otros menús abiertos
+        document.querySelectorAll('.report-menu').forEach(menu => {
+            if (menu.id !== 'report-menu-' + postId) menu.style.display = 'none';
+        });
+        const menu = document.getElementById('report-menu-' + postId);
+        if (menu) {
+            menu.style.display = 'block';
+        }
+    };
+    // Ocultar menú si se hace click fuera
+    document.addEventListener('click', function(e) {
+        // Si el click no es dentro del menú ni en el botón, ocultar todos los menús
+        if (!e.target.classList.contains('btn-report') && !e.target.closest('.report-menu')) {
+            document.querySelectorAll('.report-menu').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }
+    });
     // Mostrar formulario si hay error
     const errorDiv = document.querySelector('.error');
     if (errorDiv) {

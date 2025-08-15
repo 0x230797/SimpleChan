@@ -19,6 +19,18 @@ CREATE TABLE posts (
     FOREIGN KEY (parent_id) REFERENCES posts(id) ON DELETE CASCADE
 );
 
+-- Tabla de reportes
+CREATE TABLE reports (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    post_id INT NOT NULL,
+    reason VARCHAR(100) NOT NULL,
+    details TEXT,
+    reporter_ip VARCHAR(45) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_post_id (post_id),
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+);
+
 -- Tabla de bans
 CREATE TABLE bans (
     id INT AUTO_INCREMENT PRIMARY KEY,

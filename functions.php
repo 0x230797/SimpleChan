@@ -149,6 +149,24 @@ function get_all_posts() {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Función para crear un reporte
+function create_report($post_id, $reason, $details, $reporter_ip) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("INSERT INTO reports (post_id, reason, details, reporter_ip) VALUES (?, ?, ?, ?)");
+        return $stmt->execute([$post_id, $reason, $details, $reporter_ip]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+// Función para obtener todos los reportes
+function get_all_reports() {
+    global $pdo;
+    $stmt = $pdo->query("SELECT r.*, p.name, p.subject FROM reports r LEFT JOIN posts p ON r.post_id = p.id ORDER BY r.created_at DESC");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 // Función para obtener bans activos
 function get_active_bans() {
     global $pdo;

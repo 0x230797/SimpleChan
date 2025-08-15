@@ -26,34 +26,50 @@ if (isset($_GET['logout'])) {
 }
 
 // Procesar acciones de admin
-if (is_admin() && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['delete_post'])) {
-        $post_id = (int)($_POST['post_id'] ?? 0);
-        if ($post_id > 0 && delete_post($post_id)) {
-            $success = 'Post eliminado correctamente.';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Procesar reporte de usuario
+    if (isset($_POST['submit_report']) && isset($_POST['report_post_id'])) {
+        $post_id = (int)$_POST['report_post_id'];
+        $reason = clean_input($_POST['report_reason'] ?? '');
+        $details = clean_input($_POST['report_details'] ?? '');
+        $reporter_ip = get_user_ip();
+        if ($post_id > 0 && !empty($reason)) {
+            if (create_report($post_id, $reason, $details, $reporter_ip)) {
+                $success = 'Reporte enviado correctamente.';
+            } else {
+                $error = 'Error al enviar el reporte.';
+            }
         } else {
-            $error = 'Error al eliminar el post.';
+            $error = 'Datos de reporte inválidos.';
         }
     }
-    
-    if (isset($_POST['ban_ip'])) {
-        $ip_address = clean_input($_POST['ip_address'] ?? '');
-        $reason = clean_input($_POST['reason'] ?? '');
-        $duration = isset($_POST['duration']) && !empty($_POST['duration']) ? (int)$_POST['duration'] : null;
-        
-        if (!empty($ip_address) && ban_ip($ip_address, $reason, $duration)) {
-            $success = 'IP baneada correctamente.';
-        } else {
-            $error = 'Error al banear la IP o IP vacía.';
+    // Acciones de admin
+    if (is_admin()) {
+        if (isset($_POST['delete_post'])) {
+            $post_id = (int)($_POST['post_id'] ?? 0);
+            if ($post_id > 0 && delete_post($post_id)) {
+                $success = 'Post eliminado correctamente.';
+            } else {
+                $error = 'Error al eliminar el post.';
+            }
         }
-    }
-    
-    if (isset($_POST['unban_ip'])) {
-        $ban_id = (int)($_POST['ban_id'] ?? 0);
-        if ($ban_id > 0 && unban_ip($ban_id)) {
-            $success = 'IP desbaneada correctamente.';
-        } else {
-            $error = 'Error al desbanear la IP.';
+        if (isset($_POST['ban_ip'])) {
+            $ip_address = clean_input($_POST['ip_address'] ?? '');
+            $reason = clean_input($_POST['reason'] ?? '');
+            $duration = isset($_POST['duration']) && !empty($_POST['duration']) ? (int)$_POST['duration'] : null;
+            if (!empty($ip_address) && ban_ip($ip_address, $reason, $duration)) {
+                $success = 'IP baneada correctamente.';
+            } else {
+                $error = 'Error al banear la IP o IP vacía.';
+            }
+        }
+        if (isset($_POST['unban_ip'])) {
+            $ban_id = (int)($_POST['ban_id'] ?? 0);
+            if ($ban_id > 0 && unban_ip($ban_id)) {
+                $success = 'IP desbaneada correctamente.';
+            } else {
+                $error = 'Error al desbanear la IP.';
+            }
         }
     }
 }
@@ -61,6 +77,7 @@ if (is_admin() && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // Obtener datos para admin
 $posts = is_admin() ? get_all_posts() : [];
 $bans = is_admin() ? get_active_bans() : [];
+$reports = is_admin() ? get_all_reports() : [];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -228,6 +245,50 @@ $bans = is_admin() ? get_active_bans() : [];
                                 </div>
                             <?php endforeach; ?>
                         </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Sección de reportes -->
+                <div class="admin-section">
+                    <h3>Reportes de Usuarios</h3>
+                    <?php if (empty($reports)): ?>
+                        <p>No hay reportes.</p>
+                    <?php else: ?>
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Post</th>
+                                    <th>Motivo</th>
+                                    <th>Detalles</th>
+                                    <th>Reportado por IP</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($reports as $report): ?>
+                                    <tr>
+                                        <td><?php echo $report['id']; ?></td>
+                                        <td>
+                                            <a href="index.php#post-<?php echo $report['post_id']; ?>" target="_blank">No. <?php echo $report['post_id']; ?></a>
+                                            <?php if (!empty($report['name'])): ?>
+                                                <br><small><?php echo htmlspecialchars($report['name']); ?></small>
+                                            <?php endif; ?>
+                                            <?php if (!empty($report['subject'])): ?>
+                                                <br><small><?php echo htmlspecialchars($report['subject']); ?></small>
+                                            <?php endif; ?>
+                                            <?php if (!empty($report['post_id'])): ?>
+                                                <br><small style="color:#888;">IP publicador: <?php echo htmlspecialchars(get_post($report['post_id'])['ip_address'] ?? ''); ?></small>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($report['reason']); ?></td>
+                                        <td><?php echo htmlspecialchars($report['details']); ?></td>
+                                        <td><?php echo htmlspecialchars($report['reporter_ip']); ?></td>
+                                        <td><?php echo date('d/m/Y H:i:s', strtotime($report['created_at'])); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     <?php endif; ?>
                 </div>
             </section>

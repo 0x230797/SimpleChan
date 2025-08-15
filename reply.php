@@ -68,13 +68,14 @@ $replies = get_replies($post_id);
 <body>
     <header>
         <h1>SimpleChan</h1>
+        <p>Imageboard Anónimo Simple</p>
         <nav>
             <a href="index.php">Inicio</a>
             <a href="reglas.php">Reglas</a>
         </nav>
     </header>
     <main>
-        <section class="post-view">
+        <section>
             <h2>Publicación</h2>
             <article class="post" id="post-<?php echo $post['id']; ?>">
                 <div class="post-header">
@@ -97,7 +98,7 @@ $replies = get_replies($post_id);
                 </div>
             </article>
         </section>
-        <section class="replies-view">
+        <section>
             <h2>Respuestas</h2>
             <?php if (empty($replies)): ?>
                 <p>No hay respuestas aún.</p>
@@ -125,27 +126,30 @@ $replies = get_replies($post_id);
                 </div>
             <?php endif; ?>
         </section>
-        <h2>Responder</h2>
-        <section class="reply-form">
+        <section>
+            <h2>Responder</h2>
             <?php if (isset($error)): ?>
                 <div class="error"><?php echo $error; ?></div>
             <?php endif; ?>
-            <form method="POST" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data" class="reply-form">
                 <div class="form-group">
+                    <label for="name">Nombre (opcional):</label>
                     <input type="text" name="name" placeholder="Anónimo" maxlength="50">
                 </div>
                 <div class="form-group">
+                    <label for="button">Formatos:</label>
                     <button type="button" onclick="insertFormat('bold', this)" title="Negrita"><b>B</b></button>
                     <button type="button" onclick="insertFormat('italic', this)" title="Cursiva"><i>I</i></button>
                     <button type="button" onclick="insertFormat('strike', this)" title="Tachado"><s>T</s></button>
                     <button type="button" onclick="insertFormat('spoiler', this)" title="Spoiler">SPOILER</button>
                 </div>
                 <div class="form-group">
+                    <label for="message">Mensaje:</label>
                     <textarea name="message" required rows="3" placeholder="Tu respuesta..."></textarea>
                 </div>
                 <div class="form-group">
                     <input type="file" name="image" accept="image/*">
-                    <em>Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 2MB.</em>
+                    <span style="font-size:12px;color:rgb(102, 102, 102);text-align:right">Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB.</span>
                 </div>
                 <div class="form-buttons">
                     <button type="submit" name="submit_post">Responder</button>
