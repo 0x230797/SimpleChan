@@ -20,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_report']) && i
     if ($post_id > 0 && !empty($reason)) {
         if (create_report($post_id, $reason, $details, $reporter_ip)) {
             $report_success = true;
+            header('Location: ' . $_SERVER['PHP_SELF'] . '?report_success=1');
+            exit;
         } else {
             $error = 'Error al enviar el reporte.';
         }
@@ -27,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_report']) && i
         $error = 'Datos de reporte inválidos.';
     }
 }
+// Redirigir después de procesar un post para evitar reenvío
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
     $name = clean_input($_POST['name'] ?? '');
     // Si el nombre está vacío, usar "Anónimo"
@@ -57,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
         if (!isset($error)) {
             if (create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id)) {
                 // Redirigir para evitar reenvío
-                header('Location: ' . $_SERVER['PHP_SELF']);
+                header('Location: ' . $_SERVER['PHP_SELF'] . '?post_success=1');
                 exit;
             } else {
                 $error = 'Error al crear el post.';
@@ -74,7 +77,8 @@ $posts = get_posts();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SimpleChan - Imageboard Anónimo</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
 <body>
     <header>
@@ -83,13 +87,18 @@ $posts = get_posts();
         <nav>
             <a href="index.php">Inicio</a>
             <a href="reglas.php">Reglas</a>
+            <?php if (is_admin()): ?>
+                <a href="admin.php">Administración</a>
+            <?php endif; ?>
         </nav>
     </header>
 
     <main>
-        <?php if (isset($report_success) && $report_success): ?>
+        <!-- Mostrar mensaje de éxito si el reporte fue enviado -->
+        <?php if (isset($_GET['report_success']) && $_GET['report_success'] == 1): ?>
             <div class="success">¡Gracias por reportar! El reporte ha sido enviado al administrador.</div>
         <?php endif; ?>
+
         <!-- Botón para mostrar formulario -->
         <section class="create-post-toggle">
             <button onclick="toggleCreatePostForm()" id="toggle-post-btn" class="btn-create-post">
@@ -171,9 +180,9 @@ $posts = get_posts();
                                 <?php endif; ?>
                                 <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($post['created_at'])); ?></span>
                                 <span class="post-number"><a href="reply.php?post_id=<?php echo $post['id']; ?>&ref=<?php echo $post['id']; ?>">No. <?php echo $post['id']; ?></a></span>
-                                <a href="reply.php?post_id=<?php echo $post['id']; ?>" class="btn-reply">Responder</a>
+                                [<a href="reply.php?post_id=<?php echo $post['id']; ?>" class="btn-reply">Responder</a>]
                                 <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
-                                    <button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>
+                                    [<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]
                                     <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position: absolute;z-index: 10;background: #f7e5e5;border: 1px solid rgb(136 0 0);padding: 10px;min-width: 150px;">
                                         <form method="POST" action="index.php" style="margin:0;">
                                             <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
@@ -199,14 +208,14 @@ $posts = get_posts();
                                     <form method="POST" action="admin_actions.php" style="display:inline;">
                                         <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                         <?php if ($post['is_locked']): ?>
-                                            <button type="submit" name="unlock_post" class="btn-unlock">Desbloquear</button>
+                                            [<button type="submit" name="unlock_post" class="btn-unlock">Desbloquear</button>]
                                         <?php else: ?>
-                                            <button type="submit" name="lock_post" class="btn-lock">Bloquear</button>
+                                            [<button type="submit" name="lock_post" class="btn-lock">Bloquear</button>]
                                         <?php endif; ?>
                                         <?php if ($post['is_pinned']): ?>
-                                            <button type="submit" name="unpin_post" class="btn-unpin">Desfijar</button>
+                                            [<button type="submit" name="unpin_post" class="btn-unpin">Desfijar</button>]
                                         <?php else: ?>
-                                            <button type="submit" name="pin_post" class="btn-pin">Fijar</button>
+                                            [<button type="submit" name="pin_post" class="btn-pin">Fijar</button>]
                                         <?php endif; ?>
                                     </form>
                                 <?php endif; ?>
@@ -269,6 +278,6 @@ $posts = get_posts();
         <p>&copy; 2025 SimpleChan - Imageboard Simple y Anónimo</p>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="assets/js/script.js"></script>
 </body>
 </html>

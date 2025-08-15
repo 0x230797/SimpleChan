@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
         }
         if (!isset($error)) {
             if (create_post($name, '', $message, $image_filename, $image_original_name, $post_id)) {
-                header('Location: reply.php?post_id=' . $post_id);
+                header('Location: reply.php?post_id=' . $post_id . '&success=1');
                 exit;
             } else {
                 $error = 'Error al crear la respuesta.';
@@ -71,7 +71,8 @@ $replies = get_replies($post_id);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Respuestas - SimpleChan</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
 <body>
     <header>
@@ -80,6 +81,9 @@ $replies = get_replies($post_id);
         <nav>
             <a href="index.php">Inicio</a>
             <a href="reglas.php">Reglas</a>
+            <?php if (is_admin()): ?>
+                <a href="admin.php">Administración</a>
+            <?php endif; ?>
         </nav>
     </header>
 
@@ -215,7 +219,7 @@ $replies = get_replies($post_id);
     <footer>
         <p>&copy; 2025 SimpleChan - Imageboard Simple y Anónimo</p>
     </footer>
-    <script src="script.js"></script>
+    <script src="assets/js/script.js"></script>
     <script>
         window.addEventListener('DOMContentLoaded', function() {
             const params = new URLSearchParams(window.location.search);

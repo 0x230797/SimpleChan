@@ -174,6 +174,13 @@ function get_all_reports() {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Función para eliminar un reporte por su ID
+function delete_report($report_id) {
+    global $pdo;
+    $stmt = $pdo->prepare("DELETE FROM reports WHERE id = ?");
+    return $stmt->execute([$report_id]);
+}
+
 // Función para obtener bans activos
 function get_active_bans() {
     global $pdo;

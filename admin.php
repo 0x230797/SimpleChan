@@ -104,16 +104,16 @@ if (isset($post_id) && $post_id > 0) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración - SimpleChan</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
 <body>
     <header>
         <h1>Panel de Administración</h1>
         <nav>
             <a href="index.php">Volver al Tablón</a>
-            <?php if (is_admin()): ?>
-                <a href="?logout=1">Cerrar Sesión</a>
-            <?php endif; ?>
+            <a href="admin.php">Recargar</a>
+            <a href="?logout=1">Cerrar Sesión</a>
         </nav>
     </header>
 
@@ -283,6 +283,7 @@ if (isset($post_id) && $post_id > 0) {
                                     <th>Detalles</th>
                                     <th>Reportado por IP</th>
                                     <th>Fecha</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -305,6 +306,12 @@ if (isset($post_id) && $post_id > 0) {
                                         <td><?php echo htmlspecialchars($report['details']); ?></td>
                                         <td><?php echo htmlspecialchars($report['reporter_ip']); ?></td>
                                         <td><?php echo date('d/m/Y H:i:s', strtotime($report['created_at'])); ?></td>
+                                        <td>
+                                            <form method="POST" action="admin_actions.php">
+                                                <input type="hidden" name="report_id" value="<?php echo $report['id']; ?>">
+                                                <button type="submit" name="delete_report" class="btn-delete">Eliminar</button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -318,7 +325,7 @@ if (isset($post_id) && $post_id > 0) {
     <footer>
         <p>&copy; 2025 SimpleChan - Panel de Administración</p>
     </footer>
-
+    <script src="assets/js/script.js"></script>
     <script>
     function setBanIp(ip) {
         var input = document.getElementById('ip_address');

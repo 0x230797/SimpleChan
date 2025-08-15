@@ -12,6 +12,7 @@ if (!is_admin()) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $post_id = isset($_POST['post_id']) ? (int)$_POST['post_id'] : 0;
+    $report_id = isset($_POST['report_id']) ? (int)$_POST['report_id'] : 0;
 
     if ($post_id > 0) {
         if (isset($_POST['lock_post'])) {
@@ -23,6 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (isset($_POST['unpin_post'])) {
             unpin_post($post_id);
         }
+    }
+
+    if ($report_id > 0 && isset($_POST['delete_report'])) {
+        delete_report($report_id);
+        header('Location: admin.php');
+        exit;
     }
 }
 

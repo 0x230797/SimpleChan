@@ -9,7 +9,7 @@ body {
     font-family: Arial, sans-serif;
     font-size: 14px;
     line-height: 1.4;
-    background: #ffe url('assets/imgs/fade.png') top repeat-x;
+    background: #ffe url('../imgs/fade.png') top repeat-x;
     color: #800;
 }
 
@@ -244,7 +244,11 @@ article,
 }
 
 /* Botón de reportes */
-.btn-report {
+.btn-report,
+.btn-unlock,
+.btn-lock,
+.btn-unpin,
+.btn-pin {
     background: none;
     border: none;
     color: #800;
@@ -253,7 +257,11 @@ article,
     text-decoration: none;
     padding: 0;
 }
-.btn-report:hover {
+.btn-report:hover,
+.btn-unlock:hover,
+.btn-lock:hover,
+.btn-unpin:hover,
+.btn-pin:hover {
     color: #e00;
     text-decoration: underline;
     background: none;
