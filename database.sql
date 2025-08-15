@@ -14,6 +14,8 @@ CREATE TABLE posts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE,
     parent_id INT DEFAULT NULL,
+    is_locked BOOLEAN DEFAULT FALSE,
+    is_pinned BOOLEAN DEFAULT FALSE,
     INDEX idx_parent_id (parent_id),
     INDEX idx_created_at (created_at),
     FOREIGN KEY (parent_id) REFERENCES posts(id) ON DELETE CASCADE

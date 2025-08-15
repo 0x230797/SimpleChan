@@ -23,6 +23,13 @@ if (!$post || $post['parent_id'] !== null) {
     exit;
 }
 
+// Verificar si el post está bloqueado antes de permitir respuestas
+if ($post['is_locked'] && !is_admin()) {
+    $error = 'Este post está bloqueado. Solo el administrador puede responder.';
+    header('Location: index.php');
+    exit;
+}
+
 // Procesar respuesta
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
     $name = clean_input($_POST['name'] ?? '');
@@ -93,6 +100,29 @@ $replies = get_replies($post_id);
                     <?php endif; ?>
                     <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($post['created_at'])); ?></span>
                     <span class="post-number"><a href="#post-<?php echo $post['id']; ?>" onclick="insertReference(<?php echo $post['id']; ?>); return false;">No. <?php echo $post['id']; ?></a></span>
+                    <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
+                                    <button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>
+                                    <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position: absolute;z-index: 10;background: #f7e5e5;border: 1px solid rgb(136 0 0);padding: 10px;min-width: 150px;">
+                                        <form method="POST" action="index.php" style="margin:0;">
+                                            <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
+                                            <label style="display:block;margin-bottom:5px;">Motivo:</label>
+                                            <select name="report_reason" style="width:100%;margin-bottom:5px;">
+                                                <option value="spam">Spam</option>
+                                                <option value="contenido ilegal">Contenido ilegal</option>
+                                                <option value="acoso">Acoso</option>
+                                                <option value="otro">Otro</option>
+                                            </select>
+                                            <input type="text" name="report_details" placeholder="Detalles (opcional)" style="width:100%;margin-bottom:5px;">
+                                            <button type="submit" name="submit_report" style="width:100%;background:#800;color:#fff;padding: 2px;">Enviar reporte</button>
+                                        </form>
+                                    </nav>
+                                </div>
+                                <?php if ($post['is_pinned']): ?>
+                                    <img src="assets/imgs/sticky.gif" alt="Fijado">
+                                <?php endif; ?>
+                                <?php if ($post['is_locked']): ?>
+                                    <img src="assets/imgs/closed.gif" alt="Bloqueado">
+                                <?php endif; ?>
                 </div>
                 <?php if ($post['image_filename']): ?>
                     <div class="post-image">
@@ -109,7 +139,7 @@ $replies = get_replies($post_id);
         <section>
             <h2>Respuestas</h2>
             <?php if (empty($replies)): ?>
-                <p>No hay respuestas aún.</p>
+                <p>No hay respuestas aún.</p><br>
             <?php else: ?>
                 <div class="replies">
                     <?php foreach ($replies as $reply): ?>
@@ -124,6 +154,7 @@ $replies = get_replies($post_id);
                                 ?>
                                 <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($reply['created_at'])); ?></span>
                                 <span class="post-number"><a href="#post-<?php echo $reply['id']; ?>" onclick="insertReference(<?php echo $reply['id']; ?>); return false;">No. <?php echo $reply['id']; ?></a></span>
+
                             </div>
                             <?php if ($reply['image_filename']): ?>
                                 <div class="post-image">

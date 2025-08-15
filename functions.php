@@ -47,6 +47,11 @@ function create_post($name, $subject, $message, $image_filename, $image_original
         $name = 'Anónimo';
     }
     
+    // Validar formatos reservados antes de crear un post
+    if (!validate_admin_formats($message, $name === 'Administrador')) {
+        return false; // Rechazar el post si contiene formatos reservados y no es administrador
+    }
+    
     try {
         $stmt = $pdo->prepare("INSERT INTO posts (name, subject, message, image_filename, image_original_name, ip_address, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
         return $stmt->execute([$name, $subject, $message, $image_filename, $image_original_name, get_user_ip(), $parent_id]);
@@ -70,7 +75,9 @@ function get_posts($limit = 50) {
     // Validar que el límite sea un entero positivo
     $limit = max(1, min(200, (int)$limit));
     
-    $stmt = $pdo->query("SELECT * FROM posts WHERE is_deleted = 0 ORDER BY created_at DESC LIMIT " . $limit);
+    $stmt = $pdo->query(
+        "SELECT * FROM posts WHERE is_deleted = 0 ORDER BY is_pinned DESC, created_at DESC LIMIT " . $limit
+    );
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -187,6 +194,34 @@ function unban_ip($ban_id) {
     }
 }
 
+// Función para bloquear una publicación
+function lock_post($post_id) {
+    global $pdo;
+    $stmt = $pdo->prepare("UPDATE posts SET is_locked = 1 WHERE id = ?");
+    return $stmt->execute([$post_id]);
+}
+
+// Función para desbloquear una publicación
+function unlock_post($post_id) {
+    global $pdo;
+    $stmt = $pdo->prepare("UPDATE posts SET is_locked = 0 WHERE id = ?");
+    return $stmt->execute([$post_id]);
+}
+
+// Función para fijar una publicación
+function pin_post($post_id) {
+    global $pdo;
+    $stmt = $pdo->prepare("UPDATE posts SET is_pinned = 1 WHERE id = ?");
+    return $stmt->execute([$post_id]);
+}
+
+// Función para desfijar una publicación
+function unpin_post($post_id) {
+    global $pdo;
+    $stmt = $pdo->prepare("UPDATE posts SET is_pinned = 0 WHERE id = ?");
+    return $stmt->execute([$post_id]);
+}
+
 // Función para convertir >>id en enlaces HTML en los mensajes
 function parse_references($text, $is_admin = false) {
     // 1. Primero procesar entidades HTML y preparar el texto
@@ -278,5 +313,19 @@ function parse_references($text, $is_admin = false) {
     }
     
     return $text;
+}
+
+// Validar que los formatos reservados solo sean usados por el administrador
+function validate_admin_formats($message, $is_admin) {
+    // Lista de formatos reservados para el administrador
+    $reserved_formats = ['<h1>', '<h2>', '<color>', '<center>'];
+
+    foreach ($reserved_formats as $format) {
+        if (strpos($message, $format) !== false && !$is_admin) {
+            return false;
+        }
+    }
+
+    return true;
 }
 ?>

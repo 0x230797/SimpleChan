@@ -87,6 +87,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $posts = is_admin() ? get_all_posts() : [];
 $bans = is_admin() ? get_active_bans() : [];
 $reports = is_admin() ? get_all_reports() : [];
+
+// Verificar si el post está bloqueado antes de permitir acciones
+if (isset($post_id) && $post_id > 0) {
+    $post = get_post($post_id);
+    if ($post['is_locked'] && !is_admin()) {
+        $error = 'No tienes permiso para responder a este post bloqueado.';
+        header('Location: index.php');
+        exit;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">

@@ -66,7 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
     }
 }
 
-// Obtener posts
 $posts = get_posts();
 ?>
 <!DOCTYPE html>
@@ -186,10 +185,31 @@ $posts = get_posts();
                                                 <option value="otro">Otro</option>
                                             </select>
                                             <input type="text" name="report_details" placeholder="Detalles (opcional)" style="width:100%;margin-bottom:5px;">
-                                            <button type="submit" name="submit_report" style="width:100%;background:#d00;color:#fff;">Enviar reporte</button>
+                                            <button type="submit" name="submit_report" style="width:100%;background:#800;color:#fff;padding: 2px;">Enviar reporte</button>
                                         </form>
                                     </nav>
                                 </div>
+                                <?php if ($post['is_pinned']): ?>
+                                    <img src="assets/imgs/sticky.gif" alt="Fijado">
+                                <?php endif; ?>
+                                <?php if ($post['is_locked']): ?>
+                                    <img src="assets/imgs/closed.gif" alt="Bloqueado">
+                                <?php endif; ?>
+                                <?php if (is_admin()): ?>
+                                    <form method="POST" action="admin_actions.php" style="display:inline;">
+                                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                                        <?php if ($post['is_locked']): ?>
+                                            <button type="submit" name="unlock_post" class="btn-unlock">Desbloquear</button>
+                                        <?php else: ?>
+                                            <button type="submit" name="lock_post" class="btn-lock">Bloquear</button>
+                                        <?php endif; ?>
+                                        <?php if ($post['is_pinned']): ?>
+                                            <button type="submit" name="unpin_post" class="btn-unpin">Desfijar</button>
+                                        <?php else: ?>
+                                            <button type="submit" name="pin_post" class="btn-pin">Fijar</button>
+                                        <?php endif; ?>
+                                    </form>
+                                <?php endif; ?>
                             </div>
                             
                             <?php if ($post['image_filename']): ?>
