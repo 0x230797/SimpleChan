@@ -17,13 +17,14 @@ require_once 'functions.php';
     <title>Reglas - SimpleChan - Imageboard Anónimo</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/themes.css">
-    <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
+    <link id="site-favicon" rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
 
 <body>
     <header>
-        <h1>SimpleChan</h1>
-        <p>Imageboard Anónimo Simple</p>
+        <a href="index.php">
+            <img id="site-logo" src="assets/imgs/logo.png" alt="SimpleChan">
+        </a>
     </header>
 
     <main>
@@ -175,9 +176,9 @@ require_once 'functions.php';
     <div class="theme-selector" style="margin:0 var(--spacing-sm);">
         <label for="theme-select">Selecciona un tema:</label>
         <select id="theme-select" onchange="changeTheme(this.value)">
-            <option value="default">Predeterminado</option>
-            <option value="blue">Blue</option>
-            <option value="dark">Oscuro</option>
+            <option value="yotsuba">Yotsuba</option>
+            <option value="yotsubab">Yotsuba Blue</option>
+            <option value="dark">Dark</option>
         </select>
     </div>
 

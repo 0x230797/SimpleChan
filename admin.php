@@ -271,7 +271,7 @@ class AdminView {
             <title>Panel de Administración - SimpleChan</title>
             <link rel="stylesheet" href="assets/css/style.css">
             <link rel="stylesheet" href="assets/css/themes.css">
-            <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
+            <link id="site-favicon" rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
         </head>
         <body>
             <?php $this->renderHeader(); ?>
@@ -511,7 +511,7 @@ class AdminView {
                      alt="<?php echo htmlspecialchars($post['image_original_name']); ?>" 
                      onclick="toggleImageSize(this)">
             <?php else: ?>
-                <img src="assets/imgs/filedeleted.gif" alt="Imagen no disponible">
+                <img src="assets/imgs/filedeleted.png" alt="Imagen no disponible">
             <?php endif; ?>
         </div>
         <?php

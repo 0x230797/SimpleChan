@@ -463,14 +463,360 @@ function showSection(sectionId) {
 function changeTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('selectedTheme', theme);
+    
+    // Cambiar el logo y favicon según el tema
+    changeThemeAssets(theme);
+}
+
+// Sistema de caché para imágenes
+const ImageCache = {
+    // Prefijo para las claves del localStorage
+    prefix: 'simplechan_img_',
+    
+    // Versión del caché (incrementar cuando cambien las imágenes)
+    version: '1.2',
+    
+    // Hash de las imágenes para detectar cambios
+    imageHashes: {
+        'assets/imgs/logo.png': Date.now(),
+        'assets/imgs/logob.png': Date.now(),
+        'assets/imgs/logod.png': Date.now(),
+        'assets/imgs/blue.png': Date.now(),
+        'assets/imgs/closed.png': Date.now(),
+        'assets/imgs/dark.png': Date.now(),
+        'assets/imgs/fade.png': Date.now(),
+        'assets/imgs/filedeleted.png': Date.now(),
+        'assets/imgs/sticky.png': Date.now()
+    },
+    
+    // Lista de imágenes a cachear
+    images: [
+        'assets/imgs/logo.png',
+        'assets/imgs/logob.png', 
+        'assets/imgs/logod.png',
+        'assets/imgs/blue.png',
+        'assets/imgs/closed.png',
+        'assets/imgs/dark.png',
+        'assets/imgs/fade.png',
+        'assets/imgs/filedeleted.png',
+        'assets/imgs/sticky.png'
+    ],
+    
+    // Lista de favicons para pre-cargar (no cachear como base64)
+    favicons: [
+        'assets/favicon/favicon.ico',
+        'assets/favicon/faviconb.ico',
+        'assets/favicon/favicond.ico'
+    ],
+    
+    // Inicializar el sistema de caché
+    init: function() {
+        this.checkVersion();
+        this.preloadImages();
+    },
+    
+    // Verificar si la versión del caché es actual
+    checkVersion: function() {
+        const storedVersion = localStorage.getItem(this.prefix + 'version');
+        if (storedVersion !== this.version) {
+            this.clearCache();
+            localStorage.setItem(this.prefix + 'version', this.version);
+        }
+    },
+    
+    // Limpiar caché anterior
+    clearCache: function() {
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+            if (key.startsWith(this.prefix)) {
+                localStorage.removeItem(key);
+            }
+        });
+    },
+    
+    // Pre-cargar todas las imágenes
+    preloadImages: function() {
+        this.images.forEach(imagePath => {
+            this.cacheImage(imagePath);
+        });
+        
+        // Pre-cargar favicons (sin cachear, solo para que estén en caché del navegador)
+        this.favicons.forEach(faviconPath => {
+            this.preloadFavicon(faviconPath);
+        });
+    },
+    
+    // Pre-cargar favicon en caché del navegador
+    preloadFavicon: function(faviconPath) {
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = faviconPath;
+        document.head.appendChild(link);
+    },
+    
+    // Cachear una imagen específica
+    cacheImage: function(imagePath) {
+        const cacheKey = this.prefix + imagePath.replace(/[^a-zA-Z0-9]/g, '_');
+        
+        // Si ya está cacheada, no hacer nada
+        if (localStorage.getItem(cacheKey)) {
+            return Promise.resolve();
+        }
+        
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const dataURL = canvas.toDataURL('image/png', 0.8);
+                    
+                    // Verificar que no exceda el límite de localStorage (aprox 5MB)
+                    if (dataURL.length < 500000) { // ~500KB por imagen para más imágenes
+                        try {
+                            localStorage.setItem(cacheKey, dataURL);
+                            console.log(`Imagen cacheada: ${imagePath} (${(dataURL.length/1024).toFixed(1)}KB)`);
+                        } catch (e) {
+                            if (e.name === 'QuotaExceededError') {
+                                console.warn('localStorage lleno, limpiando caché anterior...');
+                                this.clearOldestCache();
+                                try {
+                                    localStorage.setItem(cacheKey, dataURL);
+                                    console.log(`Imagen cacheada tras limpieza: ${imagePath}`);
+                                } catch (e2) {
+                                    console.warn('No se pudo cachear imagen:', imagePath);
+                                }
+                            }
+                        }
+                    } else {
+                        console.warn(`Imagen demasiado grande para cachear: ${imagePath} (${(dataURL.length/1024).toFixed(1)}KB)`);
+                    }
+                    resolve();
+                } catch (error) {
+                    console.warn(`Error al cachear imagen: ${imagePath}`, error);
+                    resolve(); // No fallar si no se puede cachear
+                }
+            };
+            
+            img.onerror = () => {
+                console.warn(`Error al cargar imagen para cachear: ${imagePath}`);
+                resolve(); // No fallar si no se puede cargar
+            };
+            
+            img.src = imagePath;
+        });
+    },
+    
+    // Obtener imagen del caché
+    getCachedImage: function(imagePath) {
+        const cacheKey = this.prefix + imagePath.replace(/[^a-zA-Z0-9]/g, '_');
+        return localStorage.getItem(cacheKey);
+    },
+    
+    // Limpiar caché más antiguo cuando localStorage se llena
+    clearOldestCache: function() {
+        const keys = Object.keys(localStorage);
+        const cacheKeys = keys.filter(key => key.startsWith(this.prefix) && key !== this.prefix + 'version');
+        
+        // Limpiar la mitad del caché más antiguo
+        const keysToRemove = cacheKeys.slice(0, Math.floor(cacheKeys.length / 2));
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+        });
+        
+        console.log(`Limpiadas ${keysToRemove.length} imágenes del caché`);
+    },
+    
+    // Función para usar imágenes cacheadas en elementos existentes
+    applyCachedImages: function() {
+        // Aplicar a imágenes de archivos eliminados
+        const deletedImages = document.querySelectorAll('img[src*="filedeleted"]');
+        deletedImages.forEach(img => {
+            const cachedSrc = this.getCachedImage('assets/imgs/filedeleted.png');
+            if (cachedSrc) {
+                img.src = cachedSrc;
+            }
+        });
+        
+        // Aplicar a imágenes de posts pegajosos
+        const stickyImages = document.querySelectorAll('img[src*="sticky"]');
+        stickyImages.forEach(img => {
+            const cachedSrc = this.getCachedImage('assets/imgs/sticky.png');
+            if (cachedSrc) {
+                img.src = cachedSrc;
+            }
+        });
+        
+        // Aplicar a imágenes de hilos cerrados
+        const closedImages = document.querySelectorAll('img[src*="closed"]');
+        closedImages.forEach(img => {
+            const cachedSrc = this.getCachedImage('assets/imgs/closed.png');
+            if (cachedSrc) {
+                img.src = cachedSrc;
+            }
+        });
+    },
+    
+    // Obtener información del caché
+    getCacheInfo: function() {
+        let totalSize = 0;
+        let imageCount = 0;
+        const keys = Object.keys(localStorage);
+        
+        keys.forEach(key => {
+            if (key.startsWith(this.prefix) && key !== this.prefix + 'version') {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    totalSize += value.length;
+                    imageCount++;
+                }
+            }
+        });
+        
+        return {
+            imageCount,
+            totalSize,
+            totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2)
+        };
+    },
+    
+    // Limpiar caché manualmente
+    clearCacheManual: function() {
+        this.clearCache();
+        console.log('Caché de imágenes limpiado manualmente');
+        // Re-inicializar después de limpiar
+        setTimeout(() => this.preloadImages(), 100);
+    }
+};
+
+// Funciones de utilidad para desarrolladores
+window.SimpleChanUtils = {
+    // Verificar estado del caché
+    checkCache: function() {
+        const info = ImageCache.getCacheInfo();
+        console.log('=== SimpleChan Image Cache Status ===');
+        console.log(`Imágenes cacheadas: ${info.imageCount}`);
+        console.log(`Tamaño total: ${info.totalSizeMB}MB`);
+        console.log(`Versión del caché: ${ImageCache.version}`);
+        return info;
+    },
+    
+    // Limpiar y regenerar caché
+    refreshCache: function() {
+        console.log('Regenerando caché de imágenes...');
+        ImageCache.clearCacheManual();
+    },
+    
+    // Probar cambio de tema
+    testTheme: function(theme) {
+        console.log(`Probando tema: ${theme}`);
+        changeTheme(theme);
+    },
+    
+    // Aplicar imágenes cacheadas a nuevos elementos
+    applyCachedImages: function() {
+        ImageCache.applyCachedImages();
+        console.log('Imágenes cacheadas aplicadas a elementos actuales');
+    }
+};
+
+// Función global para usar imágenes cacheadas (útil para contenido dinámico)
+window.useCachedImage = function(imagePath, fallbackPath) {
+    const cachedImage = ImageCache.getCachedImage(imagePath);
+    return cachedImage || fallbackPath || imagePath;
+};
+
+// Función para cambiar el logo y favicon según el tema
+function changeThemeAssets(theme) {
+    changeLogo(theme);
+    changeFavicon(theme);
+}
+
+// Función para cambiar el logo según el tema (con caché)
+function changeLogo(theme) {
+    const logoImg = document.getElementById('site-logo') || document.querySelector('header img[alt="SimpleChan"]');
+    if (logoImg) {
+        let logoPath;
+        
+        switch(theme) {
+            case 'yotsubab':
+                logoPath = 'assets/imgs/logob.png';
+                break;
+            case 'dark':
+                logoPath = 'assets/imgs/logod.png';
+                break;
+            default:
+                logoPath = 'assets/imgs/logo.png';
+                break;
+        }
+        
+        // Intentar usar imagen cacheada primero
+        const cachedImage = ImageCache.getCachedImage(logoPath);
+        if (cachedImage) {
+            logoImg.src = cachedImage;
+        } else {
+            // Usar ruta normal si no está cacheada
+            const currentSrc = logoImg.src;
+            const assetsPath = currentSrc.substring(0, currentSrc.lastIndexOf('/') + 1);
+            logoImg.src = assetsPath + logoPath.split('/').pop();
+        }
+    }
+}
+
+// Función para cambiar el favicon según el tema
+function changeFavicon(theme) {
+    const faviconLink = document.getElementById('site-favicon') || document.querySelector('link[rel="shortcut icon"]') || document.querySelector('link[rel="icon"]');
+    if (faviconLink) {
+        // Detectar la ruta base de assets basándose en la ruta actual del favicon
+        const currentHref = faviconLink.href;
+        const assetsPath = currentHref.substring(0, currentHref.lastIndexOf('/') + 1);
+        
+        switch(theme) {
+            case 'yotsubab':
+                faviconLink.href = assetsPath + 'faviconb.ico';
+                break;
+            case 'dark':
+                faviconLink.href = assetsPath + 'favicond.ico';
+                break;
+            default:
+                faviconLink.href = assetsPath + 'favicon.ico';
+                break;
+        }
+    }
 }
 
 // Aplicar el tema guardado al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
-    const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+    // Inicializar sistema de caché de imágenes
+    ImageCache.init();
+    
+    const savedTheme = localStorage.getItem('selectedTheme') || 'yotsuba';
     document.documentElement.setAttribute('data-theme', savedTheme);
     const themeSelect = document.getElementById('theme-select');
     if (themeSelect) {
         themeSelect.value = savedTheme;
     }
+    
+    // Aplicar el logo y favicon correctos según el tema guardado
+    changeThemeAssets(savedTheme);
+    
+    // Aplicar imágenes cacheadas a elementos existentes
+    setTimeout(() => {
+        ImageCache.applyCachedImages();
+    }, 1000);
+    
+    // Hacer disponible el sistema de caché globalmente para debugging
+    window.SimpleChanImageCache = ImageCache;
+    
+    // Log de información del caché (solo en desarrollo)
+    setTimeout(() => {
+        const cacheInfo = ImageCache.getCacheInfo();
+        console.log(`SimpleChan Image Cache: ${cacheInfo.imageCount} imágenes, ${cacheInfo.totalSizeMB}MB`);
+    }, 2000);
 });

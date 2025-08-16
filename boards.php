@@ -437,14 +437,15 @@ class BoardView {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>SimpleChan - Imageboard Anónimo</title>
+            <title>/<?php echo htmlspecialchars($this->board['short_id']); ?>/ <?php echo htmlspecialchars($this->board['name']); ?> - SimpleChan</title>
             <link rel="stylesheet" href="assets/css/style.css">
             <link rel="stylesheet" href="assets/css/themes.css">
-            <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
+            <link id="site-favicon" rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
         </head>
-        <body>
+        <body id="top">
             <?php $this->renderNavigation(); ?>
             <?php $this->renderHeader(); ?>
+            <?php $this->renderMiniMenu(); ?>
             
             <main>
                 <?php $this->renderMessages(); ?>
@@ -486,17 +487,6 @@ class BoardView {
                     <?php endforeach; ?>]
                 <?php endforeach; ?>
             </ul>
-            <!-- Formulario de búsqueda -->
-            <form method="get" action="boards.php" class="search-form" style="margin:0 5px">
-                <input type="hidden" name="board" value="<?php echo htmlspecialchars($this->board['short_id']); ?>">
-                <input type="text" name="query" placeholder="Buscar publicaciones..." 
-                       value="<?php echo isset($_GET['query']) ? htmlspecialchars($_GET['query']) : ''; ?>" required autocomplete="off">
-                <button type="submit">Buscar</button>
-                <?php if (isset($_GET['query']) && !empty($_GET['query'])): ?>
-                    <a href="boards.php?board=<?php echo htmlspecialchars($this->board['short_id']); ?>" 
-                       class="btn-clear-search" style="font-size:13px">Limpiar</a>
-                <?php endif; ?>
-            </form>
         </nav>
         <?php
     }
@@ -524,6 +514,31 @@ class BoardView {
         ?>
         <h1>/<?php echo htmlspecialchars($this->board['short_id']); ?>/ - <?php echo htmlspecialchars($this->board['name']); ?></h1>
         <p><?php echo htmlspecialchars($this->board['description']); ?></p>
+        <?php
+    }
+
+    /**
+     * Renderiza información del board
+     */
+    private function renderMiniMenu() {
+        ?>
+        <nav>
+            <ul class="mini-menu">
+                <form method="get" action="boards.php" class="search-form" style="margin:0">
+                    <input type="hidden" name="board" value="<?php echo htmlspecialchars($this->board['short_id']); ?>">
+                    <input type="text" name="query" placeholder="Buscar publicaciones..." 
+                        value="<?php echo isset($_GET['query']) ? htmlspecialchars($_GET['query']) : ''; ?>" required autocomplete="off">
+                    [<button type="submit">Buscar</button>]
+                    <?php if (isset($_GET['query']) && !empty($_GET['query'])): ?>
+                        [<a href="boards.php?board=<?php echo htmlspecialchars($this->board['short_id']); ?>" 
+                        class="btn-clear-search" style="font-size:13px">Limpiar</a>]
+                    <?php endif; ?>
+                </form>
+                <li>[<a href="index.php">Retornar</a>]</li>
+                <li>[<a href="#footer">Bajar</a>]</li>
+                <li>[<a href="catalog.php?board=<?php echo htmlspecialchars($this->board['short_id']); ?>">Catálogo</a>]</li>
+            </ul>
+        </nav>
         <?php
     }
     
@@ -776,11 +791,11 @@ class BoardView {
      */
     private function renderPostIcons($post) {
         if ($post['is_locked']) {
-            echo '<img src="assets/imgs/closed.gif" alt="Bloqueado">';
+            echo '<img src="assets/imgs/closed.png" alt="Bloqueado">';
         }
         
         if ($post['is_pinned']) {
-            echo '<img src="assets/imgs/sticky.gif" alt="Fijado">';
+            echo '<img src="assets/imgs/sticky.png" alt="Fijado">';
         }
     }
     
@@ -822,7 +837,7 @@ class BoardView {
                      alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
                      onclick="toggleImageSize(this)">
             <?php else: ?>
-                <img src="assets/imgs/filedeleted.gif" alt="Imagen no disponible">
+                <img src="assets/imgs/filedeleted.png" alt="Imagen no disponible">
             <?php endif; ?>
         </div>
         <?php
@@ -913,7 +928,6 @@ class BoardView {
                 echo '<span class="pagination-btn current">' . $i . '</span>';
             } else {
                 echo '<a href="?board=' . htmlspecialchars($board_id) . '&page=' . $i . '" class="pagination-btn">' . $i . '</a>';
-                echo ' | <a href="catalog.php?board=' . htmlspecialchars($board_id) . '">Catálogo</a>';
             }
         }
     }
@@ -923,14 +937,19 @@ class BoardView {
      */
     private function renderThemes() {
         ?>
-        <div class="theme-selector" style="margin:0 var(--spacing-sm);">
-            <label for="theme-select">Selecciona un tema:</label>
-            <select id="theme-select" onchange="changeTheme(this.value)">
-                <option value="default">Predeterminado</option>
-                <option value="blue">Blue</option>
-                <option value="dark">Oscuro</option>
-            </select>
-        </div>
+        <nav>
+            <ul class="mini-menu">
+                <div class="theme-selector">
+                    <label for="theme-select">Selecciona un tema:</label>
+                    <select id="theme-select" onchange="changeTheme(this.value)">
+                        <option value="yotsuba">Yotsuba</option>
+                        <option value="yotsubab">Yotsuba Blue</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </div>
+                <li>[<a href="#top">Subir</a>]</li>
+            </ul>
+        </nav>
         <?php
     }
     
@@ -939,7 +958,7 @@ class BoardView {
      */
     private function renderFooter() {
         ?>
-        <footer>
+        <footer id="footer">
             <p>&copy; 2025 SimpleChan - Imageboard Simple y Anónimo</p>
         </footer>
         <?php

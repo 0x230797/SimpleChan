@@ -249,6 +249,17 @@ function renderHeader($board, $post, $random_banner) {
     <?php
 }
 
+function renderMiniMenu($board) {
+    ?>
+    <nav>
+        <ul class="mini-menu">
+            <li>[<a href="boards.php?board=<?php echo htmlspecialchars($board['short_id']); ?>">Retornar</a>]</li>
+            <li>[<a href="#footer">Bajar</a>]</li>
+        </ul>
+    </nav>
+    <?php
+}
+
 function renderMessages($error, $success_message) {
     if ($error): ?>
         <div class="error">
@@ -458,11 +469,11 @@ function renderReportMenu($post, $post_id = null) {
 
 function renderPostFlags($post) {
     if ($post['is_pinned']): ?>
-        <img src="assets/imgs/sticky.gif" alt="Fijado">
+        <img src="assets/imgs/sticky.png" alt="Fijado">
     <?php endif;
     
     if ($post['is_locked']): ?>
-        <img src="assets/imgs/closed.gif" alt="Bloqueado">
+        <img src="assets/imgs/closed.png" alt="Bloqueado">
     <?php endif;
 }
 
@@ -479,21 +490,26 @@ function renderPostImage($post) {
         </div>
     <?php else: ?>
         <div class="post-image">
-            <img src="assets/imgs/filedeleted.gif" alt="Imagen no disponible">
+            <img src="assets/imgs/filedeleted.png" alt="Imagen no disponible">
         </div>
     <?php endif;
 }
 
     function renderThemes() {
         ?>
-        <div class="theme-selector" style="margin:0 var(--spacing-sm);">
-            <label for="theme-select">Selecciona un tema:</label>
-            <select id="theme-select" onchange="changeTheme(this.value)">
-                <option value="default">Predeterminado</option>
-                <option value="blue">Blue</option>
-                <option value="dark">Oscuro</option>
-            </select>
-        </div>
+        <nav>
+            <ul class="mini-menu">
+                <div class="theme-selector">
+                    <label for="theme-select">Selecciona un tema:</label>
+                    <select id="theme-select" onchange="changeTheme(this.value)">
+                        <option value="yotsuba">Yotsuba</option>
+                        <option value="yotsubab">Yotsuba Blue</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </div>
+                <li>[<a href="#top">Subir</a>]</li>
+            </ul>
+        </nav>
         <?php
     }
 
@@ -503,15 +519,17 @@ function renderPostImage($post) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Respuestas - SimpleChan</title>
+    <title>Publicación <?php echo $post['id']; ?> /<?php echo htmlspecialchars($view_data['board']['short_id']); ?>/ <?php echo htmlspecialchars($view_data['board']['name']); ?> - SimpleChan</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/themes.css">
-    <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
+    <link id="site-favicon" rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
 <body>
     <?php renderNavigation($view_data['boards_by_category']); ?>
     
     <?php renderHeader($view_data['board'], $post, $view_data['random_banner']); ?>
+
+    <?php renderMiniMenu($view_data['board']); ?>
 
     <main>
         <?php renderMessages($error, $success_message); ?>
@@ -526,7 +544,7 @@ function renderPostImage($post) {
     </main>
 
     <?php renderThemes(); ?>
-    <footer>
+    <footer id="footer">
         <p>&copy; 2025 SimpleChan - Imageboard Simple y Anónimo</p>
     </footer>
     

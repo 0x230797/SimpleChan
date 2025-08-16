@@ -178,7 +178,8 @@ class BanView {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Acceso Denegado - SimpleChan</title>
         <link rel="stylesheet" href="assets/css/style.css">
-        <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
+        <link rel="stylesheet" href="assets/css/themes.css">
+        <link id="site-favicon" rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
         <?php $this->renderStyles(); ?>
         <?php
     }

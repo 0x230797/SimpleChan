@@ -202,7 +202,7 @@ function renderPostImage($post) {
         } else {
             ?>
             <div class="post-image">
-                <img src="assets/imgs/filedeleted.gif" 
+                <img src="assets/imgs/filedeleted.png" 
                      alt="Imagen no disponible">
             </div>
             <?php
@@ -256,11 +256,13 @@ function renderMessages($error, $success_message) {
     <title>SimpleChan - Imageboard Anónimo</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/themes.css">
-    <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
+    <link id="site-favicon" rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
 <body>
     <header>
-        <img src="assets/imgs/logo.png" alt="SimpleChan">
+        <a href="index.php">
+            <img id="site-logo" src="assets/imgs/logo.png" alt="SimpleChan">
+        </a>
     </header>
 
     <main>
