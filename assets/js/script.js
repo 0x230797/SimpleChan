@@ -458,3 +458,19 @@ function showSection(sectionId) {
     // Mostrar la sección seleccionada
     document.getElementById(sectionId).style.display = 'block';
 }
+
+// Función para cambiar el tema y guardar la configuración en localStorage
+function changeTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('selectedTheme', theme);
+}
+
+// Aplicar el tema guardado al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const themeSelect = document.getElementById('theme-select');
+    if (themeSelect) {
+        themeSelect.value = savedTheme;
+    }
+});

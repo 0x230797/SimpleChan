@@ -16,6 +16,7 @@ require_once 'functions.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reglas - SimpleChan - Imageboard Anónimo</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/themes.css">
     <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
 
@@ -169,10 +170,22 @@ require_once 'functions.php';
 
         </section>
     </main>
+
+    <!-- TEMAS -->
+    <div class="theme-selector" style="margin:0 var(--spacing-sm);">
+        <label for="theme-select">Selecciona un tema:</label>
+        <select id="theme-select" onchange="changeTheme(this.value)">
+            <option value="default">Predeterminado</option>
+            <option value="blue">Blue</option>
+            <option value="dark">Oscuro</option>
+        </select>
+    </div>
+
     <!-- FOOTER -->
     <footer>
         <p>&copy; <?php echo date('Y'); ?> SimpleChan - Imageboard Simple y Anónimo</p>
     </footer>
 
+    <script src="assets/js/script.js"></script>
 </body>
 </html>

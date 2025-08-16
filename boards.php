@@ -10,7 +10,7 @@ class BoardController {
     private $board;
     private $board_id;
     private $current_page;
-    private $posts_per_page = 10;
+    private $posts_per_page = 10; // Posts por página
     private $messages = [];
     private $search_results = null;
     
@@ -226,7 +226,7 @@ class BoardController {
      * Crea el post
      */
     private function createPost($post_data, $image_result) {
-        return create_post(
+        $result = create_post(
             $post_data['name'],
             $post_data['subject'],
             $post_data['message'],
@@ -235,6 +235,31 @@ class BoardController {
             $post_data['parent_id'],
             $this->board_id
         );
+
+        if ($result) {
+            $this->enforcePostLimit(); // Verificar y eliminar publicaciones si es necesario
+        }
+
+        return $result;
+    }
+    
+    /**
+     * Aplica el límite de publicaciones por tablón
+     */
+    private function enforcePostLimit() {
+        $total_posts = count_posts_by_board($this->board_id);
+        if ($total_posts > 100) {
+            $oldest_post = get_oldest_post($this->board_id);
+            if ($oldest_post) {
+                delete_post($oldest_post['id']);
+                if (!empty($oldest_post['image_filename'])) {
+                    $image_path = UPLOAD_DIR . $oldest_post['image_filename'];
+                    if (file_exists($image_path)) {
+                        unlink($image_path); // Eliminar la imagen asociada
+                    }
+                }
+            }
+        }
     }
     
     /**
@@ -414,6 +439,7 @@ class BoardView {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>SimpleChan - Imageboard Anónimo</title>
             <link rel="stylesheet" href="assets/css/style.css">
+            <link rel="stylesheet" href="assets/css/themes.css">
             <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
         </head>
         <body>
@@ -427,6 +453,7 @@ class BoardView {
                 <?php $this->renderPagination(); ?>
             </main>
             
+            <?php $this->renderThemes(); ?>
             <?php $this->renderFooter(); ?>
             <script src="assets/js/script.js"></script>
         </body>
@@ -616,7 +643,7 @@ class BoardView {
             <?php if ($this->controller->getSearchResults() !== null): ?>
                 <h2>Resultados de búsqueda</h2>
             <?php else: ?>
-                <h2>Publicaciones <?php echo $this->getPaginationText(); ?></h2>
+                <h2>Publicaciones</h2>
             <?php endif; ?>
             
             <?php if (empty($this->posts)): ?>
@@ -874,42 +901,37 @@ class BoardView {
      */
     private function renderPaginationControls() {
         $current = $this->pagination_info['current_page'];
-        $total = $this->pagination_info['total_pages'];
+        $total = $this->pagination_info['total_pages']; // Siempre 10
         $board_id = $this->board['short_id'];
-        
-        // Botones anterior
-        if ($current > 1) {
-            echo '<a href="?board=' . htmlspecialchars($board_id) . '&page=1" class="pagination-btn first">« Primera</a>';
-            echo '<a href="?board=' . htmlspecialchars($board_id) . '&page=' . ($current - 1) . '" class="pagination-btn prev">‹ Anterior</a>';
-        }
-        
-        // Números de página
-        $start_page = max(1, $current - 2);
-        $end_page = min($total, $current + 2);
-        
+
+        // Como siempre habrá exactamente 10 páginas, mostrar todas
+        $start_page = 1;
+        $end_page = $total; // Será 10
+
         for ($i = $start_page; $i <= $end_page; $i++) {
             if ($i == $current) {
                 echo '<span class="pagination-btn current">' . $i . '</span>';
             } else {
                 echo '<a href="?board=' . htmlspecialchars($board_id) . '&page=' . $i . '" class="pagination-btn">' . $i . '</a>';
+                echo ' | <a href="catalog.php?board=' . htmlspecialchars($board_id) . '">Catálogo</a>';
             }
         }
-        
-        // Botones siguiente
-        if ($current < $total) {
-            echo '<a href="?board=' . htmlspecialchars($board_id) . '&page=' . ($current + 1) . '" class="pagination-btn next">Siguiente ›</a>';
-            echo '<a href="?board=' . htmlspecialchars($board_id) . '&page=' . $total . '" class="pagination-btn last">Última »</a>';
-        }
     }
-    
+
     /**
-     * Obtiene el texto de paginación para el título de posts
+     * Renderiza los temas
      */
-    private function getPaginationText() {
-        if ($this->pagination_info['total_pages'] > 1) {
-            return "(Página {$this->pagination_info['current_page']} de {$this->pagination_info['total_pages']})";
-        }
-        return "";
+    private function renderThemes() {
+        ?>
+        <div class="theme-selector" style="margin:0 var(--spacing-sm);">
+            <label for="theme-select">Selecciona un tema:</label>
+            <select id="theme-select" onchange="changeTheme(this.value)">
+                <option value="default">Predeterminado</option>
+                <option value="blue">Blue</option>
+                <option value="dark">Oscuro</option>
+            </select>
+        </div>
+        <?php
     }
     
     /**

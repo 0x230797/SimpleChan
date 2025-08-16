@@ -484,6 +484,19 @@ function renderPostImage($post) {
     <?php endif;
 }
 
+    function renderThemes() {
+        ?>
+        <div class="theme-selector" style="margin:0 var(--spacing-sm);">
+            <label for="theme-select">Selecciona un tema:</label>
+            <select id="theme-select" onchange="changeTheme(this.value)">
+                <option value="default">Predeterminado</option>
+                <option value="blue">Blue</option>
+                <option value="dark">Oscuro</option>
+            </select>
+        </div>
+        <?php
+    }
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -492,6 +505,7 @@ function renderPostImage($post) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Respuestas - SimpleChan</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/themes.css">
     <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
 <body>
@@ -511,6 +525,7 @@ function renderPostImage($post) {
         <?php renderRepliesSection($view_data['replies'], $post_id); ?>
     </main>
 
+    <?php renderThemes(); ?>
     <footer>
         <p>&copy; 2025 SimpleChan - Imageboard Simple y Anónimo</p>
     </footer>

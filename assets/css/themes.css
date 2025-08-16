@@ -1,0 +1,247 @@
+/* ================================
+   VARIABLES CSS - TEMA POR DEFECTO
+   ================================ */
+:root {
+    /* Colores principales */
+    --primary-color: #800;
+    --primary-hover: #e00;
+    --secondary-color: #008705;
+    --accent-color: #cc1105;
+    --danger-color: #ca2f2f;
+    --success-color: #09780d;
+    
+    /* Backgrounds */
+    --body-bg: #ffe;
+    --body-bg-image: url('../imgs/fade.png');
+    --content-bg: #fff3f3;
+    --form-bg: #f7e5e5;
+    --reply-bg: #f7e5e5;
+    --input-bg: #fff;
+    --button-bg: #f7e5e5;
+    --button-hover-bg: #eed5d5;
+    --boxbar-bg: #fca;
+    
+    /* Borders */
+    --border-color: #800;
+    --border-style: 1px solid var(--border-color);
+    
+    /* Text colors */
+    --text-color: #800;
+    --text-light: #800;
+    --link-color: #800;
+    --link-hover: #e00;
+    --admin-name-color: red;
+    --placeholder-color: #800;
+    
+    /* Status colors */
+    --error-bg: #f6c6c6;
+    --error-border: #ca2f2f;
+    --error-text: #ca2f2f;
+    --success-bg: #aec6ae;
+    --success-border: #09780d;
+    --success-text: #09780d;
+    --danger-bg: #ffcece;
+    --deleted-bg: #ffbfbf;
+    
+    /* Special text colors */
+    --greentext-color: #228B22;
+    --pinktext-color: #e75480;
+    --spoiler-bg: #1a1a1a;
+    --spoiler-text: #fff;
+    --nsfw-color: red;
+    
+    /* Scrollbar */
+    --scrollbar-track: #2d2d2d;
+    --scrollbar-thumb: #555;
+    --scrollbar-thumb-hover: #666;
+    
+    /* Typography */
+    --font-family: Arial, sans-serif;
+    --font-size-base: 14px;
+    --font-size-small: 12px;
+    --font-size-xs: 9px;
+    --font-size-large: 16px;
+    --font-size-xl: 20px;
+    --line-height: 1.4;
+    
+    /* Spacing */
+    --spacing-xs: 3px;
+    --spacing-sm: 5px;
+    --spacing-md: 10px;
+    --spacing-lg: 15px;
+    --spacing-xl: 20px;
+    --spacing-xxl: 40px;
+    
+    /* Layout */
+    --max-width: 800px;
+    --border-radius: 3px;
+    --border-radius-md: 6px;
+    
+    /* Breakpoints */
+    --mobile-breakpoint: 600px;
+    --tablet-breakpoint: 768px;
+    --desktop-breakpoint: 1024px;
+}
+
+[data-theme="blue"] {
+    /* Colores principales */
+    --primary-color: #800;
+    --primary-hover: #e00;
+    --secondary-color: #008705;
+    --accent-color: #cc1105;
+    --danger-color: #ca2f2f;
+    --success-color: #09780d;
+    
+    /* Backgrounds */
+    --body-bg: #ffe;
+    --body-bg-image: url('../imgs/blue.png');
+    --content-bg: #fff3f3;
+    --form-bg: #f7e5e5;
+    --reply-bg: #f7e5e5;
+    --input-bg: #fff;
+    --button-bg: #f7e5e5;
+    --button-hover-bg: #eed5d5;
+    --boxbar-bg: #fca;
+    
+    /* Borders */
+    --border-color: #800;
+    --border-style: 1px solid var(--border-color);
+    
+    /* Text colors */
+    --text-color: #800;
+    --text-light: #800;
+    --link-color: #800;
+    --link-hover: #e00;
+    --admin-name-color: red;
+    --placeholder-color: #800;
+    
+    /* Status colors */
+    --error-bg: #f6c6c6;
+    --error-border: #ca2f2f;
+    --error-text: #ca2f2f;
+    --success-bg: #aec6ae;
+    --success-border: #09780d;
+    --success-text: #09780d;
+    --danger-bg: #ffcece;
+    --deleted-bg: #ffbfbf;
+    
+    /* Special text colors */
+    --greentext-color: #228B22;
+    --pinktext-color: #e75480;
+    --spoiler-bg: #1a1a1a;
+    --spoiler-text: #fff;
+    --nsfw-color: red;
+    
+    /* Scrollbar */
+    --scrollbar-track: #2d2d2d;
+    --scrollbar-thumb: #555;
+    --scrollbar-thumb-hover: #666;
+    
+    /* Typography */
+    --font-family: Arial, sans-serif;
+    --font-size-base: 14px;
+    --font-size-small: 12px;
+    --font-size-xs: 9px;
+    --font-size-large: 16px;
+    --font-size-xl: 20px;
+    --line-height: 1.4;
+    
+    /* Spacing */
+    --spacing-xs: 3px;
+    --spacing-sm: 5px;
+    --spacing-md: 10px;
+    --spacing-lg: 15px;
+    --spacing-xl: 20px;
+    --spacing-xxl: 40px;
+    
+    /* Layout */
+    --max-width: 800px;
+    --border-radius: 3px;
+    --border-radius-md: 6px;
+    
+    /* Breakpoints */
+    --mobile-breakpoint: 600px;
+    --tablet-breakpoint: 768px;
+    --desktop-breakpoint: 1024px;
+}
+[data-theme="dark"] {
+    /* Colores principales */
+    --primary-color: #800;
+    --primary-hover: #e00;
+    --secondary-color: #008705;
+    --accent-color: #cc1105;
+    --danger-color: #ca2f2f;
+    --success-color: #09780d;
+    
+    /* Backgrounds */
+    --body-bg: #ffe;
+    --body-bg-image: #000;
+    --content-bg: #fff3f3;
+    --form-bg: #f7e5e5;
+    --reply-bg: #f7e5e5;
+    --input-bg: #fff;
+    --button-bg: #f7e5e5;
+    --button-hover-bg: #eed5d5;
+    --boxbar-bg: #fca;
+    
+    /* Borders */
+    --border-color: #800;
+    --border-style: 1px solid var(--border-color);
+    
+    /* Text colors */
+    --text-color: #800;
+    --text-light: #800;
+    --link-color: #800;
+    --link-hover: #e00;
+    --admin-name-color: red;
+    --placeholder-color: #800;
+    
+    /* Status colors */
+    --error-bg: #f6c6c6;
+    --error-border: #ca2f2f;
+    --error-text: #ca2f2f;
+    --success-bg: #aec6ae;
+    --success-border: #09780d;
+    --success-text: #09780d;
+    --danger-bg: #ffcece;
+    --deleted-bg: #ffbfbf;
+    
+    /* Special text colors */
+    --greentext-color: #228B22;
+    --pinktext-color: #e75480;
+    --spoiler-bg: #1a1a1a;
+    --spoiler-text: #fff;
+    --nsfw-color: red;
+    
+    /* Scrollbar */
+    --scrollbar-track: #2d2d2d;
+    --scrollbar-thumb: #555;
+    --scrollbar-thumb-hover: #666;
+    
+    /* Typography */
+    --font-family: Arial, sans-serif;
+    --font-size-base: 14px;
+    --font-size-small: 12px;
+    --font-size-xs: 9px;
+    --font-size-large: 16px;
+    --font-size-xl: 20px;
+    --line-height: 1.4;
+    
+    /* Spacing */
+    --spacing-xs: 3px;
+    --spacing-sm: 5px;
+    --spacing-md: 10px;
+    --spacing-lg: 15px;
+    --spacing-xl: 20px;
+    --spacing-xxl: 40px;
+    
+    /* Layout */
+    --max-width: 800px;
+    --border-radius: 3px;
+    --border-radius-md: 6px;
+    
+    /* Breakpoints */
+    --mobile-breakpoint: 600px;
+    --tablet-breakpoint: 768px;
+    --desktop-breakpoint: 1024px;
+}
