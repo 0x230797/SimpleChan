@@ -449,3 +449,12 @@ function setBanIp(ip) {
         window.scrollTo(0, input.getBoundingClientRect().top + window.scrollY - 100);
     }
 }
+
+function showSection(sectionId) {
+    // Ocultar todas las secciones
+    document.querySelectorAll('.admin-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    // Mostrar la sección seleccionada
+    document.getElementById(sectionId).style.display = 'block';
+}

@@ -1,46 +1,124 @@
 <?php
-require_once 'config.php';
-require_once 'functions.php';
+/**
+ * Admin Actions Handler
+ * Maneja las acciones administrativas del sistema
+ */
 
 session_start();
 
-// Verificar si el usuario es administrador
+require_once 'config.php';
+require_once 'functions.php';
+
+/**
+ * Verificar si el usuario es administrador
+ */
 if (!is_admin()) {
     header('Location: index.php');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $post_id = isset($_POST['post_id']) ? (int)$_POST['post_id'] : 0;
-    $report_id = isset($_POST['report_id']) ? (int)$_POST['report_id'] : 0;
+    processAdminActions();
+}
 
+// Redirección por defecto
+redirectToPreviousPage();
+
+/**
+ * Procesa las acciones administrativas
+ */
+function processAdminActions() {
+    $post_id = getPostId();
+    $report_id = getReportId();
+    
     if ($post_id > 0) {
-        if (isset($_POST['lock_post'])) {
-            lock_post($post_id);
-        } elseif (isset($_POST['unlock_post'])) {
-            unlock_post($post_id);
-        } elseif (isset($_POST['pin_post'])) {
-            pin_post($post_id);
-        } elseif (isset($_POST['unpin_post'])) {
-            unpin_post($post_id);
-        } elseif (isset($_POST['delete_image'])) {
-            $post = get_post($post_id);
-            if ($post && $post['image_filename']) {
-                $image_path = UPLOAD_DIR . $post['image_filename'];
-                if (file_exists($image_path)) {
-                    unlink($image_path);
-                }
-                update_post_image($post_id, null); // Actualizar la base de datos para eliminar la referencia a la imagen
-            }
-        }
+        handlePostActions($post_id);
     }
+    
+    if ($report_id > 0) {
+        handleReportActions($report_id);
+    }
+}
 
-    if ($report_id > 0 && isset($_POST['delete_report'])) {
+/**
+ * Obtiene y valida el ID del post
+ * @return int
+ */
+function getPostId() {
+    return isset($_POST['post_id']) ? (int)$_POST['post_id'] : 0;
+}
+
+/**
+ * Obtiene y valida el ID del reporte
+ * @return int
+ */
+function getReportId() {
+    return isset($_POST['report_id']) ? (int)$_POST['report_id'] : 0;
+}
+
+/**
+ * Maneja las acciones relacionadas con posts
+ * @param int $post_id
+ */
+function handlePostActions($post_id) {
+    if (isset($_POST['lock_post'])) {
+        lock_post($post_id);
+        
+    } elseif (isset($_POST['unlock_post'])) {
+        unlock_post($post_id);
+        
+    } elseif (isset($_POST['pin_post'])) {
+        pin_post($post_id);
+        
+    } elseif (isset($_POST['unpin_post'])) {
+        unpin_post($post_id);
+        
+    } elseif (isset($_POST['delete_image'])) {
+        deletePostImage($post_id);
+    }
+}
+
+/**
+ * Elimina la imagen de un post
+ * @param int $post_id
+ */
+function deletePostImage($post_id) {
+    $post = get_post($post_id);
+    
+    if (!$post || !$post['image_filename']) {
+        return;
+    }
+    
+    $image_path = UPLOAD_DIR . $post['image_filename'];
+    
+    // Eliminar archivo físico si existe
+    if (file_exists($image_path)) {
+        unlink($image_path);
+    }
+    
+    // Actualizar base de datos
+    update_post_image($post_id, null);
+}
+
+/**
+ * Maneja las acciones relacionadas con reportes
+ * @param int $report_id
+ */
+function handleReportActions($report_id) {
+    if (isset($_POST['delete_report'])) {
         delete_report($report_id);
         header('Location: admin.php');
         exit;
     }
 }
 
-header('Location: index.php');
-exit;
+/**
+ * Redirecciona a la página anterior
+ */
+function redirectToPreviousPage() {
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'admin.php';
+    header('Location: ' . $referer);
+    exit;
+}
+
+?>

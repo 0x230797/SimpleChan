@@ -1,41 +1,142 @@
 <?php
-// Configuración de la base de datos
-$host = 'localhost';
-$dbname = 'simplechan_db';
-$username = 'root';
-$password = '';
+/**
+ * SimpleBoard Configuration File
+ * Configuraciones principales del sistema
+ */
 
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-    die("Error de conexión: " . $e->getMessage());
+// Prevenir acceso directo
+if (!defined('ABSPATH')) {
+    define('ABSPATH', dirname(__FILE__) . '/');
 }
 
-// Configuraciones generales
-define('ADMIN_PASSWORD', 'admin123'); // Cambiar por una contraseña segura
+// ============================================================================
+// CONFIGURACIÓN DE BASE DE DATOS
+// ============================================================================
+
+// Configuración de conexión
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'simplechan_db');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_CHARSET', 'utf8mb4');
+
+// ============================================================================
+// CONFIGURACIONES DE SEGURIDAD
+// ============================================================================
+
+// Contraseña de administrador (CAMBIAR EN PRODUCCIÓN)
+define('ADMIN_PASSWORD', 'admin123');
+
+// ============================================================================
+// CONFIGURACIONES DE ARCHIVOS
+// ============================================================================
+
+// Límites de archivos
 define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB
+
+// Extensiones permitidas
 define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+
+// Directorios
 define('UPLOAD_DIR', 'uploads/');
 
-// Crear directorio de uploads si no existe
-if (!file_exists(UPLOAD_DIR)) {
-    mkdir(UPLOAD_DIR, 0755, true);
-}
+// ============================================================================
+// INICIALIZACIÓN DEL SISTEMA
+// ============================================================================
 
-// Función para limpiar entrada
-function clean_input($data) {
-    return htmlspecialchars(trim($data), ENT_QUOTES, 'UTF-8');
-}
+// Conexión a base de datos
+$pdo = initializeDatabase();
 
-// Función para obtener IP del usuario
-function get_user_ip() {
-    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-        return $_SERVER['HTTP_CLIENT_IP'];
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        return $_SERVER['HTTP_X_FORWARDED_FOR'];
-    } else {
-        return $_SERVER['REMOTE_ADDR'];
+// Crear directorios necesarios
+createRequiredDirectories();
+
+// ============================================================================
+// FUNCIONES DE INICIALIZACIÓN
+// ============================================================================
+
+/**
+ * Inicializa la conexión a la base de datos
+ * @return PDO
+ * @throws Exception
+ */
+function initializeDatabase() {
+    try {
+        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . DB_CHARSET
+        ];
+        
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        return $pdo;
+        
+    } catch (PDOException $e) {
+        error_log("Error de conexión a BD: " . $e->getMessage());
+        die("Error de conexión a la base de datos. Contacte al administrador.");
     }
 }
+
+/**
+ * Crea los directorios necesarios para el funcionamiento
+ */
+function createRequiredDirectories() {
+    $directories = [
+        UPLOAD_DIR
+    ];
+    
+    foreach ($directories as $dir) {
+        if (!file_exists($dir)) {
+            if (!mkdir($dir, 0755, true)) {
+                error_log("No se pudo crear el directorio: $dir");
+            }
+        }
+    }
+}
+
+// ============================================================================
+// FUNCIONES UTILITARIAS GLOBALES
+// ============================================================================
+
+/**
+ * Genera un hash seguro para contraseñas
+ * @param string $password
+ * @return string
+ */
+function hash_password($password) {
+    return password_hash($password, PASSWORD_ARGON2ID);
+}
+
+/**
+ * Verifica una contraseña contra su hash
+ * @param string $password
+ * @param string $hash
+ * @return bool
+ */
+function verify_password($password, $hash) {
+    return password_verify($password, $hash);
+}
+
+/**
+ * Genera un token CSRF
+ * @return string
+ */
+function generate_csrf_token() {
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Verifica el token CSRF
+ * @param string $token
+ * @return bool
+ */
+function verify_csrf_token($token) {
+    return isset($_SESSION['csrf_token']) && 
+           hash_equals($_SESSION['csrf_token'], $token);
+}
+
 ?>

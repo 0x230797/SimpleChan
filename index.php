@@ -10,82 +10,243 @@ if ($ban_info) {
     exit;
 }
 
-// Procesar envío de post y reporte de usuario
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_report']) && isset($_POST['report_post_id'])) {
-    $post_id = (int)$_POST['report_post_id'];
-    $reason = clean_input($_POST['report_reason'] ?? '');
-    $details = clean_input($_POST['report_details'] ?? '');
-    $reporter_ip = get_user_ip();
-    if ($post_id > 0 && !empty($reason)) {
-        if (create_report($post_id, $reason, $details, $reporter_ip)) {
-            $report_success = true;
-            header('Location: ' . $_SERVER['PHP_SELF'] . '?report_success=1');
-            exit;
-        } else {
-            $error = 'Error al enviar el reporte.';
-        }
-    } else {
-        $error = 'Datos de reporte inválidos.';
-    }
+$error = null;
+$success_message = null;
+
+// Mostrar mensaje de éxito si viene de redirección
+if (isset($_GET['post_success']) && $_GET['post_success'] == '1') {
+    $success_message = 'Post creado exitosamente.';
 }
-// Redirigir después de procesar un post para evitar reenvío
+
+// Procesar envío de nuevo post
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
+    $error = processNewPost();
+}
+
+function processNewPost() {
+    // Sanitizar y validar datos de entrada
     $name = clean_input($_POST['name'] ?? '');
-    // Si el nombre está vacío, usar "Anónimo"
-    if (empty(trim($name))) {
-        $name = 'Anónimo';
-    }
+    $name = empty(trim($name)) ? 'Anónimo' : $name;
     $subject = clean_input($_POST['subject'] ?? '');
     $message = clean_input($_POST['message'] ?? '');
     $parent_id = isset($_POST['parent_id']) ? (int)$_POST['parent_id'] : null;
     $board_id = isset($_POST['board_id']) ? (int)$_POST['board_id'] : null;
     
+    // Validar mensaje obligatorio
     if (empty($message)) {
-        $error = 'El mensaje no puede estar vacío.';
+        return 'El mensaje no puede estar vacío.';
+    }
+    
+    // Procesar imagen subida
+    $image_data = processImageUpload();
+    if ($image_data['error']) {
+        return $image_data['error'];
+    }
+    
+    // Crear el post en la base de datos
+    $post_created = create_post(
+        $name, 
+        $subject, 
+        $message, 
+        $image_data['filename'], 
+        $image_data['original_name'], 
+        $parent_id, 
+        $board_id
+    );
+    
+    if ($post_created) {
+        // Redirigir para evitar reenvío del formulario
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?post_success=1');
+        exit;
     } else {
-        $image_filename = null;
-        $image_original_name = null;
-        
-        // Procesar imagen si se subió una
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $upload_result = upload_image($_FILES['image']);
-            if ($upload_result['success']) {
-                $image_filename = $upload_result['filename'];
-                $image_original_name = $upload_result['original_name'];
-            } else {
-                $error = $upload_result['error'];
-            }
+        return 'Error al crear el post.';
+    }
+}
+
+function processImageUpload() {
+    $result = [
+        'filename' => null,
+        'original_name' => null,
+        'error' => null
+    ];
+    
+    // Verificar si se subió una imagen
+    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        $upload_result = upload_image($_FILES['image']);
+        if ($upload_result['success']) {
+            $result['filename'] = $upload_result['filename'];
+            $result['original_name'] = $upload_result['original_name'];
+        } else {
+            $result['error'] = $upload_result['error'];
         }
-        
-        if (!isset($error)) {
-            if (create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id, $board_id)) {
-                // Redirigir para evitar reenvío
-                header('Location: ' . $_SERVER['PHP_SELF'] . '?post_success=1');
-                exit;
-            } else {
-                $error = 'Error al crear el post.';
-            }
+    }
+    
+    return $result;
+}
+
+// Obtener datos necesarios para la página
+$data = loadPageData();
+
+function loadPageData() {
+    return [
+        'posts' => get_posts(),
+        'popular_posts' => get_recent_and_replied_posts(8),
+        'boards_by_category' => organizeBoardsByCategory(),
+        'site_stats' => get_site_stats()
+    ];
+}
+
+function organizeBoardsByCategory() {
+    $boards = get_all_boards();
+    $boards_by_category = [];
+    
+    foreach ($boards as $board) {
+        $category = $board['category'] ?? 'Sin categoría';
+        if (!isset($boards_by_category[$category])) {
+            $boards_by_category[$category] = [];
+        }
+        $boards_by_category[$category][] = $board;
+    }
+    
+    return $boards_by_category;
+}
+
+function renderBoardsSection($boards_by_category) {
+    ?>
+    <div class="box-outer top-box" id="boards">
+        <div class="box-inner">
+            <div class="boxbar">
+                <h2>Tablones</h2>
+            </div>
+            <div class="boxcontent">
+                <?php foreach ($boards_by_category as $category => $boards): ?>
+                    <?php renderBoardCategory($category, $boards); ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+    <?php
+}
+
+function renderBoardCategory($category, $boards) {
+    $has_nsfw = array_reduce($boards, function($carry, $board) {
+        return $carry || !empty($board['nsfw_label']);
+    }, false);
+    ?>
+    <div class="column">
+        <u>
+            <?php echo htmlspecialchars($category); ?>
+            <?php if ($has_nsfw): ?>
+                <span class="nsfw-label">(NSFW)</span>
+            <?php endif; ?>
+        </u>
+        <ul>
+            <?php foreach ($boards as $board): ?>
+                <li>
+                    <a href="boards.php?board=<?php echo urlencode($board['short_id']); ?>" class="boardlink">
+                        <?php echo htmlspecialchars($board['name']); ?>
+                    </a>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+    <?php
+}
+
+function renderPopularPostsSection($popular_posts) {
+    ?>
+    <div class="box-outer top-box" id="popular-threads">
+        <div class="box-inner">
+            <div class="boxbar">
+                <h2>Publicaciones Populares</h2>
+            </div>
+            <div class="boxcontent">
+                <div id="c-threads">
+                    <?php foreach ($popular_posts as $post): ?>
+                        <?php renderPopularPost($post); ?>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+}
+
+function renderPopularPost($post) {
+    ?>
+    <div class="c-thread">
+        <div class="c-board">
+            <?php echo htmlspecialchars($post['board_name']); ?>
+        </div>
+        <a href="reply.php?post_id=<?php echo $post['id']; ?>" class="boardlink">
+            <?php renderPostImage($post); ?>
+        </a>
+        <div class="c-teaser">
+            <b><?php echo htmlspecialchars($post['subject'] ?? 'Sin título'); ?></b>:<br>
+            <?php echo htmlspecialchars_decode(substr($post['message'], 0, 50)); ?>...
+        </div>
+    </div>
+    <?php
+}
+
+function renderPostImage($post) {
+    if (!empty($post['image_filename'])) {
+        if (file_exists(UPLOAD_DIR . $post['image_filename'])) {
+            ?>
+            <div class="post-image">
+                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
+                     alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
+                     onclick="toggleImageSize(this)">
+            </div>
+            <?php
+        } else {
+            ?>
+            <div class="post-image">
+                <img src="assets/imgs/filedeleted.gif" 
+                     alt="Imagen no disponible">
+            </div>
+            <?php
         }
     }
 }
 
-$posts = get_posts();
-$popular_posts = get_recent_and_replied_posts(8);
-
-// Obtener todos los tablones y organizarlos por categoría
-$boards = get_all_boards();
-$boards_by_category = [];
-
-// Organizar los tablones por categoría
-foreach ($boards as $board) {
-    $category = $board['category'] ?? 'Sin categoría';
-    if (!isset($boards_by_category[$category])) {
-        $boards_by_category[$category] = [];
-    }
-    $boards_by_category[$category][] = $board;
+function renderStatsSection($site_stats) {
+    ?>
+    <div class="box-outer top-box" id="site-stats">
+        <div class="box-inner">
+            <div class="boxbar">
+                <h2>Estadísticas del Sitio</h2>
+            </div>
+            <div class="boxcontent">
+                <div class="stat-cell">
+                    <b>Total de Publicaciones:</b> <?php echo number_format($site_stats['total_posts']); ?>
+                </div>
+                <div class="stat-cell">
+                    <b>Usuarios Únicos:</b> <?php echo number_format($site_stats['unique_users']); ?>
+                </div>
+                <div class="stat-cell">
+                    <b>Peso Total de Archivos:</b> <?php echo $site_stats['total_size']; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
 }
 
-$site_stats = get_site_stats();
+function renderMessages($error, $success_message) {
+    if ($error): ?>
+        <div class="error-message">
+            <?php echo htmlspecialchars($error); ?>
+        </div>
+    <?php endif;
+    
+    if ($success_message): ?>
+        <div class="success-message">
+            <?php echo htmlspecialchars($success_message); ?>
+        </div>
+    <?php endif;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -98,105 +259,17 @@ $site_stats = get_site_stats();
 </head>
 <body>
     <header>
-        <h1>SimpleChan</h1>
-        <p>Imageboard Anónimo Simple</p>
+        <img src="assets/imgs/logo.png" alt="SimpleChan">
     </header>
 
     <main>
-
-        <!-- Lista de tablones -->
-        <div class="box-outer top-box" id="boards">
-            <div class="box-inner">
-                <div class="boxbar">
-                    <h2>Tablones</h2>
-                </div>
-                <div class="boxcontent">
-                    <?php foreach ($boards_by_category as $category => $boards): ?>
-                        <?php 
-                        $has_nsfw = false;
-                        foreach ($boards as $board) {
-                            if (!empty($board['nsfw_label'])) {
-                                $has_nsfw = true;
-                                break;
-                            }
-                        }
-                        ?>
-                        <div class="column">
-                            <u>
-                                <?php echo htmlspecialchars($category); ?>
-                                <?php if ($has_nsfw): ?>
-                                    <span class="nsfw-label">(NSFW)</span>
-                                <?php endif; ?>
-                            </u>
-                            <ul>
-                                <?php foreach ($boards as $board): ?>
-                                    <li>
-                                        <a href="boards.php?board=<?php echo urlencode($board['short_id']); ?>" class="boardlink">
-                                            <?php echo htmlspecialchars($board['name']); ?>
-                                        </a>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-
-        <!-- Publicaciones -->
-        <div class="box-outer top-box" id="popular-threads">
-            <div class="box-inner">
-                <div class="boxbar">
-                    <h2>Publicaciones Populares</h2>
-                </div>
-                <div class="boxcontent">
-                    <div id="c-threads">
-                        <?php foreach ($popular_posts as $post): ?>
-                            <div class="c-thread">
-                                <div class="c-board">
-                                    <?php echo htmlspecialchars($post['board_name']); ?>
-                                </div>
-                                <a href="reply.php?post_id=<?php echo $post['id']; ?>" class="boardlink">
-                                <?php if (!empty($post['image_filename'])): ?>
-                                    <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
-                                        <div class="post-image">
-                                            <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
-                                                alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
-                                                onclick="toggleImageSize(this)">
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="post-image">
-                                            <img src="assets/imgs/filedeleted.gif" 
-                                                alt="Imagen no disponible">
-                                        </div>
-                                    <?php endif; ?>
-                                <?php endif; ?>
-                                </a>
-                                <div class="c-teaser">
-                                    <b><?php echo htmlspecialchars($post['subject'] ?? 'Sin título'); ?></b>:<br>
-                                    <?php echo htmlspecialchars_decode(substr($post['message'], 0, 50)); ?>...
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Estadisticas -->
-        <div class="box-outer top-box" id="site-stats">
-            <div class="box-inner">
-                <div class="boxbar">
-                    <h2>Estadísticas del Sitio</h2>
-                </div>
-                <div class="boxcontent">
-                    <div class="stat-cell"><b>Total de Publicaciones:</b> <?php echo number_format($site_stats['total_posts']); ?></div>
-                    <div class="stat-cell"><b>Usuarios Únicos:</b> <?php echo number_format($site_stats['unique_users']); ?></div>
-                    <div class="stat-cell"><b>Peso Total de Archivos:</b> <?php echo $site_stats['total_size']; ?></div>
-                </div>
-            </div>
-        </div>
-
+        <?php renderMessages($error, $success_message); ?>
+        
+        <?php renderBoardsSection($data['boards_by_category']); ?>
+        
+        <?php renderPopularPostsSection($data['popular_posts']); ?>
+        
+        <?php renderStatsSection($data['site_stats']); ?>
     </main>
 
     <footer>

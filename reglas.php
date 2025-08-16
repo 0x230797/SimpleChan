@@ -1,8 +1,14 @@
 <?php
+/**
+ * SimpleChan - Página de Reglas
+ * Muestra las reglas y formatos de texto del sitio
+ */
+
 session_start();
 require_once 'config.php';
 require_once 'functions.php';
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -12,71 +18,83 @@ require_once 'functions.php';
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
+
 <body>
     <header>
         <h1>SimpleChan</h1>
         <p>Imageboard Anónimo Simple</p>
-        <nav>
-            <a href="index.php">Inicio</a>
-            <a href="reglas.php">Reglas</a>
-            <?php if (is_admin()): ?>
-                <a href="admin.php">Administración</a>
-            <?php endif; ?>
-        </nav>
     </header>
 
     <main>
-
-        <!-- Lista de posts -->
         <section>
             <h2>Reglas</h2>
+
+            <!-- BIENVENIDA -->
             <article>
                 <div class="rules-header">
                     <span class="rules-title">Bienvenidos</span>
                 </div>
                 <div class="rules-message">
-                    SimpleChan es un imageboard anónimo simple y libre. Para mantener un ambiente respetuoso y seguro para todos los usuarios, hemos establecido las siguientes reglas.
+                    SimpleChan es un imageboard anónimo simple y libre. Para mantener un ambiente 
+                    respetuoso y seguro para todos los usuarios, hemos establecido las siguientes reglas.
                 </div>
             </article>
 
+            <!-- REGLAS GENERALES -->
             <article>
                 <div class="rules-header">
                     <span class="rules-title">Reglas generales</span>
                 </div>
                 <div class="rules-message">
-                    <div>
-                        <h4>Respeto mutuo</h4>
-                        <span>Mantén un tono respetuoso hacia otros usuarios. No se toleran insultos personales, discriminación por raza, género, religión, orientación sexual o nacionalidad.</span>
-                    </div>
-                    <div>
-                        <h4>Contenido apropiado</h4>
-                        <span>Trata de publicar algo, no tran prohibido, no queremos problemas aquí.</span>
-                    </div>
-                    <div>
-                        <h4>No spam ni flood</h4>
-                        <span>No publiques el mismo mensaje repetidas veces, no hagas posts vacíos o sin sentido, y no abuses del sistema de respuestas.</span>
-                    </div>
-                    <div>
-                        <h4>Uso correcto de imágenes</h4>
-                        <span>Solo se permiten archivos de imagen (JPG, PNG, GIF, WebP) de máximo 5MB. No subas imágenes ofensivas, con virus, o que violen derechos de autor.</span>
-                    </div>
-                    <div>
-                        <h4>No publicidad ni autopromoción</h4>
-                        <span>Prohibido hacer spam de enlaces externos, promocionar productos/servicios, o usar el imageboard para publicidad personal.</span>
-                    </div>
-                    <div>
-                        <h4>No trolling destructivo</h4>
-                        <span>Aunque se permite el humor y las bromas, no hagas posts con la única intención de provocar, molestar o arruinar conversaciones.</span>
-                    </div>
-                    <div>
-                        <h4>Respeta la temática de la publicación</h4>
-                        <span>Mantén tus posts relevantes y coherentes. No hagas posts completamente fuera de lugar o random sin contexto.</span>
-                    </div>
-                    <div>
-                        <h4>No evasión de bans</h4>
-                        <span>Si recibes un ban, no intentes evadirlo usando proxies, VPNs, o cambiando de IP. Espera a que expire o contacta al administrador.</span>
-                    </div>
+                    <?php 
+                    // Array de reglas generales
+                    $general_rules = [
+                        [
+                            'title' => 'Respeto mutuo',
+                            'description' => 'Mantén un tono respetuoso hacia otros usuarios. No se toleran insultos personales, discriminación por raza, género, religión, orientación sexual o nacionalidad.'
+                        ],
+                        [
+                            'title' => 'Contenido apropiado',
+                            'description' => 'Trata de publicar algo, no tran prohibido, no queremos problemas aquí.'
+                        ],
+                        [
+                            'title' => 'No spam ni flood',
+                            'description' => 'No publiques el mismo mensaje repetidas veces, no hagas posts vacíos o sin sentido, y no abuses del sistema de respuestas.'
+                        ],
+                        [
+                            'title' => 'Uso correcto de imágenes',
+                            'description' => 'Solo se permiten archivos de imagen (JPG, PNG, GIF, WebP) de máximo 5MB. No subas imágenes ofensivas, con virus, o que violen derechos de autor.'
+                        ],
+                        [
+                            'title' => 'No publicidad ni autopromoción',
+                            'description' => 'Prohibido hacer spam de enlaces externos, promocionar productos/servicios, o usar el imageboard para publicidad personal.'
+                        ],
+                        [
+                            'title' => 'No trolling destructivo',
+                            'description' => 'Aunque se permite el humor y las bromas, no hagas posts con la única intención de provocar, molestar o arruinar conversaciones.'
+                        ],
+                        [
+                            'title' => 'Respeta la temática de la publicación',
+                            'description' => 'Mantén tus posts relevantes y coherentes. No hagas posts completamente fuera de lugar o random sin contexto.'
+                        ],
+                        [
+                            'title' => 'No evasión de bans',
+                            'description' => 'Si recibes un ban, no intentes evadirlo usando proxies, VPNs, o cambiando de IP. Espera a que expire o contacta al administrador.'
+                        ]
+                    ];
+
+                    // Mostrar las reglas
+                    foreach ($general_rules as $rule): ?>
+                        <div>
+                            <h4><?php echo htmlspecialchars($rule['title']); ?></h4>
+                            <span><?php echo htmlspecialchars($rule['description']); ?></span>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
+            </article>
+
+            <!-- FORMATOS DE TEXTO -->
+            <article>
                 <div class="rules-header">
                     <span class="rules-title">Publicaciones</span>
                 </div>
@@ -85,30 +103,75 @@ require_once 'functions.php';
                         <h4>Formatos de texto</h4>
                         <span>Me complace anunciar que agregamos nuevos formatos de texto para hacer que las publicaciones y respuestas se vean mucho mejor.</span>
                         <br><br>
-                        <div>• ¿Cómo escribir en <b>negrita</b>?: **tu texto aquí**</div>
-                        <div>• ¿Cómo <u>subrayar</u>?: _tu texto aquí_</div>
-                        <div>• ¿Cómo escribir en <em>cursiva</em>?: *tu texto aquí*</div>
-                        <div>• ¿Cómo escribir en <s>tachado</s>?: ~tu texto aquí~</div>
-                        <div>• ¿Cómo escribir <span class="greentext">&gt;texto verde</span>?: Escribe ">" (sin las comillas) delante del texto. El texto verde sirve para citar, ironizar o abreviar una historia, no lo uses sólo "para que quede más bonito en verde".</div>
-                        <div>• ¿Cómo escribir <span class="pinktext">&lt;texto rosa</span>?: Escribe "<" (sin las comillas) delante del texto. El texto rosa sirve para enfatizar algo, no lo uses sólo "para que quede más bonito en rosa".</div>
+
+                        <?php 
+                        // Array de formatos de texto
+                        $text_formats = [
+                            [
+                                'name' => 'negrita',
+                                'syntax' => '**tu texto aquí**',
+                                'example' => '<b>negrita</b>'
+                            ],
+                            [
+                                'name' => 'subrayar',
+                                'syntax' => '_tu texto aquí_',
+                                'example' => '<u>subrayar</u>'
+                            ],
+                            [
+                                'name' => 'cursiva',
+                                'syntax' => '*tu texto aquí*',
+                                'example' => '<em>cursiva</em>'
+                            ],
+                            [
+                                'name' => 'tachado',
+                                'syntax' => '~tu texto aquí~',
+                                'example' => '<s>tachado</s>'
+                            ],
+                            [
+                                'name' => 'texto verde',
+                                'syntax' => '"> (sin las comillas) delante del texto',
+                                'example' => '<span class="greentext">&gt;texto verde</span>',
+                                'note' => 'El texto verde sirve para citar, ironizar o abreviar una historia, no lo uses sólo "para que quede más bonito en verde".'
+                            ],
+                            [
+                                'name' => 'texto rosa',
+                                'syntax' => '"< (sin las comillas) delante del texto',
+                                'example' => '<span class="pinktext">&lt;texto rosa</span>',
+                                'note' => 'El texto rosa sirve para enfatizar algo, no lo uses sólo "para que quede más bonito en rosa".'
+                            ]
+                        ];
+
+                        // Mostrar los formatos
+                        foreach ($text_formats as $format): ?>
+                            <div>
+                                • ¿Cómo escribir en <?php echo $format['example']; ?>?: <?php echo htmlspecialchars($format['syntax']); ?>
+                                <?php if (isset($format['note'])): ?>
+                                    <?php echo htmlspecialchars($format['note']); ?>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
+                </div>
             </article>
 
+            <!-- ADVERTENCIA -->
             <article class="danger">
                 <div class="rules-header">
                     <span class="rules-title">Advertencia</span>
                 </div>
                 <div class="rules-message">
-                    El incumplimiento de estas reglas puede resultar en la eliminación de posts, advertencias, o baneos temporales/permanentes. Los administradores se reservan el derecho de modificar estas reglas en cualquier momento para mantener un ambiente seguro y respetuoso.
+                    El incumplimiento de estas reglas puede resultar en la eliminación de posts, 
+                    advertencias, o baneos temporales/permanentes. Los administradores se reservan 
+                    el derecho de modificar estas reglas en cualquier momento para mantener un 
+                    ambiente seguro y respetuoso.
                 </div>
             </article>
 
         </section>
-
     </main>
-
+    <!-- FOOTER -->
     <footer>
-        <p>&copy; 2025 SimpleChan - Imageboard Simple y Anónimo</p>
+        <p>&copy; <?php echo date('Y'); ?> SimpleChan - Imageboard Simple y Anónimo</p>
     </footer>
 
 </body>
