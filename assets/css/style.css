@@ -53,18 +53,9 @@ header h1 {
     margin-bottom: 5px;
 }
 
-header nav {
-    margin-top: 10px;
-}
-
-header nav a {
-    text-decoration: none;
-    margin-right: 15px;
-    font-weight: bold;
-}
-
-header nav a:hover {
-    text-decoration: underline;
+header .banner {
+    display: inline-flex;
+    border: 1px solid #800;
 }
 
 nav ul {
@@ -613,4 +604,85 @@ input::placeholder, textarea::placeholder {
 .admin-name {
     color: red;
     font-weight: bold;
+}
+
+/* Estilos de paginación */
+.pagination {
+    text-align: center;
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f7e5e5;
+    border: 1px solid #ddd;
+}
+
+.pagination-info {
+    margin-bottom: 10px;
+}
+
+.pagination-info p {
+    color: #800;
+    font-size: 13px;
+    margin: 0;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 2px;
+    text-decoration: none;
+    color: #800;
+    background-color: #fff;
+    border: 1px solid #800;
+    border-radius: 3px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover {
+    background-color: #800;
+    color: #fff;
+    text-decoration: none;
+}
+
+.pagination-btn.current {
+    background-color: #800;
+    color: #fff;
+    font-weight: bold;
+    cursor: default;
+}
+
+.pagination-btn.first,
+.pagination-btn.last {
+    font-weight: bold;
+}
+
+.pagination-btn.prev,
+.pagination-btn.next {
+    font-weight: bold;
+}
+
+/* Responsive para paginación */
+@media (max-width: 600px) {
+    .pagination-controls {
+        gap: 3px;
+    }
+    
+    .pagination-btn {
+        padding: 6px 8px;
+        font-size: 11px;
+        margin: 1px;
+    }
+    
+    .pagination-btn.first,
+    .pagination-btn.last {
+        display: none; /* Ocultar en móviles para ahorrar espacio */
+    }
 }

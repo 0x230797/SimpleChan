@@ -34,6 +34,21 @@ if ($board_name) {
     die('Error: No se especificó un tablón válido.');
 }
 
+// Configuración de paginación
+$posts_per_page = 10; // Número de posts por página
+$current_page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$offset = ($current_page - 1) * $posts_per_page;
+
+// Obtener el total de posts para calcular las páginas
+$total_posts = count_posts_by_board($board_id);
+$total_pages = ceil($total_posts / $posts_per_page);
+
+// Asegurar que la página actual no exceda el total de páginas
+if ($current_page > $total_pages && $total_pages > 0) {
+    $current_page = $total_pages;
+    $offset = ($current_page - 1) * $posts_per_page;
+}
+
 // Procesar envío de post y reporte de usuario
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_report']) && isset($_POST['report_post_id'])) {
     $post_id = (int)$_POST['report_post_id'];
@@ -43,7 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_report']) && i
     if ($post_id > 0 && !empty($reason)) {
         if (create_report($post_id, $reason, $details, $reporter_ip)) {
             $report_success = true;
-            header('Location: ' . $_SERVER['PHP_SELF'] . '?report_success=1');
+            $redirect_url = $_SERVER['PHP_SELF'] . '?board=' . $board['short_id'] . '&report_success=1';
+            if ($current_page > 1) {
+                $redirect_url .= '&page=' . $current_page;
+            }
+            header('Location: ' . $redirect_url);
             exit;
         } else {
             $error = 'Error al enviar el reporte.';
@@ -82,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
 
         if (!isset($error)) {
             if (create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id, $board_id)) {
-                // Redirigir para evitar reenvío
+                // Redirigir a la primera página después de crear un post para verlo
                 header('Location: ' . $_SERVER['PHP_SELF'] . '?board=' . $board['short_id'] . '&post_success=1');
                 exit;
             } else {
@@ -92,8 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
     }
 }
 
-// Obtener posts del tablón
-$posts = get_posts_by_board($board_id);
+// Obtener posts del tablón con paginación
+$posts = get_posts_by_board($board_id, $posts_per_page, $offset);
 
 $all_boards = get_all_boards();
 $boards_by_category = [];
@@ -104,6 +123,11 @@ foreach ($all_boards as $nav_board) {
     }
     $boards_by_category[$category][] = $nav_board;
 }
+
+// Obtener un banner aleatorio de la carpeta banners
+$banner_dir = 'assets/banners/';
+$banners = array_diff(scandir($banner_dir), array('..', '.'));
+$random_banner = $banners ? $banner_dir . $banners[array_rand($banners)] : null;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -136,6 +160,11 @@ foreach ($all_boards as $nav_board) {
     <header>
         <h1>/<?php echo htmlspecialchars($board['short_id']); ?>/ - <?php echo htmlspecialchars($board['name']); ?></h1>
         <p><?php echo htmlspecialchars($board['description']); ?></p>
+        <div class="banner">
+            <?php if ($random_banner): ?>
+                <img src="<?php echo htmlspecialchars($random_banner); ?>" alt="Banner">
+            <?php endif; ?>
+        </div>
     </header>
 
     <main>
@@ -143,6 +172,11 @@ foreach ($all_boards as $nav_board) {
         <!-- Mostrar mensaje de éxito si el reporte fue enviado -->
         <?php if (isset($_GET['report_success']) && $_GET['report_success'] == 1): ?>
             <div class="success">¡Gracias por reportar! El reporte ha sido enviado al administrador.</div>
+        <?php endif; ?>
+
+        <!-- Mostrar mensaje de éxito si el post fue creado -->
+        <?php if (isset($_GET['post_success']) && $_GET['post_success'] == 1): ?>
+            <div class="success">¡Post creado exitosamente!</div>
         <?php endif; ?>
 
         <!-- Botón para mostrar formulario -->
@@ -211,7 +245,7 @@ foreach ($all_boards as $nav_board) {
 
         <!-- Lista de posts -->
         <section class="posts">
-            <h2>Publicaciones</h2>
+            <h2>Publicaciones <?php echo ($total_pages > 1) ? "(Página $current_page de $total_pages)" : ""; ?></h2>
             <?php if (empty($posts)): ?>
                 <p>No hay posts aún. ¡Sé el primero en publicar!</p>
             <?php else: ?>
@@ -237,10 +271,14 @@ foreach ($all_boards as $nav_board) {
                                 <span class="post-number">
                                     <a href="reply.php?post_id=<?php echo $post['id']; ?>&ref=<?php echo $post['id']; ?>">No. <?php echo $post['id']; ?></a>
                                 </span>
-                                [<a href="reply.php?post_id=<?php echo $post['id']; ?>" class="btn-reply">Responder</a>]
+                                <?php if ($post['is_locked']): ?>
+                                    [<a href="#" class="btn-reply" onclick="alert('No puedes responder a una publicación bloqueada'); window.location.reload(); return false;">Responder</a>]
+                                <?php else: ?>
+                                    [<a href="reply.php?post_id=<?php echo $post['id']; ?>" class="btn-reply">Responder</a>]
+                                <?php endif; ?>
                                 <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
                                     [<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]
-                                    <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position: absolute;z-index: 10;background: #f7e5e5;border: 1px solid rgb(136 0 0);padding: 10px;min-width: 150px;">
+                                    <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position:fixed;width:1px;z-index:10;background:#f7e5e5;border:1px solid rgb(136 0 0);padding:10px;min-width:150px;">
                                         <form method="POST" action="index.php" style="margin:0;">
                                             <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
                                             <label style="display:block;margin-bottom:5px;">Motivo:</label>
@@ -334,6 +372,40 @@ foreach ($all_boards as $nav_board) {
                 <?php endforeach; ?>
             <?php endif; ?>
         </section>
+
+        <!-- Paginación -->
+        <?php if ($total_pages > 1): ?>
+            <section class="pagination">
+                <div class="pagination-info">
+                    <p>Página <?php echo $current_page; ?> de <?php echo $total_pages; ?> (<?php echo $total_posts; ?> posts totales)</p>
+                </div>
+                <div class="pagination-controls">
+                    <?php if ($current_page > 1): ?>
+                        <a href="?board=<?php echo htmlspecialchars($board['short_id']); ?>&page=1" class="pagination-btn first">« Primera</a>
+                        <a href="?board=<?php echo htmlspecialchars($board['short_id']); ?>&page=<?php echo $current_page - 1; ?>" class="pagination-btn prev">‹ Anterior</a>
+                    <?php endif; ?>
+
+                    <?php
+                    // Mostrar números de página
+                    $start_page = max(1, $current_page - 2);
+                    $end_page = min($total_pages, $current_page + 2);
+                    
+                    for ($i = $start_page; $i <= $end_page; $i++):
+                    ?>
+                        <?php if ($i == $current_page): ?>
+                            <span class="pagination-btn current"><?php echo $i; ?></span>
+                        <?php else: ?>
+                            <a href="?board=<?php echo htmlspecialchars($board['short_id']); ?>&page=<?php echo $i; ?>" class="pagination-btn"><?php echo $i; ?></a>
+                        <?php endif; ?>
+                    <?php endfor; ?>
+
+                    <?php if ($current_page < $total_pages): ?>
+                        <a href="?board=<?php echo htmlspecialchars($board['short_id']); ?>&page=<?php echo $current_page + 1; ?>" class="pagination-btn next">Siguiente ›</a>
+                        <a href="?board=<?php echo htmlspecialchars($board['short_id']); ?>&page=<?php echo $total_pages; ?>" class="pagination-btn last">Última »</a>
+                    <?php endif; ?>
+                </div>
+            </section>
+        <?php endif; ?>
     </main>
 
     <footer>

@@ -38,11 +38,19 @@ function get_board_by_id($id) {
 }
 
 // Función para obtener los posts de un tablón específico
-function get_posts_by_board($board_id, $limit = 50) {
+function get_posts_by_board($board_id, $limit = 50, $offset = 0) {
     global $pdo;
-    $stmt = $pdo->prepare("SELECT * FROM posts WHERE board_id = ? AND is_deleted = 0 ORDER BY created_at DESC LIMIT " . (int)$limit);
+    $stmt = $pdo->prepare("SELECT * FROM posts WHERE board_id = ? AND is_deleted = 0 ORDER BY created_at DESC LIMIT " . (int)$limit . " OFFSET " . (int)$offset);
     $stmt->execute([$board_id]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Función para contar el total de posts de un tablón
+function count_posts_by_board($board_id) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM posts WHERE board_id = ? AND is_deleted = 0");
+    $stmt->execute([$board_id]);
+    return $stmt->fetchColumn();
 }
 
 // Función para obtener todos los tablones disponibles

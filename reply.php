@@ -77,6 +77,10 @@ foreach ($all_boards as $board) {
     }
     $boards_by_category[$category][] = $board;
 }
+// Obtener un banner aleatorio de la carpeta banners
+$banner_dir = 'assets/banners/';
+$banners = array_diff(scandir($banner_dir), array('..', '.'));
+$random_banner = $banners ? $banner_dir . $banners[array_rand($banners)] : null;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -91,10 +95,10 @@ foreach ($all_boards as $board) {
     <nav>
         <ul>
             [<li>
-                <a href="index.php">Inicio</a>
+                <a href="index.php">Inicio</a>/
                 <a href="reglas.php">Reglas</a>
                 <?php if (is_admin()): ?>
-                <a href="admin.php">Administración</a>
+                /<a href="admin.php">Administración</a>
                 <?php endif; ?>
             </li>]
             <?php foreach ($boards_by_category as $category => $boards): ?>
@@ -109,6 +113,11 @@ foreach ($all_boards as $board) {
     <header>
         <h1>/<?php echo htmlspecialchars($board['short_id']); ?>/ - <?php echo htmlspecialchars($board['name']); ?> - Post <?php echo $post['id']; ?></h1>
         <p><?php echo htmlspecialchars($board['description']); ?></p>
+        <div class="banner">
+            <?php if ($random_banner): ?>
+                <img src="<?php echo htmlspecialchars($random_banner); ?>" alt="Banner">
+            <?php endif; ?>
+        </div>
     </header>
 
     <main>
@@ -192,7 +201,7 @@ foreach ($all_boards as $board) {
                     [<a href="reply.php?post_id=<?php echo $post['id']; ?>" class="btn-reply">Responder</a>]
                     <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
                         [<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]
-                        <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position: absolute;z-index: 10;background: #f7e5e5;border: 1px solid rgb(136 0 0);padding: 10px;min-width: 150px;">
+                        <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position:fixed;width:1px;z-index:10;background:#f7e5e5;border:1px solid rgb(136 0 0);padding:10px;min-width:150px;">
                             <form method="POST" action="index.php" style="margin:0;">
                                 <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
                                 <label style="display:block;margin-bottom:5px;">Motivo:</label>
