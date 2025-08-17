@@ -13,7 +13,7 @@ class ReplyView {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Publicación <?php echo $post['id']; ?> /<?php echo htmlspecialchars($view_data['board']['short_id']); ?>/ <?php echo htmlspecialchars($view_data['board']['name']); ?> - SimpleChan</title>
+            <title><?php echo htmlspecialchars($post['subject']); ?> - /<?php echo htmlspecialchars($view_data['board']['short_id']); ?>/ <?php echo htmlspecialchars($view_data['board']['name']); ?> - SimpleChan</title>
             <link rel="stylesheet" href="assets/css/style.css">
             <link rel="stylesheet" href="assets/css/themes.css">
             <link id="site-favicon" rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
@@ -77,7 +77,8 @@ class ReplyView {
     private function renderHeader($board, $post, $random_banner) {
         ?>
         <header>
-            <h1>/<?php echo htmlspecialchars($board['short_id']); ?>/ - <?php echo htmlspecialchars($board['name']); ?> - Post <?php echo $post['id']; ?></h1>
+            <h1><?php echo htmlspecialchars($post['subject']); ?></h1>
+            <h1>/<?php echo htmlspecialchars($board['short_id']); ?>/ - <?php echo htmlspecialchars($board['name']); ?></h1>
             <p><?php echo htmlspecialchars($board['description']); ?></p>
             <div class="banner">
                 <?php if ($random_banner): ?>
@@ -202,13 +203,32 @@ class ReplyView {
         <section class="reply-section">
             <h2>Publicación</h2>
             <article class="post" id="post-<?php echo $post['id']; ?>">
-                <?php $this->renderPostHeader($post, true); ?>
-                <?php $this->renderPostImage($post); ?>
+                <?php 
+                $this->renderPostFileInfo($post);
+                $this->renderPostImage($post);
+                $this->renderPostHeader($post, true);
+                ?>
                 <div class="post-message">
                     <?php echo parse_references($post['message'], $post['name'] === 'Administrador'); ?>
                 </div>
             </article>
         </section>
+        <?php
+    }
+
+    private function renderPostFileInfo(array $post): void 
+    {
+        if (empty($post['image_filename'])) {
+            return;
+        }
+        ?>
+        <div class="post-header-file">
+            <b>Archivo:</b> <a href="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" target="_blank" 
+                     title="<?php echo UPLOAD_DIR . $post['image_filename']; ?>">
+                <?php echo htmlspecialchars($post['image_filename']); ?>
+            </a> 
+            (<?php echo format_file_size($post['image_size']) . ', ' . $post['image_dimensions']; ?>)
+        </div>
         <?php
     }
 
@@ -221,8 +241,11 @@ class ReplyView {
                 <div class="replies no-b">
                     <?php foreach ($replies as $reply): ?>
                         <article class="reply" id="post-<?php echo $reply['id']; ?>">
-                            <?php $this->renderPostHeader($reply, false, $post_id); ?>
-                            <?php $this->renderPostImage($reply); ?>
+                            <?php
+                            $this->renderPostFileInfo($reply);
+                            $this->renderPostImage($reply);
+                            $this->renderPostHeader($reply, false, $post_id);
+                            ?>
                             <div class="post-message">
                                 <?php echo parse_references($reply['message'], $reply['name'] === 'Administrador'); ?>
                             </div>
@@ -237,8 +260,10 @@ class ReplyView {
     private function renderPostHeader($post, $is_main_post = false, $post_id = null) {
         ?>
         <div class="post-header">
-            <?php $this->renderPostName($post); ?>
-            <?php $this->renderPostSubject($post); ?>
+            <?php
+            $this->renderPostSubject($post);
+            $this->renderPostName($post);
+            ?>
             <span><?php echo date('d/m/Y H:i:s', strtotime($post['created_at'])); ?></span>
             <span>
                 <a href="#post-<?php echo $post['id']; ?>" onclick="insertReference(<?php echo $post['id']; ?>); return false;">

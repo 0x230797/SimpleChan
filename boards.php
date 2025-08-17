@@ -10,26 +10,14 @@
  */
 
 session_start();
-
-// Usar manejo seguro para cargar archivos críticos
-try {
-    require_once 'config.php';
-    require_once 'functions.php';
-    safe_require('includes/RedirectHandler.php');
-    safe_require('includes/BoardController.php');
-    safe_require('includes/BoardView.php');
-} catch (Exception $e) {
-    error_log("Critical file loading error in boards.php: " . $e->getMessage());
-    redirect_to_error_page("Error al cargar componentes del tablón");
-}
+require_once 'config.php';
+require_once 'functions.php';
+require_once 'includes/RedirectHandler.php';
+require_once 'includes/BoardController.php';
+require_once 'includes/BoardView.php';
 
 // Manejar redirecciones tempranas para evitar salida previa
-try {
-    RedirectHandler::handleSuccessRedirects();
-} catch (Exception $e) {
-    error_log("Error in RedirectHandler: " . $e->getMessage());
-    redirect_to_error_page("Error en el sistema de redirecciones");
-}
+RedirectHandler::handleSuccessRedirects();
 
 try {
     // Inicializar controlador y vista

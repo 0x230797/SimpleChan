@@ -5,15 +5,8 @@
  */
 
 session_start();
-
-// Usar manejo seguro para cargar archivos críticos
-try {
-    require_once 'config.php';
-    require_once 'functions.php';
-} catch (Exception $e) {
-    error_log("Critical file loading error in reglas.php: " . $e->getMessage());
-    redirect_to_error_page("Error al cargar componentes del sistema");
-}
+require_once 'config.php';
+require_once 'functions.php';
 ?>
 
 <!DOCTYPE html>

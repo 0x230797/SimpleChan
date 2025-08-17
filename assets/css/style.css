@@ -25,6 +25,8 @@
     /* Borders */
     --border-color: #800;
     --border-style: 1px solid var(--border-color);
+    --border-color-boards: #800;
+    --border-style-boards: 1px solid var(--border-color-boards);
     
     /* Text colors */
     --text-color: #800;
@@ -189,7 +191,6 @@ main {
 .admin-login,
 .reply-form,
 .ban-form {
-    width: var(--max-width);
     background-color: var(--form-bg);
     border: var(--border-style);
     padding: var(--spacing-lg);
@@ -256,7 +257,7 @@ textarea::placeholder {
    BOTONES
    ================================ */
 button {
-    padding: 8px var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-md);
     background-color: var(--button-bg);
     border: var(--border-style);
     cursor: pointer;
@@ -482,6 +483,23 @@ article,
 /* ================================
    TEXTO ESPECIAL
    ================================ */
+
+s, .strikethrough {
+    text-decoration: line-through;
+}
+
+b, strong {
+    font-weight: bold;
+}
+
+em, i {
+    font-style: italic;
+}
+
+u {
+    text-decoration: underline;
+}
+
 .spoiler {
     background: var(--spoiler-bg);
     color: transparent;
@@ -512,7 +530,7 @@ article,
 #popular-threads,
 #site-stats,
 #catalog-threads {
-    border: var(--border-style);
+    border: var(--border-style-boards);
     padding-bottom: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
 }

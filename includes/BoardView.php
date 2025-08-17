@@ -360,7 +360,7 @@ class BoardView
         }
         ?>
         <div class="post-header-file">
-            Archivo: <a href="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" target="_blank" 
+            <b>Archivo:</b> <a href="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" target="_blank" 
                      title="<?php echo UPLOAD_DIR . $post['image_filename']; ?>">
                 <?php echo htmlspecialchars($post['image_filename']); ?>
             </a> 
@@ -572,25 +572,32 @@ class BoardView
                     <div class="post-header">
                         <?php 
                         $this->renderPostFileInfo($reply);
-                        $this->renderPostName($reply);
-                        $this->renderPostDate($reply);
+                        $this->renderPostImage($reply);
                         ?>
-                        <span>
-                            <a href="reply.php?post_id=<?php echo $reply['parent_id'] ?: $reply['id']; ?>&ref=<?php echo $reply['id']; ?>">
-                                No. <?php echo $reply['id']; ?>
-                            </a>
-                        </span>
-                        <?php $this->renderReportMenu($reply); ?>
-                        <?php if (is_admin()): ?>
-                            <form method="POST" action="admin_actions.php" style="display:inline;">
-                                <input type="hidden" name="post_id" value="<?php echo $reply['id']; ?>">
-                                <input type="hidden" name="return_url" value="<?php echo $_SERVER['REQUEST_URI']; ?>">
-                                [<button type="submit" name="delete_post" class="btn-delete" onclick="return confirm('¿Estás seguro?')">Eliminar</button>]
-                            </form>
-                        <?php endif; ?>
+                        <div>
+                            <?php 
+                            $this->renderPostName($reply);
+                            $this->renderPostDate($reply);
+                            ?>
+                            <span>
+                                <a href="reply.php?post_id=<?php echo $reply['parent_id'] ?: $reply['id']; ?>&ref=<?php echo $reply['id']; ?>">
+                                    No. <?php echo $reply['id']; ?>
+                                </a>
+                            </span>
+                            <span>
+                                [<a href="reply.php?post_id=<?php echo $reply['parent_id'] ?: $reply['id']; ?>&ref=<?php echo $reply['id']; ?>">Responder</a>]
+                            </span>
+                            <?php $this->renderReportMenu($reply); ?>
+                            <?php if (is_admin()): ?>
+                                <form method="POST" action="admin_actions.php" style="display:inline;">
+                                    <input type="hidden" name="post_id" value="<?php echo $reply['id']; ?>">
+                                    <input type="hidden" name="return_url" value="<?php echo $_SERVER['REQUEST_URI']; ?>">
+                                    [<button type="submit" name="delete_post" class="btn-delete" onclick="return confirm('¿Estás seguro?')">Eliminar</button>]
+                                </form>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <?php 
-                    $this->renderPostImage($reply);
                     $this->renderPostMessage($reply);
                     ?>
                 </article>

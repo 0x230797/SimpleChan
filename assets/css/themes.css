@@ -17,6 +17,8 @@
     /* Borders */
     --border-color: #34345c;
     --border-style: 1px solid var(--border-color);
+    --border-color-boards: #34345c;
+    --border-style-boards: 1px solid var(--border-color-boards);
     
     /* Text colors */
     --text-color: #34345c;
@@ -46,20 +48,22 @@
     --secondary-color: #78526a;
     
     /* Backgrounds */
-    --body-bg: #eef2ff;
+    --body-bg: #f7f7f8;
     --body-bg-image: #f7f7f8;
     --content-bg: #fff;
-    --form-bg: #d1d5ee;
-    --reply-bg: #f7f7f7;
-    --input-bg: #fff;
-    --file-bg: #bfc4df;
-    --button-bg: #bfc4df;
-    --button-hover-bg: #989fc4;
+    --form-bg: #fbfbfb;
+    --reply-bg: #fbfbfb;
+    --input-bg: #fbfbfb;
+    --file-bg: #fbfbfb;
+    --button-bg: #d41564;
+    --button-hover-bg: #000;
     --boxbar-bg: #FCEFF3;
     
     /* Borders */
     --border-color: #ccc;
     --border-style: 1px solid var(--border-color);
+    --border-color-boards: #ffa6c5;
+    --border-style-boards: 1px solid var(--border-color-boards);
     
     /* Text colors */
     --text-color: #34345c;
@@ -92,6 +96,8 @@
     /* Borders */
     --border-color: #5F89AC;
     --border-style: 1px solid var(--border-color);
+    --border-color-boards: #5F89AC;
+    --border-style-boards: 1px solid var(--border-color-boards);
     
     /* Text colors */
     --text-color: #c5c8c6;

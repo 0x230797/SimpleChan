@@ -1,193 +1,481 @@
-// Función para cambiar el criterio de ordenamiento en el catálogo
-function changeBy(orderBy) {
-    console.log('changeBy ejecutado con valor:', orderBy);
-    const urlParams = new URLSearchParams(window.location.search);
-    console.log('URL actual:', window.location.search);
-    
-    // Preservar el parámetro board si existe
-    const currentBoard = urlParams.get('board');
-    console.log('Board actual:', currentBoard);
-    
-    urlParams.set('order_by', orderBy); // Establecer el nuevo criterio de ordenamiento
-    
-    // Asegurar que el parámetro board se mantenga
-    if (currentBoard) {
-        urlParams.set('board', currentBoard);
-    }
-    
-    console.log('Nuevos parámetros:', urlParams.toString());
-    window.location.search = urlParams.toString(); // Redirigir con los nuevos parámetros
-}
+/**
+ * SimpleChan - Client-side JavaScript
+ * Funcionalidades principales del foro
+ */
 
-// Función mejorada para mostrar/ocultar formularios
-function toggleCreateForm(type = 'post') {
-    const formPost = document.getElementById('create-post');
-    const buttonPost = document.getElementById('toggle-post');
-    const formReply = document.getElementById('create-reply');
-    const buttonReply = document.getElementById('toggle-reply');
-    
-    if (type === 'post') {
-        if (formPost && buttonPost) {
-            toggleSingleForm(formPost, buttonPost, 'Crear publicación', 'Cancelar', 'btn-cancel');
-        }
-        // Ocultar el formulario de respuesta si está visible y existe
-        if (formReply && buttonReply) {
-            hideSingleForm(formReply, buttonReply, 'Crear Respuesta', 'btn-cancel');
-        }
-    } else if (type === 'reply') {
-        if (formReply && buttonReply) {
-            toggleSingleForm(formReply, buttonReply, 'Crear Respuesta', 'Cancelar', 'btn-cancel');
-        }
-        // Ocultar el formulario de post si está visible y existe
-        if (formPost && buttonPost) {
-            hideSingleForm(formPost, buttonPost, 'Crear publicación', 'btn-cancel');
-        }
-    }
-}
-
-// Función auxiliar para alternar un formulario específico
-function toggleSingleForm(form, button, showText, hideText, cancelClass) {
-    if (!form || !button) return;
-    
-    const isHidden = form.style.display === 'none' || form.style.display === '';
-    
-    if (isHidden) {
-        showSingleForm(form, button, hideText, cancelClass);
-    } else {
-        hideSingleForm(form, button, showText, cancelClass);
-    }
-}
-
-// Función auxiliar para mostrar un formulario
-function showSingleForm(form, button, hideText, cancelClass) {
-    if (!form || !button) return;
-    
-    form.style.display = 'block';
-    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    button.textContent = hideText;
-    button.classList.add(cancelClass);
-    
-    // Enfocar en el primer campo de entrada disponible
-    setTimeout(() => {
-        const nameInput = form.querySelector('input[name="name"]:not([readonly])') || 
-                         form.querySelector('input[name="name"]') || 
-                         form.querySelector('textarea[name="message"]');
-        if (nameInput) nameInput.focus();
-    }, 300);
-}
-
-// Función auxiliar para ocultar un formulario
-function hideSingleForm(form, button, showText, cancelClass) {
-    if (!form || !button) return;
-    
-    form.style.display = 'none';
-    button.textContent = showText;
-    button.classList.remove(cancelClass);
-    
-    // Limpiar formulario al ocultar
-    const formElement = form.querySelector('form');
-    if (formElement) {
-        formElement.reset();
+/**
+ * Gestión de URL y parámetros
+ */
+const URLManager = {
+    /**
+     * Cambia el criterio de ordenamiento en el catálogo
+     * @param {string} orderBy - Criterio de ordenamiento
+     */
+    changeOrderBy(orderBy) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentBoard = urlParams.get('board');
         
-        // Actualizar estilos de los campos de nombre si es necesario
-        const nameInputs = formElement.querySelectorAll('input[name="name"]:not([readonly])');
-        nameInputs.forEach(input => {
-            if (input.value.trim() === '') {
-                input.classList.add('anonymous-style');
-            }
-        });
-    }
-}
+        urlParams.set('order_by', orderBy);
+        
+        if (currentBoard) {
+            urlParams.set('board', currentBoard);
+        }
+        
+        window.location.search = urlParams.toString();
+    },
 
-// Funciones específicas que pueden ser llamadas desde los botones
-function toggleCreatePost() {
-    toggleCreateForm('post');
-}
-
-function toggleCreateReply() {
-    toggleCreateForm('reply');
-}
-
-// Función para alternar el tamaño de las imágenes
-function toggleImageSize(img) {
-    img.classList.toggle('fullsize');
-    var container = img.closest('.post-image');
-    if (container) {
-        container.classList.toggle('fullsize');
-        // Agregar clase al contenedor del post para asegurar el ancho completo
-        var post = img.closest('.post');
+    /**
+     * Scroll suave a un post específico
+     * @param {string|number} postId - ID del post
+     */
+    scrollToPost(postId) {
+        const post = document.getElementById('post-' + postId);
         if (post) {
-            post.classList.toggle('fullsize');
+            post.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            post.style.backgroundColor = '#fff3cd';
+            setTimeout(() => {
+                post.style.backgroundColor = '';
+            }, 2000);
+        }
+    },
+
+    /**
+     * Inserta referencia automática al cargar la página
+     */
+    handleAutoReference() {
+        const params = new URLSearchParams(window.location.search);
+        const ref = params.get('ref');
+        if (ref) {
+            const textarea = document.querySelector('textarea[name="message"]');
+            if (textarea) {
+                textarea.value = '>>' + ref + '\n';
+                textarea.focus();
+            }
         }
     }
+};
+
+// Función global para compatibilidad
+function changeBy(orderBy) {
+    URLManager.changeOrderBy(orderBy);
 }
 
-// Función para mostrar/ocultar formulario de respuesta
-function toggleReplyForm(postId) {
-    const replyForm = document.getElementById('reply-form-' + postId);
-    if (replyForm.style.display === 'none') {
-        replyForm.style.display = 'block';
-        replyForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+/**
+ * Gestión de formularios
+ */
+const FormManager = {
+    /**
+     * Muestra/oculta formularios de creación
+     * @param {string} type - Tipo de formulario ('post' o 'reply')
+     */
+    toggleCreateForm(type = 'post') {
+        const formPost = document.getElementById('create-post');
+        const buttonPost = document.getElementById('toggle-post');
+        const formReply = document.getElementById('create-reply');
+        const buttonReply = document.getElementById('toggle-reply');
         
-        // Enfocar en el primer campo de texto (nombre)
+        if (type === 'post') {
+            if (formPost && buttonPost) {
+                this.toggleSingleForm(formPost, buttonPost, 'Crear publicación', 'Cancelar', 'btn-cancel');
+            }
+            if (formReply && buttonReply) {
+                this.hideSingleForm(formReply, buttonReply, 'Crear Respuesta', 'btn-cancel');
+            }
+        } else if (type === 'reply') {
+            if (formReply && buttonReply) {
+                this.toggleSingleForm(formReply, buttonReply, 'Crear Respuesta', 'Cancelar', 'btn-cancel');
+            }
+            if (formPost && buttonPost) {
+                this.hideSingleForm(formPost, buttonPost, 'Crear publicación', 'btn-cancel');
+            }
+        }
+    },
+
+    /**
+     * Alterna la visibilidad de un formulario específico
+     */
+    toggleSingleForm(form, button, showText, hideText, cancelClass) {
+        if (!form || !button) return;
+        
+        const isHidden = form.style.display === 'none' || form.style.display === '';
+        
+        if (isHidden) {
+            this.showSingleForm(form, button, hideText, cancelClass);
+        } else {
+            this.hideSingleForm(form, button, showText, cancelClass);
+        }
+    },
+
+    /**
+     * Muestra un formulario
+     */
+    showSingleForm(form, button, hideText, cancelClass) {
+        if (!form || !button) return;
+        
+        form.style.display = 'block';
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        button.textContent = hideText;
+        button.classList.add(cancelClass);
+        
         setTimeout(() => {
-            const nameInput = replyForm.querySelector('input[name="name"]');
+            const nameInput = form.querySelector('input[name="name"]:not([readonly])') || 
+                             form.querySelector('input[name="name"]') || 
+                             form.querySelector('textarea[name="message"]');
             if (nameInput) nameInput.focus();
         }, 300);
-    } else {
-        replyForm.style.display = 'none';
+    },
+
+    /**
+     * Oculta un formulario
+     */
+    hideSingleForm(form, button, showText, cancelClass) {
+        if (!form || !button) return;
         
-        // Limpiar formulario al ocultar
-        const formElement = replyForm.querySelector('form');
+        form.style.display = 'none';
+        button.textContent = showText;
+        button.classList.remove(cancelClass);
+        
+        const formElement = form.querySelector('form');
         if (formElement) {
             formElement.reset();
-            // Actualizar estilos de los campos de nombre
-            const nameInputs = formElement.querySelectorAll('input[name="name"]');
+            
+            const nameInputs = formElement.querySelectorAll('input[name="name"]:not([readonly])');
             nameInputs.forEach(input => {
                 if (input.value.trim() === '') {
                     input.classList.add('anonymous-style');
                 }
             });
         }
+    },
+
+    /**
+     * Muestra/oculta formulario de respuesta a un post específico
+     * @param {string|number} postId - ID del post
+     */
+    toggleReplyForm(postId) {
+        const replyForm = document.getElementById('reply-form-' + postId);
+        if (!replyForm) return;
+
+        if (replyForm.style.display === 'none') {
+            replyForm.style.display = 'block';
+            replyForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            setTimeout(() => {
+                const nameInput = replyForm.querySelector('input[name="name"]');
+                if (nameInput) nameInput.focus();
+            }, 300);
+        } else {
+            replyForm.style.display = 'none';
+            
+            const formElement = replyForm.querySelector('form');
+            if (formElement) {
+                formElement.reset();
+                const nameInputs = formElement.querySelectorAll('input[name="name"]');
+                nameInputs.forEach(input => {
+                    if (input.value.trim() === '') {
+                        input.classList.add('anonymous-style');
+                    }
+                });
+            }
+        }
+    },
+
+    /**
+     * Valida el formulario de post
+     * @param {HTMLFormElement} form - Formulario a validar
+     * @returns {boolean} - True si es válido
+     */
+    validatePost(form) {
+        const message = form.querySelector('textarea[name="message"]').value.trim();
+        
+        if (message.length === 0) {
+            alert('El mensaje no puede estar vacío.');
+            return false;
+        }
+        
+        if (message.length > 1000) {
+            alert('El mensaje es demasiado largo. Máximo 1000 caracteres.');
+            return false;
+        }
+        
+        return true;
     }
+};
+
+// Funciones globales para compatibilidad
+function toggleCreateForm(type) {
+    FormManager.toggleCreateForm(type);
 }
 
-// Función para confirmar eliminación de posts
-function confirmDelete(postId) {
-    return confirm('¿Estás seguro de que quieres eliminar este post?');
+function toggleCreatePost() {
+    FormManager.toggleCreateForm('post');
 }
 
-// Función para confirmar baneos
-function confirmBan(ip) {
-    return confirm('¿Estás seguro de que quieres banear la IP ' + ip + '?');
+function toggleCreateReply() {
+    FormManager.toggleCreateForm('reply');
 }
 
-// Auto-refresh de la página cada 60 segundos (deshabilitado por defecto)
-// Descomenta las siguientes líneas si quieres auto-refresh
-// setInterval(() => {
-//     window.location.reload();
-// }, 60000);
+function toggleReplyForm(postId) {
+    FormManager.toggleReplyForm(postId);
+}
 
-// Función para validar formulario de post
 function validatePost(form) {
-    const message = form.querySelector('textarea[name="message"]').value.trim();
-    if (message.length === 0) {
-        alert('El mensaje no puede estar vacío.');
-        return false;
-    }
-    
-    if (message.length > 1000) {
-        alert('El mensaje es demasiado largo. Máximo 1000 caracteres.');
-        return false;
-    }
-    
-    return true;
+    return FormManager.validatePost(form);
 }
 
-// Aplicar validación a todos los formularios de post
-document.addEventListener('DOMContentLoaded', function() {
-    // Menú de reportes desplegable
-    window.toggleReportMenu = function(postId) {
+/**
+ * Gestión de imágenes e interacciones (versión mejorada)
+ */
+const MediaManager = {
+    /**
+     * Alterna el tamaño de las imágenes con animación suave
+     * @param {HTMLImageElement} img - Elemento de imagen
+     */
+    toggleImageSize(img) {
+        img.classList.toggle('fullsize');
+        
+        const container = img.closest('.post-image');
+        if (container) {
+            container.classList.toggle('fullsize');
+        }
+    },
+
+    /**
+     * Inserta referencia en el textarea activo con mejor manejo de posición
+     * @param {string|number} id - ID del post a referenciar
+     */
+    insertReference(id) {
+        const textarea = document.querySelector('textarea[name="message"]:focus') || 
+                        document.querySelector('textarea[name="message"]');
+        if (!textarea) return;
+
+        const ref = `>>${id}`;
+        const cursorPos = textarea.selectionStart;
+        const textBefore = textarea.value.substring(0, cursorPos);
+        const textAfter = textarea.value.substring(cursorPos);
+
+        // Insertar con espacio si es necesario
+        const insertText = (textBefore.endsWith(' ') || textBefore === '') ? ref : ` ${ref}`;
+        
+        textarea.value = textBefore + insertText + textAfter;
+        
+        // Posicionar cursor después de la referencia
+        const newCursorPos = cursorPos + insertText.length;
+        textarea.selectionStart = newCursorPos;
+        textarea.selectionEnd = newCursorPos;
+        textarea.focus();
+        
+        // Desplazar el textarea si es necesario
+        textarea.scrollTop = textarea.scrollHeight;
+    },
+
+    /**
+     * Inserta formato de texto con validación de permisos
+     * @param {string} type - Tipo de formato
+     * @param {HTMLElement} btn - Botón que activó la función
+     * @param {boolean} isAdmin - Si el usuario es administrador
+     */
+    insertFormat(type, btn, isAdmin = false) {
+        const form = btn?.closest('form');
+        const textarea = form?.querySelector('textarea[name="message"]:focus') || 
+                        document.querySelector('textarea[name="message"]:focus') ||
+                        form?.querySelector('textarea[name="message"]') || 
+                        document.querySelector('textarea[name="message"]');
+        
+        if (!textarea) return;
+
+        const { selectionStart: start, selectionEnd: end, value } = textarea;
+        const selectedText = value.substring(start, end) || "texto";
+        const beforeText = value.substring(0, start);
+        const afterText = value.substring(end);
+
+        // Formatos disponibles para todos los usuarios
+        const userFormats = {
+            bold: `**${selectedText}**`,
+            italic: `*${selectedText}*`,
+            strike: `~${selectedText}~`,
+            underline: `_${selectedText}_`,
+            spoiler: `[spoiler]${selectedText}[/spoiler]`
+        };
+
+        // Formatos solo para administradores
+        const adminFormats = {
+            h1: `<h1>${selectedText}</h1>`,
+            h2: `<h2>${selectedText}</h2>`,
+            color: (color) => `<span style="color:${color}">${selectedText}</span>`,
+            center: `<div style="text-align:center">${selectedText}</div>`
+        };
+
+        let formattedText = '';
+
+        if (userFormats[type]) {
+            formattedText = userFormats[type];
+        } else if (isAdmin && adminFormats[type]) {
+            if (type === 'color') {
+                // Mejor UI para selección de color
+                const colorPicker = document.createElement('input');
+                colorPicker.type = 'color';
+                colorPicker.value = '#ff0000';
+                
+                colorPicker.addEventListener('change', (e) => {
+                    formattedText = adminFormats.color(e.target.value);
+                    updateTextarea();
+                });
+                
+                colorPicker.click(); // Abre el selector de color nativo
+            } else {
+                formattedText = adminFormats[type];
+            }
+        } else {
+            console.warn(`Formato no permitido: ${type}`);
+            return;
+        }
+
+        const updateTextarea = () => {
+            textarea.value = beforeText + formattedText + afterText;
+            textarea.focus();
+            
+            // Posicionar cursor correctamente
+            if (type !== 'color') { // El color picker ya maneja su propio focus
+                const newStart = start + formattedText.indexOf(selectedText);
+                textarea.selectionStart = newStart;
+                textarea.selectionEnd = newStart + selectedText.length;
+            }
+            
+            // Disparar evento de cambio
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+
+        if (type !== 'color') {
+            updateTextarea();
+        }
+    },
+
+    /**
+     * Inicializa los event listeners para los botones de formato
+     * @param {boolean} isAdmin - Si el usuario es administrador
+     */
+    initFormatButtons(isAdmin = false) {
+        document.querySelectorAll('[data-format]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const formatType = btn.dataset.format;
+                this.insertFormat(formatType, btn, isAdmin);
+            });
+        });
+    }
+};
+
+// Funciones globales para compatibilidad
+function toggleImageSize(img) {
+    MediaManager.toggleImageSize(img);
+}
+
+function insertReference(id) {
+    MediaManager.insertReference(id);
+}
+
+function insertFormat(type, btn) {
+    // Puedes pasar si el usuario es admin desde tu template PHP
+    const isAdmin = document.body.classList.contains('admin');
+    MediaManager.insertFormat(type, btn, isAdmin);
+}
+
+// Inicialización cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    const isAdmin = document.body.classList.contains('admin');
+    MediaManager.initFormatButtons(isAdmin);
+    
+    // Mejor manejo de clics en referencias
+    document.querySelectorAll('.ref-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                // Permitir abrir en nueva pestaña con Ctrl/Cmd+click
+                return;
+            }
+            e.preventDefault();
+            const postId = link.href.split('-')[1];
+            const targetPost = document.getElementById(`post-${postId}`);
+            if (targetPost) {
+                targetPost.scrollIntoView({ behavior: 'smooth' });
+                targetPost.classList.add('highlight');
+                setTimeout(() => targetPost.classList.remove('highlight'), 2000);
+            }
+        });
+    });
+});
+
+/**
+ * Utilidades de administración y confirmaciones
+ */
+const AdminUtils = {
+    /**
+     * Confirma la eliminación de posts
+     * @param {string|number} postId - ID del post
+     * @returns {boolean} - Confirmación del usuario
+     */
+    confirmDelete(postId) {
+        return confirm('¿Estás seguro de que quieres eliminar este post?');
+    },
+
+    /**
+     * Confirma el baneo de una IP
+     * @param {string} ip - Dirección IP
+     * @returns {boolean} - Confirmación del usuario
+     */
+    confirmBan(ip) {
+        return confirm('¿Estás seguro de que quieres banear la IP ' + ip + '?');
+    },
+
+    /**
+     * Establece la IP en el campo de entrada y enfoca
+     * @param {string} ip - Dirección IP
+     */
+    setBanIp(ip) {
+        const input = document.getElementById('ip_address');
+        if (input) {
+            input.value = ip;
+            input.focus();
+            window.scrollTo(0, input.getBoundingClientRect().top + window.scrollY - 100);
+        }
+    },
+
+    /**
+     * Muestra una sección específica del panel de admin
+     * @param {string} sectionId - ID de la sección
+     */
+    showSection(sectionId) {
+        document.querySelectorAll('.admin-section').forEach(section => {
+            section.style.display = 'none';
+        });
+        
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        }
+    },
+
+    /**
+     * Alterna la visibilidad de una sección
+     * @param {string} sectionId - ID de la sección
+     */
+    toggleAdminSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        }
+    }
+};
+
+/**
+ * Gestión de reportes
+ */
+const ReportManager = {
+    /**
+     * Alterna el menú de reportes
+     * @param {string|number} postId - ID del post
+     */
+    toggleReportMenu(postId) {
         // Ocultar otros menús abiertos
         document.querySelectorAll('.report-menu').forEach(menu => {
             if (menu.id !== 'report-menu-' + postId) {
@@ -197,87 +485,153 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const menu = document.getElementById('report-menu-' + postId);
         if (menu) {
-            // Alternar la visibilidad del menú actual
-            if (menu.style.display === 'none' || menu.style.display === '') {
-                menu.style.display = 'block';
-            } else {
-                menu.style.display = 'none';
+            menu.style.display = menu.style.display === 'none' || menu.style.display === '' ? 'block' : 'none';
+        }
+    },
+
+    /**
+     * Inicializa los event listeners para reportes
+     */
+    init() {
+        document.addEventListener('click', function(e) {
+            if (!e.target.classList.contains('btn-report') && !e.target.closest('.report-menu')) {
+                document.querySelectorAll('.report-menu').forEach(menu => {
+                    menu.style.display = 'none';
+                });
             }
-        }
-    };
-    // Ocultar menú si se hace click fuera
-    document.addEventListener('click', function(e) {
-        // Si el click no es dentro del menú ni en el botón, ocultar todos los menús
-        if (!e.target.classList.contains('btn-report') && !e.target.closest('.report-menu')) {
-            document.querySelectorAll('.report-menu').forEach(menu => {
-                menu.style.display = 'none';
-            });
-        }
-    });
-    // Mostrar formulario si hay error
-    const errorDiv = document.querySelector('.error');
-    if (errorDiv) {
-        // Determinar qué tipo de formulario mostrar basado en la página actual
-        if (document.getElementById('create-post')) {
-            toggleCreateForm('post');
-        } else if (document.getElementById('create-reply')) {
-            toggleCreateForm('reply');
-        }
+        });
     }
-    
-    const postForms = document.querySelectorAll('form');
-    
-    postForms.forEach(form => {
-        if (form.querySelector('textarea[name="message"]')) {
-            form.addEventListener('submit', function(e) {
-                if (!validatePost(this)) {
-                    e.preventDefault();
-                }
-            });
-        }
-    });
-    
-    // Contador de caracteres para textarea
-    const textareas = document.querySelectorAll('textarea[name="message"]');
-    textareas.forEach(textarea => {
-        const counter = document.createElement('div');
-        counter.className = 'char-counter';
-        counter.style.fontSize = '12px';
-        counter.style.color = '#666';
-        counter.style.textAlign = 'right';
-        textarea.parentNode.appendChild(counter);
+};
+
+// Funciones globales para compatibilidad
+function confirmDelete(postId) {
+    return AdminUtils.confirmDelete(postId);
+}
+
+function confirmBan(ip) {
+    return AdminUtils.confirmBan(ip);
+}
+
+function setBanIp(ip) {
+    AdminUtils.setBanIp(ip);
+}
+
+function showSection(sectionId) {
+    AdminUtils.showSection(sectionId);
+}
+
+function toggleAdminSection(sectionId) {
+    AdminUtils.toggleAdminSection(sectionId);
+}
+
+// Auto-refresh deshabilitado por defecto
+// Para activar: setInterval(() => window.location.reload(), 60000);
+
+/**
+ * Inicialización y configuración principal
+ */
+const AppInitializer = {
+    /**
+     * Inicializa la aplicación
+     */
+    init() {
+        this.initImageCache();
+        this.initTheme();
+        this.initFormHandlers();
+        this.initCharacterCounters();
+        this.initImagePreviews();
+        this.initNameFields();
+        this.initOrderSelector();
+        this.initReports();
+        this.handleErrorDisplay();
+        this.handleAutoReference();
+    },
+
+    /**
+     * Inicializa el sistema de caché de imágenes
+     */
+    initImageCache() {
+        ImageCache.init();
         
-        function updateCounter() {
-            const remaining = 1000 - textarea.value.length;
-            counter.textContent = remaining + ' caracteres restantes';
-            
-            if (remaining < 0) {
-                counter.style.color = 'red';
-            } else if (remaining < 100) {
-                counter.style.color = 'orange';
-            } else {
-                counter.style.color = '#666';
+        setTimeout(() => {
+            ImageCache.applyCachedImages();
+        }, 1000);
+        
+        window.SimpleChanImageCache = ImageCache;
+    },
+
+    /**
+     * Inicializa el tema
+     */
+    initTheme() {
+        ThemeManager.applySavedTheme();
+    },
+
+    /**
+     * Inicializa los manejadores de formularios
+     */
+    initFormHandlers() {
+        const postForms = document.querySelectorAll('form');
+        
+        postForms.forEach(form => {
+            if (form.querySelector('textarea[name="message"]')) {
+                form.addEventListener('submit', function(e) {
+                    if (!FormManager.validatePost(this)) {
+                        e.preventDefault();
+                    }
+                });
             }
-        }
+        });
+    },
+
+    /**
+     * Inicializa los contadores de caracteres
+     */
+    initCharacterCounters() {
+        const textareas = document.querySelectorAll('textarea[name="message"]');
         
-        textarea.addEventListener('input', updateCounter);
-        updateCounter();
-    });
-    
-    // Previsualización de imágenes
-    const imageInputs = document.querySelectorAll('input[type="file"][name="image"]');
-    imageInputs.forEach(input => {
-        input.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                // Verificar tamaño
+        textareas.forEach(textarea => {
+            const counter = document.createElement('div');
+            counter.className = 'char-counter';
+            counter.style.cssText = 'font-size: 12px; color: #666; text-align: right;';
+            textarea.parentNode.appendChild(counter);
+            
+            const updateCounter = () => {
+                const remaining = 1000 - textarea.value.length;
+                counter.textContent = remaining + ' caracteres restantes';
+                
+                if (remaining < 0) {
+                    counter.style.color = 'red';
+                } else if (remaining < 100) {
+                    counter.style.color = 'orange';
+                } else {
+                    counter.style.color = '#666';
+                }
+            };
+            
+            textarea.addEventListener('input', updateCounter);
+            updateCounter();
+        });
+    },
+
+    /**
+     * Inicializa las previsualizaciones de imágenes
+     */
+    initImagePreviews() {
+        const imageInputs = document.querySelectorAll('input[type="file"][name="image"]');
+        
+        imageInputs.forEach(input => {
+            input.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Validaciones
                 if (file.size > 5 * 1024 * 1024) {
                     alert('El archivo es demasiado grande. Máximo 5MB.');
                     this.value = '';
                     return;
                 }
                 
-                // Verificar tipo
                 const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
                 if (!allowedTypes.includes(file.type)) {
                     alert('Tipo de archivo no permitido. Solo JPG, PNG, GIF y WebP.');
@@ -285,7 +639,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // Mostrar previsualización
+                // Previsualización
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     let preview = input.parentNode.querySelector('.image-preview');
@@ -296,216 +650,212 @@ document.addEventListener('DOMContentLoaded', function() {
                         input.parentNode.appendChild(preview);
                     }
                     
-                    preview.innerHTML = '<img src="' + e.target.result + '" style="max-width: 200px; max-height: 200px; border: 1px solid #ccc;">';
+                    preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; max-height: 200px; border: 1px solid #ccc;">`;
                 };
                 reader.readAsDataURL(file);
-            }
+            });
         });
-    });
-    
-    // Manejar campos de nombre para mostrar "Anónimo" automáticamente
-    const nameInputs = document.querySelectorAll('input[name="name"]');
-    nameInputs.forEach(input => {
-        // Función para actualizar el estilo visual
-        function updateNameDisplay() {
-            if (input.value.trim() === '') {
-                input.classList.add('anonymous-style');
-            } else {
-                input.classList.remove('anonymous-style');
-            }
-        }
+    },
+
+    /**
+     * Inicializa los campos de nombre
+     */
+    initNameFields() {
+        const nameInputs = document.querySelectorAll('input[name="name"]');
         
-        // Eventos para manejar el comportamiento
-        input.addEventListener('focus', function() {
-            this.classList.remove('anonymous-style');
-        });
-        
-        input.addEventListener('blur', function() {
-            updateNameDisplay();
-        });
-        
-        input.addEventListener('input', function() {
-            updateNameDisplay();
-        });
-        
-        // Aplicar estilo inicial
-        updateNameDisplay();
-        
-        // Asegurar que el placeholder sea "Anónimo"
-        input.placeholder = 'Anónimo';
-        
-        // Al enviar el formulario, si está vacío, establecer "Anónimo"
-        const form = input.closest('form');
-        if (form) {
-            form.addEventListener('submit', function() {
+        nameInputs.forEach(input => {
+            const updateNameDisplay = () => {
                 if (input.value.trim() === '') {
-                    input.value = 'Anónimo';
+                    input.classList.add('anonymous-style');
+                } else {
+                    input.classList.remove('anonymous-style');
                 }
+            };
+            
+            input.addEventListener('focus', function() {
+                this.classList.remove('anonymous-style');
+            });
+            
+            input.addEventListener('blur', updateNameDisplay);
+            input.addEventListener('input', updateNameDisplay);
+            
+            updateNameDisplay();
+            input.placeholder = 'Anónimo';
+            
+            const form = input.closest('form');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    if (input.value.trim() === '') {
+                        input.value = 'Anónimo';
+                    }
+                });
+            }
+        });
+    },
+
+    /**
+     * Inicializa el selector de ordenamiento
+     */
+    initOrderSelector() {
+        const bySelect = document.getElementById('by-select');
+        if (bySelect) {
+            bySelect.addEventListener('change', function() {
+                URLManager.changeOrderBy(this.value);
             });
         }
-    });
+    },
+
+    /**
+     * Inicializa el sistema de reportes
+     */
+    initReports() {
+        window.toggleReportMenu = function(postId) {
+            ReportManager.toggleReportMenu(postId);
+        };
+        
+        ReportManager.init();
+    },
+
+    /**
+     * Maneja la visualización de errores
+     */
+    handleErrorDisplay() {
+        const errorDiv = document.querySelector('.error');
+        if (errorDiv) {
+            if (document.getElementById('create-post')) {
+                FormManager.toggleCreateForm('post');
+            } else if (document.getElementById('create-reply')) {
+                FormManager.toggleCreateForm('reply');
+            }
+        }
+    },
+
+    /**
+     * Maneja las referencias automáticas
+     */
+    handleAutoReference() {
+        URLManager.handleAutoReference();
+    }
+};
+
+// Inicialización cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    AppInitializer.init();
 });
 
-// Función para scroll suave a un post
-function scrollToPost(postId) {
-    const post = document.getElementById('post-' + postId);
-    if (post) {
-        post.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        post.style.backgroundColor = '#fff3cd';
-        setTimeout(() => {
-            post.style.backgroundColor = '';
-        }, 2000);
-    }
-}
+/**
+ * Gestión de temas
+ */
+const ThemeManager = {
+    /**
+     * Cambia el tema y guarda la configuración
+     * @param {string} theme - Nombre del tema
+     */
+    changeTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('selectedTheme', theme);
+        this.changeThemeAssets(theme);
+    },
 
-// Funciones para el panel de admin
-function toggleAdminSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    if (section) {
-        section.style.display = section.style.display === 'none' ? 'block' : 'none';
-    }
-}
+    /**
+     * Cambia los assets según el tema
+     * @param {string} theme - Nombre del tema
+     */
+    changeThemeAssets(theme) {
+        this.changeLogo(theme);
+        this.changeFavicon(theme);
+    },
 
-// Función para insertar automáticamente >>id en el textarea al hacer click en el número de post/respuesta.
-function insertReference(id) {
-    var textarea = document.querySelector('textarea[name="message"]');
-    if (textarea) {
-        var ref = '>>' + id + '\n';
-        if (textarea.value.indexOf(ref) === -1) {
-            textarea.value += ref;
-            textarea.focus();
+    /**
+     * Cambia el logo según el tema
+     * @param {string} theme - Nombre del tema
+     */
+    changeLogo(theme) {
+        const logoImg = document.getElementById('site-logo') || 
+                       document.querySelector('header img[alt="SimpleChan"]');
+        if (!logoImg) return;
+
+        let logoPath;
+        switch(theme) {
+            case 'yotsubab':
+                logoPath = 'assets/imgs/logob.png';
+                break;
+            case 'futaba':
+                logoPath = 'assets/imgs/logo.png';
+                break;
+            case 'dark':
+                logoPath = 'assets/imgs/logod.png';
+                break;
+            default:
+                logoPath = 'assets/imgs/logo.png';
+                break;
         }
-    }
-}
 
-// Función para insertar formato en el textarea activo
-function insertFormat(type, btn) {
-    // Buscar el textarea más cercano al botón
-    let textarea;
-    if (btn) {
-        // reply.php: buscar el textarea en el mismo form
-        const form = btn.closest('form');
-        textarea = form ? form.querySelector('textarea[name="message"]') : document.querySelector('textarea[name="message"]');
-    } else {
-        // index.php: solo hay un textarea principal
-        textarea = document.getElementById('message') || document.querySelector('textarea[name="message"]');
-    }
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    let selected = textarea.value.substring(start, end);
-    let before = textarea.value.substring(0, start);
-    let after = textarea.value.substring(end);
-    let insertText = '';
-    switch(type) {
-        case 'bold':
-            insertText = `**${selected || 'texto'}**`;
-            break;
-        case 'italic':
-            insertText = `*${selected || 'texto'}*`;
-            break;
-        case 'strike':
-            insertText = `~${selected || 'texto'}~`;
-            break;
-        case 'subline':
-            insertText = `_${selected || 'texto'}_`;
-            break;
-        case 'spoiler':
-            insertText = `[spoiler]${selected || 'texto'}[/spoiler]`;
-            break;
-        case 'h1':
-            if (selected) {
-                insertText = `<h1>${selected}</h1>`;
-            } else {
-                insertText = `<h1></h1>`;
-                // Colocar el cursor entre las etiquetas
-                textarea.value = before + insertText + after;
-                textarea.focus();
-                textarea.selectionStart = textarea.selectionEnd = before.length + 4; // después de <h1>
-                return;
-            }
-            break;
-        case 'h2':
-            if (selected) {
-                insertText = `<h2>${selected}</h2>`;
-            } else {
-                insertText = `<h2></h2>`;
-                textarea.value = before + insertText + after;
-                textarea.focus();
-                textarea.selectionStart = textarea.selectionEnd = before.length + 4;
-                return;
-            }
-            break;
-        case 'color':
-            let color = prompt('Color en formato CSS (ej: red, #ff0000):', '#d00');
-            if (color) {
-                insertText = `<span style="color:${color}">${selected || 'Texto de color'}</span>`;
-            } else {
-                insertText = selected;
-            }
-            break;
-        case 'center':
-            insertText = `<div style="text-align:center">${selected || 'Texto centrado'}</div>`;
-            break;
-    }
-    textarea.value = before + insertText + after;
-    // Reposicionar el cursor
-    textarea.focus();
-    textarea.selectionStart = textarea.selectionEnd = before.length + insertText.length;
-}
-
-// Manejar referencias automáticas al cargar la página
-window.addEventListener('DOMContentLoaded', function() {
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref');
-    if (ref) {
-        var textarea = document.querySelector('textarea[name="message"]');
-        if (textarea) {
-            textarea.value = '>>' + ref + '\n';
-            textarea.focus();
+        const cachedImage = ImageCache.getCachedImage(logoPath);
+        if (cachedImage) {
+            logoImg.src = cachedImage;
+        } else {
+            const currentSrc = logoImg.src;
+            const assetsPath = currentSrc.substring(0, currentSrc.lastIndexOf('/') + 1);
+            logoImg.src = assetsPath + logoPath.split('/').pop();
         }
+    },
+
+    /**
+     * Cambia el favicon según el tema
+     * @param {string} theme - Nombre del tema
+     */
+    changeFavicon(theme) {
+        const faviconLink = document.getElementById('site-favicon') || 
+                            document.querySelector('link[rel="shortcut icon"]') || 
+                            document.querySelector('link[rel="icon"]');
+        if (!faviconLink) return;
+
+        const currentHref = faviconLink.href;
+        const assetsPath = currentHref.substring(0, currentHref.lastIndexOf('/') + 1);
+
+        switch(theme) {
+            case 'yotsubab':
+            case 'futaba':
+                faviconLink.href = assetsPath + 'faviconb.ico';
+                break;
+            case 'dark':
+                faviconLink.href = assetsPath + 'favicond.ico';
+                break;
+            default:
+                faviconLink.href = assetsPath + 'favicon.ico';
+                break;
+        }
+    },
+
+    /**
+     * Aplica el tema guardado
+     */
+    applySavedTheme() {
+        const savedTheme = localStorage.getItem('selectedTheme') || 'yotsuba';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        
+        const themeSelect = document.getElementById('theme-select');
+        if (themeSelect) {
+            themeSelect.value = savedTheme;
+        }
+
+        this.changeThemeAssets(savedTheme);
     }
-});
+};
 
-// Establece la dirección IP en el campo de entrada correspondiente y enfoca el campo.
-// Además, realiza un desplazamiento suave para que el campo sea visible en la pantalla.
-function setBanIp(ip) {
-    var input = document.getElementById('ip_address');
-     if (input) {
-        input.value = ip;
-        input.focus();
-        window.scrollTo(0, input.getBoundingClientRect().top + window.scrollY - 100);
-    }
-}
-
-function showSection(sectionId) {
-    // Ocultar todas las secciones
-    document.querySelectorAll('.admin-section').forEach(section => {
-        section.style.display = 'none';
-    });
-    // Mostrar la sección seleccionada
-    document.getElementById(sectionId).style.display = 'block';
-}
-
-// Función para cambiar el tema y guardar la configuración en localStorage
+// Función global para compatibilidad
 function changeTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('selectedTheme', theme);
-    
-    // Cambiar el logo y favicon según el tema
-    changeThemeAssets(theme);
+    ThemeManager.changeTheme(theme);
 }
 
-// Sistema de caché para imágenes
+/**
+ * Sistema de caché para imágenes
+ */
 const ImageCache = {
-    // Prefijo para las claves del localStorage
     prefix: 'simplechan_img_',
-    
-    // Versión del caché (incrementar cuando cambien las imágenes)
     version: '1.2',
     
-    // Hash de las imágenes para detectar cambios
     imageHashes: {
         'assets/imgs/logo.png': Date.now(),
         'assets/imgs/logob.png': Date.now(),
@@ -518,7 +868,6 @@ const ImageCache = {
         'assets/imgs/sticky.png': Date.now()
     },
     
-    // Lista de imágenes a cachear
     images: [
         'assets/imgs/logo.png',
         'assets/imgs/logob.png', 
@@ -531,21 +880,24 @@ const ImageCache = {
         'assets/imgs/sticky.png'
     ],
     
-    // Lista de favicons para pre-cargar (no cachear como base64)
     favicons: [
         'assets/favicon/favicon.ico',
         'assets/favicon/faviconb.ico',
         'assets/favicon/favicond.ico'
     ],
     
-    // Inicializar el sistema de caché
-    init: function() {
+    /**
+     * Inicializa el sistema de caché
+     */
+    init() {
         this.checkVersion();
         this.preloadImages();
     },
     
-    // Verificar si la versión del caché es actual
-    checkVersion: function() {
+    /**
+     * Verifica la versión del caché
+     */
+    checkVersion() {
         const storedVersion = localStorage.getItem(this.prefix + 'version');
         if (storedVersion !== this.version) {
             this.clearCache();
@@ -553,8 +905,10 @@ const ImageCache = {
         }
     },
     
-    // Limpiar caché anterior
-    clearCache: function() {
+    /**
+     * Limpia el caché anterior
+     */
+    clearCache() {
         const keys = Object.keys(localStorage);
         keys.forEach(key => {
             if (key.startsWith(this.prefix)) {
@@ -563,36 +917,40 @@ const ImageCache = {
         });
     },
     
-    // Pre-cargar todas las imágenes
-    preloadImages: function() {
+    /**
+     * Pre-carga todas las imágenes
+     */
+    preloadImages() {
         this.images.forEach(imagePath => {
             this.cacheImage(imagePath);
         });
         
-        // Pre-cargar favicons (sin cachear, solo para que estén en caché del navegador)
         this.favicons.forEach(faviconPath => {
             this.preloadFavicon(faviconPath);
         });
     },
     
-    // Pre-cargar favicon en caché del navegador
-    preloadFavicon: function(faviconPath) {
+    /**
+     * Pre-carga favicon en caché del navegador
+     */
+    preloadFavicon(faviconPath) {
         const link = document.createElement('link');
         link.rel = 'prefetch';
         link.href = faviconPath;
         document.head.appendChild(link);
     },
     
-    // Cachear una imagen específica
-    cacheImage: function(imagePath) {
+    /**
+     * Cachea una imagen específica
+     */
+    cacheImage(imagePath) {
         const cacheKey = this.prefix + imagePath.replace(/[^a-zA-Z0-9]/g, '_');
         
-        // Si ya está cacheada, no hacer nada
         if (localStorage.getItem(cacheKey)) {
             return Promise.resolve();
         }
         
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             
@@ -606,94 +964,77 @@ const ImageCache = {
                     
                     const dataURL = canvas.toDataURL('image/png', 0.8);
                     
-                    // Verificar que no exceda el límite de localStorage (aprox 5MB)
-                    if (dataURL.length < 500000) { // ~500KB por imagen para más imágenes
+                    if (dataURL.length < 500000) {
                         try {
                             localStorage.setItem(cacheKey, dataURL);
-                            console.log(`Imagen cacheada: ${imagePath} (${(dataURL.length/1024).toFixed(1)}KB)`);
                         } catch (e) {
                             if (e.name === 'QuotaExceededError') {
-                                console.warn('localStorage lleno, limpiando caché anterior...');
                                 this.clearOldestCache();
                                 try {
                                     localStorage.setItem(cacheKey, dataURL);
-                                    console.log(`Imagen cacheada tras limpieza: ${imagePath}`);
                                 } catch (e2) {
-                                    console.warn('No se pudo cachear imagen:', imagePath);
+                                    // Error silencioso
                                 }
                             }
                         }
-                    } else {
-                        console.warn(`Imagen demasiado grande para cachear: ${imagePath} (${(dataURL.length/1024).toFixed(1)}KB)`);
                     }
                     resolve();
                 } catch (error) {
-                    console.warn(`Error al cachear imagen: ${imagePath}`, error);
-                    resolve(); // No fallar si no se puede cachear
+                    resolve();
                 }
             };
             
-            img.onerror = () => {
-                console.warn(`Error al cargar imagen para cachear: ${imagePath}`);
-                resolve(); // No fallar si no se puede cargar
-            };
-            
+            img.onerror = () => resolve();
             img.src = imagePath;
         });
     },
     
-    // Obtener imagen del caché
-    getCachedImage: function(imagePath) {
+    /**
+     * Obtiene imagen del caché
+     */
+    getCachedImage(imagePath) {
         const cacheKey = this.prefix + imagePath.replace(/[^a-zA-Z0-9]/g, '_');
         return localStorage.getItem(cacheKey);
     },
     
-    // Limpiar caché más antiguo cuando localStorage se llena
-    clearOldestCache: function() {
+    /**
+     * Limpia caché más antiguo
+     */
+    clearOldestCache() {
         const keys = Object.keys(localStorage);
         const cacheKeys = keys.filter(key => key.startsWith(this.prefix) && key !== this.prefix + 'version');
         
-        // Limpiar la mitad del caché más antiguo
         const keysToRemove = cacheKeys.slice(0, Math.floor(cacheKeys.length / 2));
         keysToRemove.forEach(key => {
             localStorage.removeItem(key);
         });
-        
-        console.log(`Limpiadas ${keysToRemove.length} imágenes del caché`);
     },
     
-    // Función para usar imágenes cacheadas en elementos existentes
-    applyCachedImages: function() {
-        // Aplicar a imágenes de archivos eliminados
-        const deletedImages = document.querySelectorAll('img[src*="filedeleted"]');
-        deletedImages.forEach(img => {
-            const cachedSrc = this.getCachedImage('assets/imgs/filedeleted.png');
-            if (cachedSrc) {
-                img.src = cachedSrc;
-            }
-        });
-        
-        // Aplicar a imágenes de posts pegajosos
-        const stickyImages = document.querySelectorAll('img[src*="sticky"]');
-        stickyImages.forEach(img => {
-            const cachedSrc = this.getCachedImage('assets/imgs/sticky.png');
-            if (cachedSrc) {
-                img.src = cachedSrc;
-            }
-        });
-        
-        // Aplicar a imágenes de hilos cerrados
-        const closedImages = document.querySelectorAll('img[src*="closed"]');
-        closedImages.forEach(img => {
-            const cachedSrc = this.getCachedImage('assets/imgs/closed.png');
-            if (cachedSrc) {
-                img.src = cachedSrc;
-            }
+    /**
+     * Aplica imágenes cacheadas a elementos existentes
+     */
+    applyCachedImages() {
+        const imageSelectors = [
+            { selector: 'img[src*="filedeleted"]', path: 'assets/imgs/filedeleted.png' },
+            { selector: 'img[src*="sticky"]', path: 'assets/imgs/sticky.png' },
+            { selector: 'img[src*="closed"]', path: 'assets/imgs/closed.png' }
+        ];
+
+        imageSelectors.forEach(({ selector, path }) => {
+            const images = document.querySelectorAll(selector);
+            images.forEach(img => {
+                const cachedSrc = this.getCachedImage(path);
+                if (cachedSrc) {
+                    img.src = cachedSrc;
+                }
+            });
         });
     },
     
-    // Obtener información del caché
-    getCacheInfo: function() {
+    /**
+     * Obtiene información del caché
+     */
+    getCacheInfo() {
         let totalSize = 0;
         let imageCount = 0;
         const keys = Object.keys(localStorage);
@@ -715,47 +1056,61 @@ const ImageCache = {
         };
     },
     
-    // Limpiar caché manualmente
-    clearCacheManual: function() {
+    /**
+     * Limpia caché manualmente
+     */
+    clearCacheManual() {
         this.clearCache();
-        console.log('Caché de imágenes limpiado manualmente');
-        // Re-inicializar después de limpiar
         setTimeout(() => this.preloadImages(), 100);
     }
 };
 
-// Funciones de utilidad para desarrolladores
+/**
+ * Utilidades para desarrolladores
+ */
 window.SimpleChanUtils = {
-    // Verificar estado del caché
-    checkCache: function() {
+    /**
+     * Verifica el estado del caché
+     */
+    checkCache() {
         const info = ImageCache.getCacheInfo();
-        console.log('=== SimpleChan Image Cache Status ===');
-        console.log(`Imágenes cacheadas: ${info.imageCount}`);
-        console.log(`Tamaño total: ${info.totalSizeMB}MB`);
-        console.log(`Versión del caché: ${ImageCache.version}`);
-        return info;
+        return {
+            message: `=== SimpleChan Image Cache Status ===
+Imágenes cacheadas: ${info.imageCount}
+Tamaño total: ${info.totalSizeMB}MB
+Versión del caché: ${ImageCache.version}`,
+            ...info
+        };
     },
     
-    // Limpiar y regenerar caché
-    refreshCache: function() {
-        console.log('Regenerando caché de imágenes...');
+    /**
+     * Limpia y regenera el caché
+     */
+    refreshCache() {
         ImageCache.clearCacheManual();
+        return 'Caché regenerado';
     },
     
-    // Probar cambio de tema
-    testTheme: function(theme) {
-        console.log(`Probando tema: ${theme}`);
-        changeTheme(theme);
+    /**
+     * Prueba un tema específico
+     */
+    testTheme(theme) {
+        ThemeManager.changeTheme(theme);
+        return `Tema cambiado a: ${theme}`;
     },
     
-    // Aplicar imágenes cacheadas a nuevos elementos
-    applyCachedImages: function() {
+    /**
+     * Aplica imágenes cacheadas
+     */
+    applyCachedImages() {
         ImageCache.applyCachedImages();
-        console.log('Imágenes cacheadas aplicadas a elementos actuales');
+        return 'Imágenes cacheadas aplicadas';
     }
 };
 
-// Función global para usar imágenes cacheadas (útil para contenido dinámico)
+/**
+ * Función global para usar imágenes cacheadas
+ */
 window.useCachedImage = function(imagePath, fallbackPath) {
     const cachedImage = ImageCache.getCachedImage(imagePath);
     return cachedImage || fallbackPath || imagePath;
@@ -841,13 +1196,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar el selector de ordenamiento del catálogo
     const bySelect = document.getElementById('by-select');
     if (bySelect) {
-        console.log('Selector by-select encontrado, configurando event listener');
         bySelect.addEventListener('change', function() {
-            console.log('Event listener ejecutado con valor:', this.value);
             changeBy(this.value);
         });
-    } else {
-        console.log('Selector by-select NO encontrado');
     }
     
     // Aplicar el logo y favicon correctos según el tema guardado

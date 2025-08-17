@@ -6,24 +6,15 @@
 
 session_start();
 
-// Usar manejo seguro para cargar archivos críticos
-try {
-    require_once 'config.php';
-    require_once 'functions.php';
-} catch (Exception $e) {
-    error_log("Critical file loading error in admin_actions.php: " . $e->getMessage());
-    redirect_to_error_page("Error al cargar componentes administrativos");
-}
+require_once 'config.php';
+require_once 'functions.php';
 
 /**
  * Verificar si el usuario es administrador
  */
-$is_admin = safe_database_operation(function() {
-    return is_admin();
-}, "Error al verificar permisos de administrador");
-
-if (!$is_admin) {
-    redirect_to_error_page("Acceso denegado");
+if (!is_admin()) {
+    header('Location: index.php');
+    exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

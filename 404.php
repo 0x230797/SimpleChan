@@ -1,20 +1,10 @@
 <?php
-// Iniciar sesión para obtener mensajes de error personalizados
-session_start();
-
 // Establecer el código de respuesta HTTP 404
 http_response_code(404);
 
 // Incluir configuraciones globales si es necesario
 require_once 'config.php';
 require_once 'functions.php';
-
-// Obtener mensaje de error personalizado si existe
-$custom_error_message = null;
-if (isset($_SESSION['error_message'])) {
-    $custom_error_message = $_SESSION['error_message'];
-    unset($_SESSION['error_message']); // Limpiar el mensaje después de usarlo
-}
 
 /**
  * Clase ErrorController - Maneja la lógica de la página de error
@@ -23,14 +13,7 @@ class ErrorController {
     private $error_message;
 
     public function __construct($message = 'Página no encontrada') {
-        global $custom_error_message;
-        
-        // Usar mensaje personalizado si está disponible
-        if ($custom_error_message) {
-            $this->error_message = $custom_error_message;
-        } else {
-            $this->error_message = $message;
-        }
+        $this->error_message = $message;
     }
 
     /**
@@ -124,29 +107,11 @@ class ErrorView {
     }
 
     private function renderErrorNotice() {
-        global $custom_error_message;
         ?>
         <div class="error-notice">
             <h2>Error</h2>
             <p><b><?php echo htmlspecialchars($this->controller->getErrorMessage()); ?></b></p>
-            
-            <?php if (defined('DEBUG_MODE') && DEBUG_MODE): ?>
-                <div style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-left: 4px solid #ccc; font-family: monospace; font-size: 12px;">
-                    <strong>Información de Debug:</strong><br>
-                    Timestamp: <?php echo date('Y-m-d H:i:s'); ?><br>
-                    URL solicitada: <?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? 'N/A'); ?><br>
-                    Método: <?php echo htmlspecialchars($_SERVER['REQUEST_METHOD'] ?? 'N/A'); ?><br>
-                    User Agent: <?php echo htmlspecialchars($_SERVER['HTTP_USER_AGENT'] ?? 'N/A'); ?><br>
-                    IP: <?php echo htmlspecialchars(get_user_ip()); ?><br>
-                    Referer: <?php echo htmlspecialchars($_SERVER['HTTP_REFERER'] ?? 'N/A'); ?>
-                </div>
-            <?php endif; ?>
-            
-            <div style="margin-top: 20px;">
-                <span>[<a href="index.php">Inicio</a>]</span>
-                <span>[<a href="boards.php">Tablones</a>]</span>
-                <span>[<a href="catalog.php">Catálogo</a>]</span>
-            </div>
+            <span>[<a href="index.php">Inicio</a>]</span>
         </div>
         <?php
     }

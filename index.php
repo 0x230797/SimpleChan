@@ -1,21 +1,10 @@
 <?php
 session_start();
+require_once 'config.php';
+require_once 'functions.php';
 
-// Usar manejo seguro para cargar archivos críticos
-try {
-    require_once 'config.php';
-    require_once 'functions.php';
-} catch (Exception $e) {
-    error_log("Critical file loading error: " . $e->getMessage());
-    header('Location: 404.php');
-    exit;
-}
-
-// Verificar si el usuario está baneado usando operación segura de BD
-$ban_info = safe_database_operation(function() {
-    return is_user_banned();
-}, "Error al verificar estado de ban");
-
+// Verificar si el usuario está baneado
+$ban_info = is_user_banned();
 if ($ban_info) {
     header('Location: ban.php');
     exit;
@@ -29,60 +18,48 @@ if (isset($_GET['post_success']) && $_GET['post_success'] == '1') {
     $success_message = 'Post creado exitosamente.';
 }
 
-// Procesar envío de nuevo post con manejo de errores
+// Procesar envío de nuevo post
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
-    try {
-        $error = processNewPost();
-    } catch (Exception $e) {
-        error_log("Error processing new post: " . $e->getMessage());
-        $error = "Error interno al procesar el post";
-    }
+    $error = processNewPost();
 }
 
 function processNewPost() {
-    try {
-        // Sanitizar y validar datos de entrada usando funciones seguras
-        $name = safe_post_parameter('name', 'string', 'Anónimo');
-        $name = empty(trim($name)) ? 'Anónimo' : $name;
-        $subject = safe_post_parameter('subject', 'string', '');
-        $message = safe_post_parameter('message', 'string');
-        $parent_id = safe_post_parameter('parent_id', 'int', null);
-        $board_id = safe_post_parameter('board_id', 'int', null);
-        
-        // Validar mensaje obligatorio
-        if (empty($message)) {
-            return 'El mensaje no puede estar vacío.';
-        }
-        
-        // Procesar imagen subida
-        $image_data = processImageUpload();
-        if ($image_data['error']) {
-            return $image_data['error'];
-        }
-        
-        // Crear el post en la base de datos usando operación segura
-        $post_created = safe_database_operation(function() use ($name, $subject, $message, $image_data, $parent_id, $board_id) {
-            return create_post(
-                $name, 
-                $subject, 
-                $message, 
-                $image_data['filename'], 
-                $image_data['original_name'], 
-                $parent_id, 
-                $board_id
-            );
-        }, "Error al crear el post en la base de datos");
-        
-        if ($post_created) {
-            // Redirigir para evitar reenvío del formulario
-            header('Location: ' . $_SERVER['PHP_SELF'] . '?post_success=1');
-            exit;
-        } else {
-            return 'Error al crear el post.';
-        }
-    } catch (Exception $e) {
-        error_log("Exception in processNewPost: " . $e->getMessage());
-        return 'Error interno al procesar el post.';
+    // Sanitizar y validar datos de entrada
+    $name = clean_input($_POST['name'] ?? '');
+    $name = empty(trim($name)) ? 'Anónimo' : $name;
+    $subject = clean_input($_POST['subject'] ?? '');
+    $message = clean_input($_POST['message'] ?? '');
+    $parent_id = isset($_POST['parent_id']) ? (int)$_POST['parent_id'] : null;
+    $board_id = isset($_POST['board_id']) ? (int)$_POST['board_id'] : null;
+    
+    // Validar mensaje obligatorio
+    if (empty($message)) {
+        return 'El mensaje no puede estar vacío.';
+    }
+    
+    // Procesar imagen subida
+    $image_data = processImageUpload();
+    if ($image_data['error']) {
+        return $image_data['error'];
+    }
+    
+    // Crear el post en la base de datos
+    $post_created = create_post(
+        $name, 
+        $subject, 
+        $message, 
+        $image_data['filename'], 
+        $image_data['original_name'], 
+        $parent_id, 
+        $board_id
+    );
+    
+    if ($post_created) {
+        // Redirigir para evitar reenvío del formulario
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?post_success=1');
+        exit;
+    } else {
+        return 'Error al crear el post.';
     }
 }
 
