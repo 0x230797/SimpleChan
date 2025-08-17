@@ -321,16 +321,25 @@ function get_posts($limit = 100) {
  * @param int $offset Desplazamiento para paginación
  * @return array Lista de posts del tablón
  */
-function get_posts_by_board($board_id, $limit = 50, $offset = 0) {
+// Validar el valor de $order_column para evitar inyecciones SQL
+function get_posts_by_board($board_id, $limit = 50, $offset = 0, $order_column = 'created_at') {
     global $pdo;
-    
-    $stmt = $pdo->prepare("
-        SELECT * FROM posts 
-        WHERE board_id = ? AND is_deleted = 0 AND parent_id IS NULL 
-        ORDER BY created_at DESC
-        LIMIT " . (int)$limit . " OFFSET " . (int)$offset
-    );
-    $stmt->execute([$board_id]);
+
+    // Lista de columnas permitidas para ordenar
+    $allowed_columns = ['created_at', 'updated_at', '(SELECT COUNT(*) FROM posts WHERE parent_id = posts.id)'];
+
+    // Validar que $order_column sea una de las permitidas
+    if (!in_array($order_column, $allowed_columns)) {
+        $order_column = 'created_at'; // Valor predeterminado
+    }
+
+    $sql = "SELECT * FROM posts WHERE board_id = ? AND parent_id IS NULL ORDER BY $order_column DESC LIMIT ? OFFSET ?";
+
+    // Depurar la consulta SQL
+    error_log("Consulta SQL: $sql");
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$board_id, $limit, $offset]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -1303,6 +1312,242 @@ function search_posts_by_ip($ip_address, $limit = 100) {
     $stmt->execute([$ip_address, $limit]);
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// ===================================
+// MANEJO GLOBAL DE ERRORES
+// ===================================
+
+/**
+ * Inicializa el manejo global de errores
+ */
+function initialize_global_error_handling() {
+    // Configurar manejo de errores PHP
+    set_error_handler('custom_error_handler');
+    set_exception_handler('custom_exception_handler');
+    register_shutdown_function('custom_shutdown_handler');
+    
+    // Configurar logging de errores
+    ini_set('log_errors', 1);
+    ini_set('error_log', __DIR__ . '/logs/error.log');
+    
+    // Crear directorio de logs si no existe
+    $logs_dir = __DIR__ . '/logs';
+    if (!file_exists($logs_dir)) {
+        mkdir($logs_dir, 0755, true);
+    }
+}
+
+/**
+ * Manejador personalizado de errores PHP
+ */
+function custom_error_handler($severity, $message, $file, $line) {
+    // No manejar errores suprimidos con @
+    if (!(error_reporting() & $severity)) {
+        return false;
+    }
+    
+    $error_types = [
+        E_ERROR => 'Fatal Error',
+        E_WARNING => 'Warning',
+        E_PARSE => 'Parse Error',
+        E_NOTICE => 'Notice',
+        E_CORE_ERROR => 'Core Error',
+        E_CORE_WARNING => 'Core Warning',
+        E_COMPILE_ERROR => 'Compile Error',
+        E_COMPILE_WARNING => 'Compile Warning',
+        E_USER_ERROR => 'User Error',
+        E_USER_WARNING => 'User Warning',
+        E_USER_NOTICE => 'User Notice',
+        E_STRICT => 'Strict Standards',
+        E_RECOVERABLE_ERROR => 'Recoverable Error',
+        E_DEPRECATED => 'Deprecated',
+        E_USER_DEPRECATED => 'User Deprecated'
+    ];
+    
+    $error_type = $error_types[$severity] ?? 'Unknown Error';
+    
+    // Log del error
+    error_log("[$error_type] $message in $file on line $line");
+    
+    // Para errores fatales, redirigir a 404.php
+    if (in_array($severity, [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR])) {
+        redirect_to_error_page("Error interno del servidor");
+    }
+    
+    return true;
+}
+
+/**
+ * Manejador personalizado de excepciones no capturadas
+ */
+function custom_exception_handler($exception) {
+    $message = $exception->getMessage();
+    $file = $exception->getFile();
+    $line = $exception->getLine();
+    $trace = $exception->getTraceAsString();
+    
+    // Log de la excepción
+    error_log("Uncaught Exception: $message in $file on line $line\nStack trace:\n$trace");
+    
+    // Redirigir a página de error
+    redirect_to_error_page("Error interno del servidor");
+}
+
+/**
+ * Manejador de shutdown para capturar errores fatales
+ */
+function custom_shutdown_handler() {
+    $error = error_get_last();
+    
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])) {
+        error_log("Fatal Error: {$error['message']} in {$error['file']} on line {$error['line']}");
+        redirect_to_error_page("Error fatal del servidor");
+    }
+}
+
+/**
+ * Redirige a la página de error con un mensaje personalizado
+ */
+function redirect_to_error_page($message = null) {
+    // Evitar redirecciones infinitas
+    if (strpos($_SERVER['REQUEST_URI'], '404.php') !== false) {
+        return;
+    }
+    
+    // Verificar si ya se enviaron headers
+    if (headers_sent()) {
+        echo '<script>window.location.href = "404.php";</script>';
+        echo '<noscript><meta http-equiv="refresh" content="0;url=404.php"></noscript>';
+        exit;
+    }
+    
+    // Establecer el mensaje de error en la sesión si se proporciona
+    if ($message && !isset($_SESSION)) {
+        session_start();
+    }
+    
+    if ($message) {
+        $_SESSION['error_message'] = $message;
+    }
+    
+    // Redirigir a 404.php
+    header('Location: 404.php');
+    exit;
+}
+
+/**
+ * Manejo seguro de conexión a base de datos con redirección de errores
+ */
+function safe_database_operation($callback, $error_message = "Error de base de datos") {
+    try {
+        return $callback();
+    } catch (PDOException $e) {
+        error_log("Database Error: " . $e->getMessage());
+        redirect_to_error_page($error_message);
+    } catch (Exception $e) {
+        error_log("General Error: " . $e->getMessage());
+        redirect_to_error_page($error_message);
+    }
+}
+
+/**
+ * Valida que un archivo PHP sea accesible
+ */
+function validate_file_access($filepath) {
+    if (!file_exists($filepath)) {
+        redirect_to_error_page("Archivo no encontrado");
+    }
+    
+    if (!is_readable($filepath)) {
+        redirect_to_error_page("Acceso denegado al archivo");
+    }
+}
+
+/**
+ * Validación segura de parámetros GET/POST
+ */
+function safe_get_parameter($parameter, $type = 'string', $default = null) {
+    $value = $_GET[$parameter] ?? $default;
+    
+    switch ($type) {
+        case 'int':
+            $value = filter_var($value, FILTER_VALIDATE_INT);
+            if ($value === false && $default === null) {
+                redirect_to_error_page("Parámetro inválido");
+            }
+            break;
+        case 'string':
+            $value = is_string($value) ? trim($value) : $default;
+            break;
+        case 'email':
+            $value = filter_var($value, FILTER_VALIDATE_EMAIL);
+            if ($value === false && $default === null) {
+                redirect_to_error_page("Email inválido");
+            }
+            break;
+    }
+    
+    return $value;
+}
+
+/**
+ * Validación segura de parámetros POST
+ */
+function safe_post_parameter($parameter, $type = 'string', $default = null) {
+    $value = $_POST[$parameter] ?? $default;
+    
+    switch ($type) {
+        case 'int':
+            $value = filter_var($value, FILTER_VALIDATE_INT);
+            if ($value === false && $default === null) {
+                redirect_to_error_page("Parámetro inválido");
+            }
+            break;
+        case 'string':
+            $value = is_string($value) ? trim($value) : $default;
+            break;
+        case 'email':
+            $value = filter_var($value, FILTER_VALIDATE_EMAIL);
+            if ($value === false && $default === null) {
+                redirect_to_error_page("Email inválido");
+            }
+            break;
+    }
+    
+    return $value;
+}
+
+/**
+ * Wrapper seguro para incluir archivos
+ */
+function safe_include($filepath) {
+    if (!file_exists($filepath)) {
+        redirect_to_error_page("Archivo requerido no encontrado");
+    }
+    
+    try {
+        return include $filepath;
+    } catch (Exception $e) {
+        error_log("Include Error: " . $e->getMessage());
+        redirect_to_error_page("Error al cargar archivo");
+    }
+}
+
+/**
+ * Wrapper seguro para require archivos
+ */
+function safe_require($filepath) {
+    if (!file_exists($filepath)) {
+        redirect_to_error_page("Archivo crítico no encontrado");
+    }
+    
+    try {
+        return require $filepath;
+    } catch (Exception $e) {
+        error_log("Require Error: " . $e->getMessage());
+        redirect_to_error_page("Error crítico al cargar archivo");
+    }
 }
 
 ?>

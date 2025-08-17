@@ -39,6 +39,40 @@
     --font-family: 'Times New Roman', serif;
 }
 
+[data-theme="girls"] {
+    /* Colores principales */
+    --primary-color: #d41564;
+    --primary-hover: #000;
+    --secondary-color: #78526a;
+    
+    /* Backgrounds */
+    --body-bg: #eef2ff;
+    --body-bg-image: #f7f7f8;
+    --content-bg: #fff;
+    --form-bg: #d1d5ee;
+    --reply-bg: #f7f7f7;
+    --input-bg: #fff;
+    --file-bg: #bfc4df;
+    --button-bg: #bfc4df;
+    --button-hover-bg: #989fc4;
+    --boxbar-bg: #FCEFF3;
+    
+    /* Borders */
+    --border-color: #ccc;
+    --border-style: 1px solid var(--border-color);
+    
+    /* Text colors */
+    --text-color: #34345c;
+    --text-light: #34345c;
+    --link-color: #d41564;
+    --link-hover: #000;
+    --boards-text-color: #EB176F;
+    --placeholder-color: #34345c;
+
+    /* Status colors */
+    --danger-bg: #989fc4;
+}
+
 [data-theme="dark"] {
     /* Colores principales */
     --primary-color: #c5c8c6;

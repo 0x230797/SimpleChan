@@ -56,6 +56,7 @@ CREATE TABLE posts (
     image_original_name VARCHAR(255),
     ip_address VARCHAR(45) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE,
     parent_id INT DEFAULT NULL,
     is_locked BOOLEAN DEFAULT FALSE,
@@ -65,6 +66,7 @@ CREATE TABLE posts (
     image_dimensions VARCHAR(50) NULL,
     INDEX idx_parent_id (parent_id),
     INDEX idx_created_at (created_at),
+    INDEX idx_updated_at (updated_at),
     INDEX idx_board_id (board_id),
     FOREIGN KEY (parent_id) REFERENCES posts(id) ON DELETE CASCADE,
     FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE

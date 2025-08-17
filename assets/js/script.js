@@ -1,3 +1,24 @@
+// Función para cambiar el criterio de ordenamiento en el catálogo
+function changeBy(orderBy) {
+    console.log('changeBy ejecutado con valor:', orderBy);
+    const urlParams = new URLSearchParams(window.location.search);
+    console.log('URL actual:', window.location.search);
+    
+    // Preservar el parámetro board si existe
+    const currentBoard = urlParams.get('board');
+    console.log('Board actual:', currentBoard);
+    
+    urlParams.set('order_by', orderBy); // Establecer el nuevo criterio de ordenamiento
+    
+    // Asegurar que el parámetro board se mantenga
+    if (currentBoard) {
+        urlParams.set('board', currentBoard);
+    }
+    
+    console.log('Nuevos parámetros:', urlParams.toString());
+    window.location.search = urlParams.toString(); // Redirigir con los nuevos parámetros
+}
+
 // Función mejorada para mostrar/ocultar formularios
 function toggleCreateForm(type = 'post') {
     const formPost = document.getElementById('create-post');
@@ -815,6 +836,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const themeSelect = document.getElementById('theme-select');
     if (themeSelect) {
         themeSelect.value = savedTheme;
+    }
+    
+    // Configurar el selector de ordenamiento del catálogo
+    const bySelect = document.getElementById('by-select');
+    if (bySelect) {
+        console.log('Selector by-select encontrado, configurando event listener');
+        bySelect.addEventListener('change', function() {
+            console.log('Event listener ejecutado con valor:', this.value);
+            changeBy(this.value);
+        });
+    } else {
+        console.log('Selector by-select NO encontrado');
     }
     
     // Aplicar el logo y favicon correctos según el tema guardado

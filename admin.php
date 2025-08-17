@@ -1,7 +1,14 @@
 <?php
 session_start();
-require_once 'config.php';
-require_once 'functions.php';
+
+// Usar manejo seguro para cargar archivos críticos
+try {
+    require_once 'config.php';
+    require_once 'functions.php';
+} catch (Exception $e) {
+    error_log("Critical file loading error in admin.php: " . $e->getMessage());
+    redirect_to_error_page("Error al cargar componentes del sistema");
+}
 
 /**
  * Clase AdminController - Maneja toda la lógica del panel de administración

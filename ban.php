@@ -1,6 +1,14 @@
 <?php
-require_once 'config.php';
-require_once 'functions.php';
+// Usar manejo seguro para cargar archivos críticos
+try {
+    require_once 'config.php';
+    require_once 'functions.php';
+} catch (Exception $e) {
+    error_log("Critical file loading error in ban.php: " . $e->getMessage());
+    // No podemos usar redirect_to_error_page aquí porque functions.php puede no estar cargado
+    header('Location: 404.php');
+    exit;
+}
 
 /**
  * Clase BanController - Maneja la lógica de la página de ban

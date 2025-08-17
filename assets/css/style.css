@@ -76,7 +76,7 @@
     --spacing-xxl: 40px;
     
     /* Layout */
-    --max-width: 1100px;
+    --max-width: 800px;
     --border-radius: 3px;
     --border-radius-md: 6px;
     
@@ -316,6 +316,10 @@ button:hover {
 /* ================================
    POSTS Y ARTICLES
    ================================ */
+.posts {
+    position: relative;
+    display: grid;
+}
 section h2,
 .posts h2 {
     margin-bottom: var(--spacing-lg);
@@ -328,7 +332,7 @@ article,
     margin-bottom: var(--spacing-md);
     border: var(--border-style);
     padding: var(--spacing-md);
-    overflow: auto;
+    overflow: visible;
 }
 
 .reply-section .post {
@@ -341,6 +345,10 @@ article,
 .post-subject {
     margin-bottom: var(--spacing-xs);
     font-size: 13px;
+}
+
+.post-header span {
+    padding-right: var(--spacing-sm);
 }
 
 .post-name {
@@ -642,8 +650,8 @@ article,
     background: var(--form-bg);
     border: var(--border-style);
     padding: var(--spacing-md);
-    min-width: 200px;
-    width: 200px !important;
+    min-width: 150px;
+    width: 150px!important;
 }
 
 .report-menu form {

@@ -27,6 +27,9 @@ define('DB_CHARSET', 'utf8mb4');
 // Contraseña de administrador (CAMBIAR EN PRODUCCIÓN)
 define('ADMIN_PASSWORD', 'admin123');
 
+// Modo debug (DESACTIVAR EN PRODUCCIÓN)
+define('DEBUG_MODE', true);
+
 // ============================================================================
 // CONFIGURACIONES DE ARCHIVOS
 // ============================================================================
@@ -49,6 +52,11 @@ $pdo = initializeDatabase();
 
 // Crear directorios necesarios
 createRequiredDirectories();
+
+// Inicializar manejo global de errores (después de que functions.php esté cargado)
+if (function_exists('initialize_global_error_handling')) {
+    initialize_global_error_handling();
+}
 
 // ============================================================================
 // FUNCIONES DE INICIALIZACIÓN

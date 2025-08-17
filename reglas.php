@@ -5,8 +5,15 @@
  */
 
 session_start();
-require_once 'config.php';
-require_once 'functions.php';
+
+// Usar manejo seguro para cargar archivos críticos
+try {
+    require_once 'config.php';
+    require_once 'functions.php';
+} catch (Exception $e) {
+    error_log("Critical file loading error in reglas.php: " . $e->getMessage());
+    redirect_to_error_page("Error al cargar componentes del sistema");
+}
 ?>
 
 <!DOCTYPE html>
@@ -175,12 +182,13 @@ require_once 'functions.php';
     <!-- TEMAS -->
     <nav>
         <ul class="mini-menu">
-            <div class="theme-selector">
+            <div>
                 <label for="theme-select">Selecciona un tema:</label>
                 <select id="theme-select" onchange="changeTheme(this.value)">
                     <option value="yotsuba">Yotsuba</option>
                     <option value="yotsubab">Yotsuba Blue</option>
                     <option value="futaba">Futaba</option>
+                    <option value="girls">Girls</option>
                     <option value="dark">Dark</option>
                 </select>
             </div>
