@@ -61,6 +61,8 @@ CREATE TABLE posts (
     is_locked BOOLEAN DEFAULT FALSE,
     is_pinned BOOLEAN DEFAULT FALSE,
     board_id INT NOT NULL,
+    image_size BIGINT NULL,
+    image_dimensions VARCHAR(50) NULL,
     INDEX idx_parent_id (parent_id),
     INDEX idx_created_at (created_at),
     INDEX idx_board_id (board_id),

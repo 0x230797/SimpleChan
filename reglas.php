@@ -173,14 +173,19 @@ require_once 'functions.php';
     </main>
 
     <!-- TEMAS -->
-    <div class="theme-selector" style="margin:0 var(--spacing-sm);">
-        <label for="theme-select">Selecciona un tema:</label>
-        <select id="theme-select" onchange="changeTheme(this.value)">
-            <option value="yotsuba">Yotsuba</option>
-            <option value="yotsubab">Yotsuba Blue</option>
-            <option value="dark">Dark</option>
-        </select>
-    </div>
+    <nav>
+        <ul class="mini-menu">
+            <div class="theme-selector">
+                <label for="theme-select">Selecciona un tema:</label>
+                <select id="theme-select" onchange="changeTheme(this.value)">
+                    <option value="yotsuba">Yotsuba</option>
+                    <option value="yotsubab">Yotsuba Blue</option>
+                    <option value="futaba">Futaba</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+        </ul>
+    </nav>
 
     <!-- FOOTER -->
     <footer>

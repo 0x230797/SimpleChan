@@ -214,8 +214,7 @@ function renderNavigation($boards_by_category) {
     <nav>
         <ul>
             [<li>
-                <a href="index.php">Inicio</a>/
-                <a href="reglas.php">Reglas</a>
+                <a href="index.php">Inicio</a>/<a href="reglas.php">Reglas</a>
                 <?php if (is_admin()): ?>
                 /<a href="admin.php">Administración</a>
                 <?php endif; ?>
@@ -360,7 +359,7 @@ function renderImageField() {
 
 function renderMainPost($post) {
     ?>
-    <section>
+    <section class="reply-section">
         <h2>Publicación</h2>
         <article class="post" id="post-<?php echo $post['id']; ?>">
             <?php renderPostHeader($post, true); ?>
@@ -376,11 +375,10 @@ function renderMainPost($post) {
 function renderRepliesSection($replies, $post_id) {
     ?>
     <section>
-        <h2>Respuestas</h2>
         <?php if (empty($replies)): ?>
             <p>No hay respuestas aún.</p><br>
         <?php else: ?>
-            <div class="replies">
+            <div class="replies no-b">
                 <?php foreach ($replies as $reply): ?>
                     <article class="reply" id="post-<?php echo $reply['id']; ?>">
                         <?php renderPostHeader($reply, false, $post_id); ?>
@@ -442,23 +440,20 @@ function renderPostActions($post, $is_main_post, $post_id = null) {
 function renderReportMenu($post, $post_id = null) {
     $form_action = $post_id ? "reply.php?post_id={$post_id}" : "index.php";
     ?>
-    <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
+    <div class="report-menu-wrapper">
         [<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]
-        <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" 
-             style="display:none;position:absolute;z-index:10;background:#f7e5e5;border:1px solid rgb(136 0 0);padding:10px;min-width:150px;">
-            <form method="POST" action="<?php echo $form_action; ?>" style="margin:0;">
+        <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>">
+            <form method="POST" action="<?php echo $form_action; ?>">
                 <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
-                <label for="report_reason_<?php echo $post['id']; ?>" style="display:block;margin-bottom:5px;">Motivo:</label>
-                <select id="report_reason_<?php echo $post['id']; ?>" name="report_reason" style="width:100%;margin-bottom:5px;" autocomplete="off">
+                <label for="report_reason_<?php echo $post['id']; ?>">Motivo:</label>
+                <select id="report_reason_<?php echo $post['id']; ?>" name="report_reason" autocomplete="off">
                     <option value="spam">Spam</option>
                     <option value="contenido ilegal">Contenido ilegal</option>
                     <option value="acoso">Acoso</option>
                     <option value="otro">Otro</option>
                 </select>
-                <input type="text" name="report_details" placeholder="Detalles (opcional)" 
-                       style="width:100%;margin-bottom:5px;" autocomplete="off">
-                <button type="submit" name="submit_report" 
-                        style="width:100%;background:#800;color:#fff;padding:2px;">
+                <input type="text" name="report_details" placeholder="Detalles (opcional)" autocomplete="off">
+                <button type="submit" name="submit_report">
                     Enviar reporte
                 </button>
             </form>
@@ -504,6 +499,7 @@ function renderPostImage($post) {
                     <select id="theme-select" onchange="changeTheme(this.value)">
                         <option value="yotsuba">Yotsuba</option>
                         <option value="yotsubab">Yotsuba Blue</option>
+                        <option value="futaba">Futaba</option>
                         <option value="dark">Dark</option>
                     </select>
                 </div>

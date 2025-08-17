@@ -271,6 +271,7 @@ class AdminView {
             <title>Panel de Administración - SimpleChan</title>
             <link rel="stylesheet" href="assets/css/style.css">
             <link rel="stylesheet" href="assets/css/themes.css">
+            <link rel="stylesheet" href="assets/css/admin.css">
             <link id="site-favicon" rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
         </head>
         <body>

@@ -236,29 +236,39 @@ function get_all_boards() {
  */
 function create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id = null, $board_id) {
     global $pdo;
-    
+
     // Asegurar que el nombre nunca esté vacío
     if (empty(trim($name))) {
         $name = 'Anónimo';
     }
-    
+
     // Validar formatos reservados antes de crear un post
     if (!validate_admin_formats($message, $name === 'Administrador')) {
         error_log("Post rechazado por contener formatos reservados");
         return false;
     }
-    
+
     try {
-        $stmt = $pdo->prepare("
-            INSERT INTO posts (
+        $image_size = null;
+        $image_dimensions = null;
+
+        if ($image_filename) {
+            $image_path = UPLOAD_DIR . $image_filename;
+            $image_size = filesize($image_path);
+            $dimensions = getimagesize($image_path);
+            $image_dimensions = $dimensions[0] . 'x' . $dimensions[1];
+        }
+
+        $stmt = $pdo->prepare(
+            "INSERT INTO posts (
                 name, subject, message, image_filename, 
-                image_original_name, ip_address, parent_id, board_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        
+                image_original_name, image_size, image_dimensions, ip_address, parent_id, board_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        );
+
         return $stmt->execute([
             $name, $subject, $message, $image_filename, 
-            $image_original_name, get_user_ip(), $parent_id, $board_id
+            $image_original_name, $image_size, $image_dimensions, get_user_ip(), $parent_id, $board_id
         ]);
     } catch (PDOException $e) {
         error_log("Error al crear post: " . $e->getMessage());
@@ -288,11 +298,11 @@ function get_post($post_id) {
  * @param int $limit Número máximo de posts
  * @return array Lista de posts
  */
-function get_posts($limit = 50) {
+function get_posts($limit = 100) {
     global $pdo;
     
     // Validar que el límite sea un entero positivo
-    $limit = max(1, min(200, (int)$limit));
+    $limit = max(1, min(100, (int)$limit));
     
     $stmt = $pdo->query("
         SELECT * FROM posts 
@@ -316,8 +326,8 @@ function get_posts_by_board($board_id, $limit = 50, $offset = 0) {
     
     $stmt = $pdo->prepare("
         SELECT * FROM posts 
-        WHERE board_id = ? AND is_deleted = 0 
-        ORDER BY created_at DESC 
+        WHERE board_id = ? AND is_deleted = 0 AND parent_id IS NULL 
+        ORDER BY created_at DESC
         LIMIT " . (int)$limit . " OFFSET " . (int)$offset
     );
     $stmt->execute([$board_id]);
@@ -334,7 +344,7 @@ function count_posts_by_board($board_id) {
     
     $stmt = $pdo->prepare("
         SELECT COUNT(*) FROM posts 
-        WHERE board_id = ? AND is_deleted = 0
+        WHERE board_id = ? AND is_deleted = 0 AND parent_id IS NULL
     ");
     $stmt->execute([$board_id]);
     return $stmt->fetchColumn();
@@ -390,8 +400,8 @@ function get_recent_posts_with_board_name($limit) {
         SELECT p.*, b.name AS board_name 
         FROM posts p
         JOIN boards b ON p.board_id = b.id
-        WHERE p.is_deleted = 0
-        ORDER BY p.created_at DESC 
+        WHERE p.is_deleted = 0 AND p.parent_id IS NULL
+        ORDER BY p.created_at DESC
         LIMIT :limit
     ");
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -412,7 +422,7 @@ function get_replied_posts_with_board_name($limit) {
         FROM posts p
         JOIN boards b ON p.board_id = b.id
         JOIN posts r ON p.id = r.parent_id
-        WHERE p.is_deleted = 0 AND r.is_deleted = 0
+        WHERE p.is_deleted = 0 AND p.parent_id IS NULL AND r.is_deleted = 0
         GROUP BY p.id
         ORDER BY MAX(r.created_at) DESC
         LIMIT :limit

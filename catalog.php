@@ -184,8 +184,7 @@ class CatalogView {
         <nav>
             <ul>
                 [<li>
-                    <a href="index.php">Inicio</a>/
-                    <a href="reglas.php">Reglas</a>
+                    <a href="index.php">Inicio</a>/<a href="reglas.php">Reglas</a>
                     <?php if (is_admin()): ?>
                     /<a href="admin.php">Administración</a>
                     <?php endif; ?>
@@ -309,6 +308,7 @@ class CatalogView {
                     <select id="theme-select" onchange="changeTheme(this.value)">
                         <option value="yotsuba">Yotsuba</option>
                         <option value="yotsubab">Yotsuba Blue</option>
+                        <option value="futaba">Futaba</option>
                         <option value="dark">Dark</option>
                     </select>
                 </div>
@@ -337,25 +337,7 @@ try {
     $view->render();
 } catch (Exception $e) {
     // En caso de error, mostrar página de error básica
-    ?>
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <title>Error - SimpleChan</title>
-        <style>
-            body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-            .error { color: #800; background: #f7e5e5; padding: 20px; margin: 20px auto; max-width: 500px; border: 1px solid #800; }
-        </style>
-    </head>
-    <body>
-        <div class="error">
-            <h2>Error</h2>
-            <p><?php echo htmlspecialchars($e->getMessage()); ?></p>
-            <p><a href="index.php">Volver al inicio</a></p>
-        </div>
-    </body>
-    </html>
-    <?php
+    header("Location: 404.php");
+    exit;
 }
 ?>

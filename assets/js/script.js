@@ -169,11 +169,19 @@ document.addEventListener('DOMContentLoaded', function() {
     window.toggleReportMenu = function(postId) {
         // Ocultar otros menús abiertos
         document.querySelectorAll('.report-menu').forEach(menu => {
-            if (menu.id !== 'report-menu-' + postId) menu.style.display = 'none';
+            if (menu.id !== 'report-menu-' + postId) {
+                menu.style.display = 'none';
+            }
         });
+        
         const menu = document.getElementById('report-menu-' + postId);
         if (menu) {
-            menu.style.display = 'block';
+            // Alternar la visibilidad del menú actual
+            if (menu.style.display === 'none' || menu.style.display === '') {
+                menu.style.display = 'block';
+            } else {
+                menu.style.display = 'none';
+            }
         }
     };
     // Ocultar menú si se hace click fuera
@@ -748,6 +756,9 @@ function changeLogo(theme) {
             case 'yotsubab':
                 logoPath = 'assets/imgs/logob.png';
                 break;
+            case 'futaba':
+                logoPath = 'assets/imgs/logo.png';
+                break;
             case 'dark':
                 logoPath = 'assets/imgs/logod.png';
                 break;
@@ -779,6 +790,9 @@ function changeFavicon(theme) {
         
         switch(theme) {
             case 'yotsubab':
+                faviconLink.href = assetsPath + 'faviconb.ico';
+                break;
+            case 'futaba':
                 faviconLink.href = assetsPath + 'faviconb.ico';
                 break;
             case 'dark':
@@ -813,10 +827,4 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Hacer disponible el sistema de caché globalmente para debugging
     window.SimpleChanImageCache = ImageCache;
-    
-    // Log de información del caché (solo en desarrollo)
-    setTimeout(() => {
-        const cacheInfo = ImageCache.getCacheInfo();
-        console.log(`SimpleChan Image Cache: ${cacheInfo.imageCount} imágenes, ${cacheInfo.totalSizeMB}MB`);
-    }, 2000);
 });

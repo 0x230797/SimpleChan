@@ -1,0 +1,2 @@
+# Habilitar el manejo de errores 404
+ErrorDocument 404 /404.php

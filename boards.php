@@ -206,7 +206,7 @@ class BoardController {
                 $this->addError('La imagen es requerida.');
                 return null;
             }
-            return ['filename' => null, 'original_name' => null];
+            return ['filename' => null, 'original_name' => null, 'size' => null, 'dimensions' => null];
         }
         
         $upload_result = upload_image($_FILES['image']);
@@ -216,9 +216,15 @@ class BoardController {
             return null;
         }
         
+        $image_path = UPLOAD_DIR . $upload_result['filename'];
+        $image_size = filesize($image_path);
+        $image_dimensions = getimagesize($image_path);
+        
         return [
             'filename' => $upload_result['filename'],
-            'original_name' => $upload_result['original_name']
+            'original_name' => $upload_result['original_name'],
+            'size' => $image_size,
+            'dimensions' => $image_dimensions[0] . 'x' . $image_dimensions[1]
         ];
     }
     
@@ -393,7 +399,8 @@ class BoardController {
      * Maneja errores fatales
      */
     private function handleError($message) {
-        die('Error: ' . $message);
+        header("Location: 404.php");
+        exit;
     }
     
     /**
@@ -403,6 +410,21 @@ class BoardController {
         header("Location: $url");
         exit;
     }
+}
+
+// Mover la lógica de redirección al inicio del archivo para evitar salida previa
+if (isset($_GET['post_success']) && $_GET['post_success'] == 1) {
+    $_SESSION['success_message'] = '¡Post creado exitosamente!';
+    $url = $_SERVER['PHP_SELF'] . '?' . http_build_query(array_diff_key($_GET, ['post_success' => '']));
+    header("Location: $url");
+    exit;
+}
+
+if (isset($_GET['report_success']) && $_GET['report_success'] == 1) {
+    $_SESSION['success_message'] = '¡Gracias por reportar! El reporte ha sido enviado al administrador.';
+    $url = $_SERVER['PHP_SELF'] . '?' . http_build_query(array_diff_key($_GET, ['report_success' => '']));
+    header("Location: $url");
+    exit;
 }
 
 /**
@@ -445,15 +467,14 @@ class BoardView {
         <body id="top">
             <?php $this->renderNavigation(); ?>
             <?php $this->renderHeader(); ?>
+            <?php $this->renderCreatePostSection(); ?>
             <?php $this->renderMiniMenu(); ?>
             
             <main>
                 <?php $this->renderMessages(); ?>
-                <?php $this->renderCreatePostSection(); ?>
                 <?php $this->renderPostsSection(); ?>
-                <?php $this->renderPagination(); ?>
             </main>
-            
+            <?php $this->renderPagination(); ?>
             <?php $this->renderThemes(); ?>
             <?php $this->renderFooter(); ?>
             <script src="assets/js/script.js"></script>
@@ -470,8 +491,7 @@ class BoardView {
         <nav>
             <ul>
                 [<li>
-                    <a href="index.php">Inicio</a>/
-                    <a href="reglas.php">Reglas</a>
+                    <a href="index.php">Inicio</a>/<a href="reglas.php">Reglas</a>
                     <?php if (is_admin()): ?>
                     /<a href="admin.php">Administración</a>
                     <?php endif; ?>
@@ -534,7 +554,6 @@ class BoardView {
                         class="btn-clear-search" style="font-size:13px">Limpiar</a>]
                     <?php endif; ?>
                 </form>
-                <li>[<a href="index.php">Retornar</a>]</li>
                 <li>[<a href="#footer">Bajar</a>]</li>
                 <li>[<a href="catalog.php?board=<?php echo htmlspecialchars($this->board['short_id']); ?>">Catálogo</a>]</li>
             </ul>
@@ -549,10 +568,12 @@ class BoardView {
         // Mensajes de URL (success)
         if (isset($_GET['report_success']) && $_GET['report_success'] == 1) {
             echo '<div class="success">¡Gracias por reportar! El reporte ha sido enviado al administrador.</div>';
+            header("Location: $url");
         }
 
         if (isset($_GET['post_success']) && $_GET['post_success'] == 1) {
             echo '<div class="success">¡Post creado exitosamente!</div>';
+            header("Location: $url");
         }
 
         // Mensajes del controlador
@@ -562,6 +583,12 @@ class BoardView {
 
         if (isset($this->messages['success'])) {
             echo '<div class="success">' . htmlspecialchars($this->messages['success']) . '</div>';
+        }
+
+        // Mostrar mensajes almacenados en la sesión
+        if (isset($_SESSION['success_message'])) {
+            echo '<div class="success">' . htmlspecialchars($_SESSION['success_message']) . '</div>';
+            unset($_SESSION['success_message']); // Eliminar el mensaje después de mostrarlo
         }
     }
     
@@ -578,12 +605,14 @@ class BoardView {
         </section>
 
         <!-- Formulario para nuevo post -->
-        <section class="post-form" id="create-post" style="display: none;">
-            <h2>Crear nuevo publicación</h2>
-            
-            <form method="POST" enctype="multipart/form-data">
-                <?php $this->renderPostForm(); ?>
-            </form>
+        <section class="form-create-post">
+            <div class="post-form" id="create-post" style="display: none;">
+                <h2>Crear nuevo publicación</h2>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <?php $this->renderPostForm(); ?>
+                </form>
+            </div>
         </section>
         <?php
     }
@@ -657,8 +686,6 @@ class BoardView {
         <section class="posts">
             <?php if ($this->controller->getSearchResults() !== null): ?>
                 <h2>Resultados de búsqueda</h2>
-            <?php else: ?>
-                <h2>Publicaciones</h2>
             <?php endif; ?>
             
             <?php if (empty($this->posts)): ?>
@@ -684,8 +711,9 @@ class BoardView {
     private function renderPost($post) {
         ?>
         <article class="post" id="post-<?php echo $post['id']; ?>">
-            <?php $this->renderPostHeader($post); ?>
+            <?php $this->renderUrlFile($post); ?>
             <?php $this->renderPostImage($post); ?>
+            <?php $this->renderPostHeader($post); ?>
             <?php $this->renderPostMessage($post); ?>
             <?php $this->renderPostReplies($post); ?>
         </article>
@@ -695,11 +723,22 @@ class BoardView {
     /**
      * Renderiza el header del post
      */
+    private function renderUrlFile($post) {
+        ?>
+        <div class="post-header-file">
+            <?php $this->renderPostUrlFile($post); ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Renderiza el header del post
+     */
     private function renderPostHeader($post) {
         ?>
         <div class="post-header">
-            <?php $this->renderPostName($post); ?>
             <?php $this->renderPostSubject($post); ?>
+            <?php $this->renderPostName($post); ?>
             <?php $this->renderPostDate($post); ?>
             <?php $this->renderPostNumber($post); ?>
             <?php $this->renderPostActions($post); ?>
@@ -707,6 +746,13 @@ class BoardView {
             <?php $this->renderAdminActions($post); ?>
         </div>
         <?php
+    }
+
+    /**
+     * Renderiza la url del archivo
+     */
+    private function renderPostUrlFile($post) {
+        echo 'Archivo: <a href="' . UPLOAD_DIR . $post['image_filename'] . '" target="_blank" title="' . htmlspecialchars($post['image_original_name']) . '">' . htmlspecialchars($post['image_original_name']) . '</a> (' . format_file_size($post['image_size']) . ', ' . $post['image_dimensions'] . ')';
     }
     
     /**
@@ -765,21 +811,20 @@ class BoardView {
      */
     private function renderReportMenu($post) {
         ?>
-        <div class="report-menu-wrapper" style="display:inline-block;position:relative;">
+        <div class="report-menu-wrapper">
             [<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]
-            <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" 
-                 style="display:none;position:fixed;width:1px;z-index:10;background:#f7e5e5;border:1px solid rgb(136 0 0);padding:10px;min-width:150px;">
-                <form method="POST" action="index.php" style="margin:0;">
+            <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>">
+                <form method="POST" action="index.php">
                     <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
-                    <label for="report_reason_<?php echo $post['id']; ?>" style="display:block;margin-bottom:5px;">Motivo:</label>
-                    <select id="report_reason_<?php echo $post['id']; ?>" name="report_reason" style="width:100%;margin-bottom:5px;" autocomplete="off">
+                    <label for="report_reason_<?php echo $post['id']; ?>">Motivo:</label>
+                    <select id="report_reason_<?php echo $post['id']; ?>" name="report_reason" autocomplete="off">
                         <option value="spam">Spam</option>
                         <option value="contenido ilegal">Contenido ilegal</option>
                         <option value="acoso">Acoso</option>
                         <option value="otro">Otro</option>
                     </select>
-                    <input type="text" name="report_details" placeholder="Detalles (opcional)" style="width:100%;margin-bottom:5px;" autocomplete="off">
-                    <button type="submit" name="submit_report" style="width:100%;background:#800;color:#fff;padding: 2px;">Enviar reporte</button>
+                    <input type="text" name="report_details" placeholder="Detalles (opcional)" autocomplete="off">
+                    <button type="submit" name="submit_report">Enviar reporte</button>
                 </form>
             </nav>
         </div>
@@ -833,9 +878,7 @@ class BoardView {
         ?>
         <div class="post-image">
             <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
-                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
-                     alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
-                     onclick="toggleImageSize(this)">
+                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" alt="<?php echo htmlspecialchars($post['image_original_name']); ?>" onclick="toggleImageSize(this)">
             <?php else: ?>
                 <img src="assets/imgs/filedeleted.png" alt="Imagen no disponible">
             <?php endif; ?>
@@ -877,6 +920,7 @@ class BoardView {
                                 No. <?php echo $reply['id']; ?>
                             </a>
                         </span>
+                        <?php $this->renderReportMenu($reply); ?>
                     </div>
                     <?php $this->renderPostImage($reply); ?>
                     <?php $this->renderPostMessage($reply); ?>
@@ -890,44 +934,48 @@ class BoardView {
      * Renderiza la paginación
      */
     private function renderPagination() {
-        // No mostrar paginación durante búsquedas
-        if ($this->controller->getSearchResults() !== null) {
-            return;
-        }
+        // DEBUG: Mostrar valores para diagnosticar
+        echo "<!-- DEBUG: total_posts=" . $this->pagination_info['total_posts'] . 
+            ", posts_per_page=" . $this->pagination_info['posts_per_page'] . 
+            ", total_pages=" . $this->pagination_info['total_pages'] . " -->";
         
+        // No mostrar paginación si hay solo 1 página (es decir, 10 publicaciones o menos)
         if ($this->pagination_info['total_pages'] <= 1) {
+            echo "<!-- DEBUG: No se debería mostrar paginación -->";
             return;
         }
+
+        echo "<!-- DEBUG: Se va a mostrar paginación -->";
         ?>
         <section class="pagination">
-            <div class="pagination-info">
-                <p>Página <?php echo $this->pagination_info['current_page']; ?> de <?php echo $this->pagination_info['total_pages']; ?> 
-                   (<?php echo $this->pagination_info['total_posts']; ?> posts totales)</p>
-            </div>
             <div class="pagination-controls">
                 <?php $this->renderPaginationControls(); ?>
             </div>
         </section>
         <?php
     }
-    
+
     /**
      * Renderiza los controles de paginación
      */
     private function renderPaginationControls() {
         $current = $this->pagination_info['current_page'];
-        $total = $this->pagination_info['total_pages']; // Siempre 10
+        $total = $this->pagination_info['total_pages'];
         $board_id = $this->board['short_id'];
 
-        // Como siempre habrá exactamente 10 páginas, mostrar todas
-        $start_page = 1;
-        $end_page = $total; // Será 10
+        // Validación adicional por si acaso
+        if ($total <= 1) {
+            echo "<!-- DEBUG: total_pages <= 1, no mostrar controles -->";
+            return;
+        }
 
-        for ($i = $start_page; $i <= $end_page; $i++) {
+        echo "<!-- DEBUG: Mostrando " . $total . " páginas, actual=" . $current . " -->";
+
+        for ($i = 1; $i <= $total; $i++) {
             if ($i == $current) {
-                echo '<span class="pagination-btn current">' . $i . '</span>';
+                echo '<span class="pagination-item">[<span class="pagination-btn current">' . $i . '</span>]</span>';
             } else {
-                echo '<a href="?board=' . htmlspecialchars($board_id) . '&page=' . $i . '" class="pagination-btn">' . $i . '</a>';
+                echo '<span class="pagination-item">[<a href="?board=' . htmlspecialchars($board_id) . '&page=' . $i . '" class="pagination-btn">' . $i . '</a>]</span>';
             }
         }
     }
@@ -944,6 +992,7 @@ class BoardView {
                     <select id="theme-select" onchange="changeTheme(this.value)">
                         <option value="yotsuba">Yotsuba</option>
                         <option value="yotsubab">Yotsuba Blue</option>
+                        <option value="futaba">Futaba</option>
                         <option value="dark">Dark</option>
                     </select>
                 </div>
@@ -971,26 +1020,8 @@ try {
     $view = new BoardView($controller);
     $view->render();
 } catch (Exception $e) {
-    // En caso de error, mostrar página de error básica
-    ?>
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <title>Error - SimpleChan</title>
-        <style>
-            body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-            .error { color: #800; background: #f7e5e5; padding: 20px; margin: 20px auto; max-width: 500px; border: 1px solid #800; }
-        </style>
-    </head>
-    <body>
-        <div class="error">
-            <h2>Error</h2>
-            <p><?php echo htmlspecialchars($e->getMessage()); ?></p>
-            <p><a href="index.php">Volver al inicio</a></p>
-        </div>
-    </body>
-    </html>
-    <?php
+    // En caso de error, redirigir a la página 404
+    header("Location: 404.php");
+    exit;
 }
 ?>

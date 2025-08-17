@@ -1,101 +1,72 @@
-
-
 [data-theme="yotsubab"] {
     /* Colores principales */
-    --primary-color: #800;
-    --primary-hover: #e00;
-    --secondary-color: #008705;
-    --accent-color: #cc1105;
-    --danger-color: #ca2f2f;
-    --success-color: #09780d;
+    --primary-color: #34345c;
     
     /* Backgrounds */
-    --body-bg: #ffe;
+    --body-bg: #eef2ff;
     --body-bg-image: url('../imgs/blue.png');
-    --content-bg: #fff3f3;
-    --form-bg: #f7e5e5;
-    --reply-bg: #f7e5e5;
+    --content-bg: #e7ebfb;
+    --form-bg: #d1d5ee;
+    --reply-bg: #d1d5ee;
     --input-bg: #fff;
-    --button-bg: #f7e5e5;
-    --button-hover-bg: #eed5d5;
-    --boxbar-bg: #fca;
+    --file-bg: #bfc4df;
+    --button-bg: #bfc4df;
+    --button-hover-bg: #989fc4;
+    --boxbar-bg: #34345c;
     
     /* Borders */
-    --border-color: #800;
+    --border-color: #34345c;
     --border-style: 1px solid var(--border-color);
     
     /* Text colors */
-    --text-color: #800;
-    --text-light: #800;
-    --link-color: #800;
+    --text-color: #34345c;
+    --text-light: #34345c;
+    --link-color: #34345c;
     --link-hover: #e00;
-    --admin-name-color: red;
-    --placeholder-color: #800;
-    
+    --boards-text-color: #fff;
+    --placeholder-color: #34345c;
+
     /* Status colors */
-    --error-bg: #f6c6c6;
-    --error-border: #ca2f2f;
-    --error-text: #ca2f2f;
-    --success-bg: #aec6ae;
-    --success-border: #09780d;
-    --success-text: #09780d;
-    --danger-bg: #ffcece;
-    --deleted-bg: #ffbfbf;
+    --danger-bg: #989fc4;
+}
+
+[data-theme="futaba"] {
     
-    /* Special text colors */
-    --greentext-color: #228B22;
-    --pinktext-color: #e75480;
-    --spoiler-bg: #1a1a1a;
-    --spoiler-text: #fff;
-    --nsfw-color: red;
+    /* Backgrounds */
+    --link-color: #00e;
+    
+    /* Typography */
+    --font-family: 'Times New Roman', serif;
 }
 
 [data-theme="dark"] {
     /* Colores principales */
-    --primary-color: #800;
-    --primary-hover: #e00;
-    --secondary-color: #008705;
-    --accent-color: #cc1105;
-    --danger-color: #ca2f2f;
-    --success-color: #09780d;
+    --primary-color: #c5c8c6;
     
     /* Backgrounds */
-    --body-bg: #ffe;
-    --body-bg-image: url('../imgs/dark.png');;
-    --content-bg: #fff3f3;
-    --form-bg: #f7e5e5;
-    --reply-bg: #f7e5e5;
-    --input-bg: #fff;
-    --button-bg: #f7e5e5;
-    --button-hover-bg: #eed5d5;
-    --boxbar-bg: #fca;
+    --body-bg: #1d1f21;
+    --body-bg-image: url('../imgs/dark.png');
+    --content-bg: #1d1f21;
+    --form-bg: #1d1f21;
+    --reply-bg: #1d1f21;
+    --input-bg: #1d1f21;
+    --file-bg: #1d1f21;
+    --button-bg: #1d1f21;
+    --button-hover-bg: #2e3032;
+    --boxbar-bg: #5F89AC;
     
     /* Borders */
-    --border-color: #800;
+    --border-color: #5F89AC;
     --border-style: 1px solid var(--border-color);
     
     /* Text colors */
-    --text-color: #800;
-    --text-light: #800;
-    --link-color: #800;
-    --link-hover: #e00;
-    --admin-name-color: red;
-    --placeholder-color: #800;
-    
+    --text-color: #c5c8c6;
+    --text-light: #c5c8c6;
+    --link-color: #81a2be;
+    --link-hover: #5F89AC;
+    --boards-text-color: #fff;
+    --placeholder-color: #c5c8c6;
+
     /* Status colors */
-    --error-bg: #f6c6c6;
-    --error-border: #ca2f2f;
-    --error-text: #ca2f2f;
-    --success-bg: #aec6ae;
-    --success-border: #09780d;
-    --success-text: #09780d;
-    --danger-bg: #ffcece;
-    --deleted-bg: #ffbfbf;
-    
-    /* Special text colors */
-    --greentext-color: #228B22;
-    --pinktext-color: #e75480;
-    --spoiler-bg: #1a1a1a;
-    --spoiler-text: #fff;
-    --nsfw-color: red;
+    --danger-bg: #2e3032;
 }
