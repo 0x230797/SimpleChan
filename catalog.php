@@ -261,8 +261,7 @@ class CatalogView {
             <a href="reply.php?post_id=<?= $post['id'] ?>" class="boardlink">
                 <?php if (!empty($post['image_filename'])): ?>
                 <div class="post-image">
-                    <img src="uploads/<?= htmlspecialchars($post['image_filename']) ?>" 
-                         alt="Imagen de la publicación" onclick="toggleImageSize(this)">
+                    <img src="uploads/<?= htmlspecialchars($post['image_filename']) ?>" alt="Imagen de la publicación">
                 </div>
                 <?php endif; ?>
             </a>
@@ -271,7 +270,7 @@ class CatalogView {
             </div>
             <div>
                 <b><?= htmlspecialchars($post['subject'] ?? 'Sin asunto') ?></b>
-                <?= htmlspecialchars($message_preview) ?>
+                <?= parse_references($message_preview) ?>
             </div>
         </div>
         <?php

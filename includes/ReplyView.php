@@ -209,7 +209,7 @@ class ReplyView {
                 $this->renderPostHeader($post, true);
                 ?>
                 <div class="post-message">
-                    <?php echo parse_references($post['message'], $post['name'] === 'Administrador'); ?>
+                    <?php echo parse_references($post['message']); ?>
                 </div>
             </article>
         </section>

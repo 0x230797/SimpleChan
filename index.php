@@ -143,7 +143,8 @@ function renderBoardCategory($category, $boards) {
         <ul>
             <?php foreach ($boards as $board): ?>
                 <li>
-                    <a href="boards.php?board=<?php echo urlencode($board['short_id']); ?>" class="boardlink">
+                    <a href="boards.php?board=<?php echo urlencode($board['short_id']); ?>" title="<?php echo htmlspecialchars($board['description']); ?>">
+                        /<?php echo htmlspecialchars($board['short_id']); ?>/
                         <?php echo htmlspecialchars($board['name']); ?>
                     </a>
                 </li>
@@ -183,7 +184,7 @@ function renderPopularPost($post) {
         </a>
         <div class="c-teaser">
             <b><?php echo htmlspecialchars($post['subject'] ?? 'Sin título'); ?></b>:<br>
-            <?php echo htmlspecialchars_decode(substr($post['message'], 0, 50)); ?>...
+            <?php echo parse_references(substr($post['message'], 0, 50)); ?>...
         </div>
     </div>
     <?php
@@ -194,9 +195,7 @@ function renderPostImage($post) {
         if (file_exists(UPLOAD_DIR . $post['image_filename'])) {
             ?>
             <div class="post-image">
-                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
-                     alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
-                     onclick="toggleImageSize(this)">
+                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" alt="<?php echo htmlspecialchars($post['image_original_name']); ?>">
             </div>
             <?php
         } else {

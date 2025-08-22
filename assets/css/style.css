@@ -294,7 +294,8 @@ button:hover {
 .btn-unlock,
 .btn-lock,
 .btn-unpin,
-.btn-pin {
+.btn-pin,
+.btn-delete {
     background: none;
     border: none;
     color: var(--link-color);
@@ -309,7 +310,8 @@ button:hover {
 .btn-unlock:hover,
 .btn-lock:hover,
 .btn-unpin:hover,
-.btn-pin:hover {
+.btn-pin:hover,
+.btn-delete:hover {
     color: var(--primary-hover);
     background: none;
 }
