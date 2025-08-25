@@ -42,5 +42,5 @@ $view_data = $controller->loadReplyPageData($post_id);
 
 // Inicializar vista y renderizar
 $view = new ReplyView();
-$view->render($post, $view_data, $error, $success_message);
+$view->renderReplyPage($post, $view_data, $error, $success_message);
 ?>

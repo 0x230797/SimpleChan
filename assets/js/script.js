@@ -1212,3 +1212,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Hacer disponible el sistema de caché globalmente para debugging
     window.SimpleChanImageCache = ImageCache;
 });
+
+/**
+ * Busca una imagen en Google usando búsqueda por imagen
+ * @param {string} imageUrl - URL de la imagen a buscar
+ */
+function searchImageOnGoogle(imageUrl) {
+    // Construir la URL absoluta de la imagen
+    let fullImageUrl;
+    
+    if (imageUrl.startsWith('http')) {
+        // Ya es una URL absoluta
+        fullImageUrl = imageUrl;
+    } else {
+        // Construir URL absoluta desde la URL relativa
+        const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+        fullImageUrl = baseUrl + imageUrl;
+    }
+    
+    // URL para búsqueda de imagen en Google
+    const googleSearchUrl = 'https://www.google.com/searchbyimage?image_url=' + encodeURIComponent(fullImageUrl);
+    
+    // Abrir en nueva pestaña
+    window.open(googleSearchUrl, '_blank');
+}
