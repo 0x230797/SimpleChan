@@ -183,8 +183,7 @@ function renderPopularPost($post) {
             <?php renderPostImage($post); ?>
         </a>
         <div class="c-teaser">
-            <b><?php echo htmlspecialchars($post['subject'] ?? 'Sin título'); ?></b>:<br>
-            <?php echo parse_references(substr($post['message'], 0, 50)); ?>...
+            <b><?php echo htmlspecialchars($post['subject'] ?? 'Sin título'); ?></b>
         </div>
     </div>
     <?php

@@ -389,18 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mejor manejo de clics en referencias
     document.querySelectorAll('.ref-link').forEach(link => {
         link.addEventListener('click', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                // Permitir abrir en nueva pestaña con Ctrl/Cmd+click
-                return;
-            }
-            e.preventDefault();
-            const postId = link.href.split('-')[1];
-            const targetPost = document.getElementById(`post-${postId}`);
-            if (targetPost) {
-                targetPost.scrollIntoView({ behavior: 'smooth' });
-                targetPost.classList.add('highlight');
-                setTimeout(() => targetPost.classList.remove('highlight'), 2000);
-            }
+            return true;
         });
     });
 });

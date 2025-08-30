@@ -110,7 +110,15 @@ class ReplyView extends BaseView {
         ?>
         <section class="reply-section">
             <h2>Publicación</h2>
-            <?php $this->post_renderer->renderPost($post); ?>
+            <article class="post" id="post-<?php echo $post['id']; ?>">
+                <?php 
+                // Renderizar solo los componentes del post sin las respuestas limitadas
+                $this->post_renderer->renderPostFileInfo($post);
+                $this->post_renderer->renderPostImage($post);
+                $this->post_renderer->renderPostHeader($post, true);
+                $this->post_renderer->renderPostMessage($post);
+                ?>
+            </article>
         </section>
         <?php
     }
@@ -118,6 +126,7 @@ class ReplyView extends BaseView {
     private function renderRepliesSection($replies, $post_id) {
         ?>
         <section>
+            <h2>Respuestas (<?php echo count($replies); ?>)</h2>
             <?php if (empty($replies)): ?>
                 <p>No hay respuestas aún.</p><br>
             <?php else: ?>

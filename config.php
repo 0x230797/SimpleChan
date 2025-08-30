@@ -74,10 +74,20 @@ function initializeDatabase() {
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . DB_CHARSET
         ];
         
+        // Solo agregar MYSQL_ATTR_INIT_COMMAND si está disponible
+        if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+            $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES " . DB_CHARSET;
+        }
+        
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        
+        // Si no pudimos usar MYSQL_ATTR_INIT_COMMAND, ejecutar SET NAMES manualmente
+        if (!defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+            $pdo->exec("SET NAMES " . DB_CHARSET);
+        }
+        
         return $pdo;
         
     } catch (PDOException $e) {

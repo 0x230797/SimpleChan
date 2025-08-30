@@ -491,7 +491,11 @@ class AdminView {
             <?php $this->renderPostImage($post); ?>
             
             <div class="post-message">
-                <?php echo parse_references($post['message'], true); ?>
+                <?php 
+                // Determinar el post padre para las referencias
+                $parent_post_id = $post['parent_id'] ? $post['parent_id'] : $post['id'];
+                echo parse_references($post['message'], true, $parent_post_id); 
+                ?>
             </div>
             
             <?php $this->renderPostActions($post); ?>

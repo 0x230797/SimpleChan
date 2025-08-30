@@ -272,9 +272,12 @@ class PostRenderer
      */
     public function renderPostMessage(array $post): void 
     {
+        // Determinar el post padre para las referencias
+        $parent_post_id = $post['parent_id'] ? $post['parent_id'] : $post['id'];
+        
         ?>
         <div class="post-message">
-            <?php echo parse_references($post['message'], $post['name'] === 'Administrador'); ?>
+            <?php echo parse_references($post['message'], $post['name'] === 'Administrador', $parent_post_id); ?>
         </div>
         <?php
     }

@@ -252,25 +252,27 @@ class CatalogView {
         // Consulta reutilizable
         $reply_count = $this->countReplies($post['id']);
         $reply_count_imgs = $this->countReplies($post['id'], true);
-        $message_preview = strip_tags($post['message']);
-        $message_preview = strlen($message_preview) > 100 
-            ? substr($message_preview, 0, 100) . '...' 
-            : $message_preview;
         ?>
         <div class="c-thread">
             <a href="reply.php?post_id=<?= $post['id'] ?>" class="boardlink">
                 <?php if (!empty($post['image_filename'])): ?>
-                <div class="post-image">
-                    <img src="uploads/<?= htmlspecialchars($post['image_filename']) ?>" alt="Imagen de la publicación">
-                </div>
+                    <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
+                        <div class="post-image">
+                            <img src="<?= UPLOAD_DIR . htmlspecialchars($post['image_filename']) ?>" 
+                                 alt="<?= htmlspecialchars($post['image_original_name'] ?? 'Imagen de la publicación') ?>">
+                        </div>
+                    <?php else: ?>
+                        <div class="post-image">
+                            <img src="assets/imgs/filedeleted.png" alt="Imagen no disponible" title="Archivo eliminado o no disponible">
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </a>
             <div class="c-stats">
                 <small><b>R:</b> <?= $reply_count ?> / <b>I:</b> <?= $reply_count_imgs ?></small>
             </div>
-            <div>
+            <div style="text-align:center">
                 <b><?= htmlspecialchars($post['subject'] ?? 'Sin asunto') ?></b>
-                <?= parse_references($message_preview) ?>
             </div>
         </div>
         <?php
