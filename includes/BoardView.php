@@ -124,6 +124,7 @@ class BoardView extends BaseView
                 </form>
                 <li>[<a href="#footer">Bajar</a>]</li>
                 <li>[<a href="catalog.php?board=<?php echo htmlspecialchars($this->board['short_id']); ?>">Catálogo</a>]</li>
+                <li>[<input type="checkbox" name="auto" id="auto" title="Recarga la página cada 10 segundos"> Auto]</li>
             </ul>
         </nav>
         <?php

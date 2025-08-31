@@ -60,6 +60,7 @@ class PostRenderer
             $this->renderPostImage($reply);
             $this->renderPostHeader($reply, false, $show_reply_button);
             $this->renderPostMessage($reply);
+            $this->renderPostReplies($reply);
             ?>
         </article>
         <?php
@@ -123,6 +124,7 @@ class PostRenderer
             $this->renderPostActions($post, $is_main_post, $show_reply_button);
             $this->renderPostIcons($post);
             $this->renderAdminActions($post);
+            $this->renderPostRepliesList($post);
             ?>
         </div>
         <?php
@@ -273,6 +275,53 @@ class PostRenderer
             [<button type="submit" name="delete_post" class="btn-delete" onclick="return confirm('¿Estás seguro de que quieres eliminar este post?')">Eliminar</button>]
         </form>
         <?php
+    }
+
+    /**
+     * Renderiza respuestas del post
+     */
+    public function renderPostRepliesList(array $post): void 
+    {
+        // Buscar posts que referencian este post en su mensaje
+        global $pdo;
+        
+        $stmt = $pdo->prepare("
+            SELECT id, parent_id FROM posts 
+            WHERE message LIKE ? 
+            AND is_deleted = 0 
+            AND id != ?
+            ORDER BY created_at ASC
+        ");
+        
+        // Buscar tanto >>ID como &gt;&gt;ID (formato HTML codificado)
+        $reference_pattern = '%&gt;&gt;' . $post['id'] . '%';
+        $stmt->execute([$reference_pattern, $post['id']]);
+        $referencing_posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (empty($referencing_posts)) {
+            return;
+        }
+        
+        echo '<span class="post-replies-list">';
+        foreach ($referencing_posts as $index => $ref_post) {
+            $reply_id = $ref_post['id'];
+            
+            // Si estamos en reply.php, usar enlace directo al post
+            $current_page = basename($_SERVER['PHP_SELF']);
+            if ($current_page === 'reply.php') {
+                // Usar tanto el anchor nativo como JavaScript de respaldo
+                echo '<a href="#post-' . $reply_id . '" class="reply-link" onclick="insertReference(' . $reply_id . ');">>>' . $reply_id . '</a>';
+            } else {
+                // Encontrar el hilo principal para el post que hace referencia
+                $thread_id = $ref_post['parent_id'] ? $ref_post['parent_id'] : $reply_id;
+                echo '<a href="reply.php?post_id=' . $thread_id . '#post-' . $reply_id . '" class="reply-link">>>' . $reply_id . '</a>';
+            }
+            
+            if ($index < count($referencing_posts) - 1) {
+                echo ' ';
+            }
+        }
+        echo '</span>';
     }
     
     /**

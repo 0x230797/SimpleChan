@@ -97,6 +97,7 @@ class ReplyView extends BaseView {
             <ul class="mini-menu">
                 <li>[<a href="boards.php?board=<?php echo htmlspecialchars($board['short_id']); ?>">Retornar</a>]</li>
                 <li>[<a href="#footer">Bajar</a>]</li>
+                <li>[<input type="checkbox" name="auto" id="auto" title="Recarga la página cada 10 segundos"> Auto]</li>
             </ul>
         </nav>
         <?php

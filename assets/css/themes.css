@@ -25,7 +25,6 @@
     --button-text-color: #34345c;
     --text-light: #34345c;
     --link-color: #34345c;
-    --link-hover: #e00;
     --boards-text-color: #fff;
     --placeholder-color: #34345c;
 
@@ -82,8 +81,7 @@
 [data-theme="dark"] {
     /* Colores principales */
     --primary-color: #c5c8c6;
-    --primary-hover: #000;
-    --secondary-color: #78526a;
+    --secondary-color: #81a2be;
     
     /* Backgrounds */
     --body-bg: #1d1f21;
@@ -108,7 +106,6 @@
     --button-text-color: #c5c8c6;
     --text-light: #c5c8c6;
     --link-color: #81a2be;
-    --link-hover: #5F89AC;
     --boards-text-color: #fff;
     --placeholder-color: #c5c8c6;
 

@@ -736,6 +736,106 @@ const ImageSearch = {
 };
 
 /**
+ * Auto Refresh Manager
+ * Maneja la recarga automática de páginas
+ */
+const AutoRefreshManager = {
+    intervalId: null,
+    countdownId: null,
+    isActive: false,
+    refreshRate: 10000, // 10 segundos
+    countdown: 10,
+    storageKey: 'simplechan_auto_refresh',
+
+    init() {
+        const autoCheckbox = Utils.$('#auto');
+        if (autoCheckbox) {
+            // Restaurar estado desde localStorage
+            this.restoreState(autoCheckbox);
+            
+            autoCheckbox.addEventListener('change', (e) => {
+                this.toggle(e.target.checked);
+                this.saveState(e.target.checked);
+            });
+        }
+    },
+
+    restoreState(checkbox) {
+        const savedState = localStorage.getItem(this.storageKey);
+        if (savedState === 'true') {
+            checkbox.checked = true;
+            this.start();
+        }
+    },
+
+    saveState(enabled) {
+        localStorage.setItem(this.storageKey, enabled.toString());
+    },
+
+    toggle(enabled) {
+        if (enabled) {
+            this.start();
+        } else {
+            this.stop();
+        }
+    },
+
+    start() {
+        if (this.isActive) return;
+        
+        this.isActive = true;
+        this.countdown = 10;
+        
+        // Actualizar el texto inmediatamente
+        this.updateCountdownDisplay();
+        
+        // Iniciar cuenta regresiva
+        this.countdownId = setInterval(() => {
+            this.countdown--;
+            this.updateCountdownDisplay();
+            
+            if (this.countdown <= 0) {
+                window.location.reload();
+            }
+        }, 1000);
+        
+        console.log('Auto-refresh activado (cada 10 segundos)');
+    },
+
+    stop() {
+        if (!this.isActive) return;
+        
+        this.isActive = false;
+        
+        if (this.countdownId) {
+            clearInterval(this.countdownId);
+            this.countdownId = null;
+        }
+        
+        // Restaurar texto original
+        this.resetCountdownDisplay();
+        
+        console.log('Auto-refresh desactivado');
+    },
+
+    updateCountdownDisplay() {
+        const autoCheckbox = Utils.$('#auto');
+        if (autoCheckbox && autoCheckbox.nextSibling) {
+            // Actualizar el texto que está junto al checkbox
+            autoCheckbox.nextSibling.textContent = ` Auto] (${this.countdown}s)`;
+        }
+    },
+
+    resetCountdownDisplay() {
+        const autoCheckbox = Utils.$('#auto');
+        if (autoCheckbox && autoCheckbox.nextSibling) {
+            // Restaurar texto original
+            autoCheckbox.nextSibling.textContent = ' Auto]';
+        }
+    }
+};
+
+/**
  * Inicializador principal
  */
 const SimpleChan = {
@@ -749,6 +849,7 @@ const SimpleChan = {
             FormManager.init();
             MediaManager.init();
             ReportManager.init();
+            AutoRefreshManager.init();
             
             // Handle URL params
             URLManager.handleAutoReference();
@@ -816,6 +917,13 @@ window.SimpleChanAPI = {
     
     // Report Management
     toggleReportMenu: (postId) => ReportManager.toggleReportMenu(postId),
+    
+    // Auto Refresh Management
+    toggleAutoRefresh: (enabled) => AutoRefreshManager.toggle(enabled),
+    startAutoRefresh: () => AutoRefreshManager.start(),
+    stopAutoRefresh: () => AutoRefreshManager.stop(),
+    saveAutoRefreshState: (enabled) => AutoRefreshManager.saveState(enabled),
+    updateCountdownDisplay: () => AutoRefreshManager.updateCountdownDisplay(),
     
     // Image Search
     searchImageOnGoogle: (imageUrl) => ImageSearch.searchOnBing(imageUrl),

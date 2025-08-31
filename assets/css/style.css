@@ -384,6 +384,14 @@ article,
     color: var(--accent-color);
 }
 
+.post-replies-list {
+    font-size: 10px;
+}
+
+.post-replies-list .reply-link {
+    text-decoration: underline;
+}
+
 .post-image {
     float: left;
     max-width: 200px;
