@@ -25,7 +25,7 @@ define('DB_CHARSET', 'utf8mb4');
 // ============================================================================
 
 // Contraseña de administrador (CAMBIAR EN PRODUCCIÓN)
-define('ADMIN_PASSWORD', 'admin123');
+define('ADMIN_PASSWORD', 'SimpleChanAdmin230797');
 
 // Modo debug (DESACTIVAR EN PRODUCCIÓN)
 define('DEBUG_MODE', true);
