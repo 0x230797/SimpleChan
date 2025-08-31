@@ -343,6 +343,42 @@ const URLManager = {
                 textarea.focus();
             }
         }
+    },
+
+    /**
+     * Limpia parámetros de éxito de la URL al cargar la página
+     * Evita que los mensajes de éxito se muestren al recargar
+     */
+    cleanSuccessParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const successParams = ['post_success', 'success', 'report_success', 'delete_success', 'ban_success'];
+        let hasSuccessParams = false;
+
+        // Verificar si hay algún parámetro de éxito
+        for (const param of successParams) {
+            if (urlParams.has(param)) {
+                hasSuccessParams = true;
+                break;
+            }
+        }
+
+        // Si hay parámetros de éxito, mostrar el mensaje brevemente y luego limpiar la URL
+        if (hasSuccessParams) {
+            // Dar tiempo para que se muestre el mensaje de éxito
+            setTimeout(() => {
+                // Eliminar todos los parámetros de éxito
+                successParams.forEach(param => urlParams.delete(param));
+                
+                // Construir nueva URL sin parámetros de éxito
+                const newUrl = window.location.pathname + 
+                              (urlParams.toString() ? '?' + urlParams.toString() : '');
+                
+                // Reemplazar la URL actual en el historial sin recargar la página
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState({}, document.title, newUrl);
+                }
+            }, 3000); // Esperar 3 segundos antes de limpiar
+        }
     }
 };
 
@@ -578,6 +614,40 @@ const MediaManager = {
         textarea.selectionStart = newCursorPos;
         textarea.selectionEnd = newCursorPos;
         textarea.focus();
+    },
+
+    /**
+     * Inserta una referencia cruzada a otro tablón
+     * @param {string} boardId - ID del tablón
+     * @param {number} postId - ID del post (opcional)
+     */
+    insertCrossBoardReference(boardId, postId = null) {
+        const textarea = document.activeElement?.name === 'message' ? document.activeElement :
+                        Utils.$('textarea[name="message"]');
+        if (!textarea) return;
+
+        const ref = postId ? `>>${boardId}/${postId}` : `>>${boardId}/`;
+        const cursorPos = textarea.selectionStart;
+        const textBefore = textarea.value.substring(0, cursorPos);
+        const textAfter = textarea.value.substring(cursorPos);
+
+        const insertText = (textBefore.endsWith(' ') || textBefore === '') ? ref : ` ${ref}`;
+        
+        textarea.value = textBefore + insertText + textAfter;
+        
+        const newCursorPos = cursorPos + insertText.length;
+        textarea.selectionStart = newCursorPos;
+        textarea.selectionEnd = newCursorPos;
+        textarea.focus();
+    },
+
+    /**
+     * Obtiene el ID del tablón actual desde la URL
+     * @returns {string|null} ID del tablón actual o null
+     */
+    getCurrentBoardId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('board');
     },
 
     insertFormat(type, btn, isAdmin = false) {
@@ -861,6 +931,7 @@ const SimpleChan = {
             
             // Handle URL params
             URLManager.handleAutoReference();
+            URLManager.cleanSuccessParams();
             
             // Initialize catalog order selector
             this.initCatalogSelector();
@@ -900,6 +971,7 @@ window.SimpleChanAPI = {
     // URL Management
     changeBy: (orderBy) => URLManager.changeOrderBy(orderBy),
     scrollToPost: (postId) => URLManager.scrollToPost(postId),
+    cleanSuccessParams: () => URLManager.cleanSuccessParams(),
     
     // Form Management  
     toggleCreateForm: (type) => FormManager.toggleCreateForm(type),
@@ -911,6 +983,8 @@ window.SimpleChanAPI = {
     // Media Management
     toggleImageSize: (img) => MediaManager.toggleImageSize(img),
     insertReference: (id) => MediaManager.insertReference(id),
+    insertCrossBoardReference: (boardId, postId) => MediaManager.insertCrossBoardReference(boardId, postId),
+    getCurrentBoardId: () => MediaManager.getCurrentBoardId(),
     insertFormat: (type, btn) => MediaManager.insertFormat(type, btn, document.body.classList.contains('admin')),
     
     // Theme Management

@@ -50,7 +50,7 @@
     
     /* Special text colors */
     --greentext-color: #228B22;
-    --pinktext-color: #e75480;
+    --pinktext-color: #ff437b;
     --spoiler-bg: #1a1a1a;
     --spoiler-text: #fff;
     --nsfw-color: red;
@@ -254,6 +254,37 @@ textarea::placeholder {
     color: var(--placeholder-color);
 }
 
+/* Estilos mejorados para checkboxes */
+input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 13px;
+    height: 13px;
+    border: var(--border-style);
+    background-color: var(--input-bg);
+    margin-left: 3px;
+    cursor: pointer;
+    position: relative;
+    vertical-align: middle;
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--link-color);
+    border-color: var(--link-color);
+}
+
+input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: -.5px;
+    left: 1.5px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+}
+
 /* ================================
    BOTONES
    ================================ */
@@ -390,6 +421,41 @@ article,
 
 .post-replies-list .reply-link {
     text-decoration: underline;
+}
+
+/* Estilos para referencias cruzadas */
+.ref-link {
+    text-decoration: none;
+}
+
+.ref-link:hover {
+    text-decoration: underline;
+}
+
+.ref-link.cross-board {
+    color: #d00;
+}
+
+.ref-link.cross-board:hover {
+    color: #f00;
+}
+
+.ref-link.board-link {
+    color: #d00;
+}
+
+.ref-link.board-link:hover {
+    color: #f00;
+}
+
+.ref-link.dead-link {
+    color: #999;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+.ref-link.dead-link:hover {
+    color: #666;
 }
 
 .post-image {

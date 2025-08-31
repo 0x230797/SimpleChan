@@ -366,7 +366,14 @@ function get_posts_by_board($board_id, $limit = 50, $offset = 0, $order_column =
         $order_column = 'updated_at'; // Valor predeterminado - ordenar por bump
     }
 
-    $sql = "SELECT * FROM posts WHERE board_id = ? AND parent_id IS NULL ORDER BY is_pinned DESC, $order_column DESC LIMIT ? OFFSET ?";
+    $sql = "SELECT * FROM posts 
+            WHERE board_id = ? 
+            AND parent_id IS NULL 
+            AND is_deleted = 0 
+            AND is_locked = 0 
+            AND is_pinned = 0 
+            ORDER BY $order_column DESC 
+            LIMIT ? OFFSET ?";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$board_id, $limit, $offset]);
@@ -383,7 +390,11 @@ function count_posts_by_board($board_id) {
     
     $stmt = $pdo->prepare("
         SELECT COUNT(*) FROM posts 
-        WHERE board_id = ? AND is_deleted = 0 AND parent_id IS NULL
+        WHERE board_id = ? 
+        AND is_deleted = 0 
+        AND parent_id IS NULL
+        AND is_locked = 0 
+        AND is_pinned = 0
     ");
     $stmt->execute([$board_id]);
     return $stmt->fetchColumn();
@@ -780,14 +791,8 @@ function process_text_line(string $line, bool $is_admin, $parent_post_id = null)
         $line = apply_text_formatting($line);
     }
     
-    // Convertir referencias >>id en enlaces (siempre)
-    if ($parent_post_id) {
-        // Si estamos en un contexto con post padre, usar ese ID para el enlace
-        $line = preg_replace('/>>([0-9]+)/', '<a href="reply.php?post_id=' . $parent_post_id . '#post-$1" class="ref-link">&gt;&gt;$1</a>', $line);
-    } else {
-        // Comportamiento original para posts principales
-        $line = preg_replace('/>>([0-9]+)/', '<a href="reply.php?post_id=$1#post-$1" class="ref-link">&gt;&gt;$1</a>', $line);
-    }
+    // Convertir referencias >>id en enlaces usando la nueva función avanzada
+    $line = process_cross_board_references($line, $parent_post_id);
     
     // Verificar nuevamente si hay HTML después de los formatos
     $has_html_after = preg_match('/<[^>]+>/', $line);
@@ -843,6 +848,103 @@ function apply_color_text_formatting(string $line): string {
     elseif (preg_match('/^&lt;(.*)$/', $line, $matches)) {
         return '<span class="pinktext">&lt;' . htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8') . '</span>';
     }
+    
+    return $line;
+}
+
+/**
+ * Procesa referencias cruzadas entre tablones
+ * Soporta:
+ * - >>ID (post del mismo tablón)
+ * - >>/tablón/ID (post de otro tablón) 
+ * - >>/tablón/ (enlace a tablón)
+ * 
+ * @param string $line Línea de texto a procesar
+ * @param int|null $parent_post_id ID del post padre si existe
+ * @return string Línea con referencias convertidas en enlaces
+ */
+function process_cross_board_references(string $line, ?int $parent_post_id = null): string {
+    global $pdo;
+    
+    // Patrón 1: >>/tablón/ID (referencia a post de otro tablón)
+    $line = preg_replace_callback(
+        '/>>\/([a-zA-Z0-9_]+)\/(\d+)/',
+        function($matches) use ($pdo) {
+            $board_short_id = $matches[1];
+            $post_id = $matches[2];
+            
+            // Verificar que el tablón existe
+            $stmt = $pdo->prepare("SELECT id FROM boards WHERE short_id = ?");
+            $stmt->execute([$board_short_id]);
+            $board_exists = $stmt->fetchColumn();
+            
+            if ($board_exists) {
+                // Verificar que el post existe en ese tablón
+                $stmt = $pdo->prepare("
+                    SELECT p.id FROM posts p 
+                    JOIN boards b ON p.board_id = b.id 
+                    WHERE p.id = ? AND b.short_id = ? AND p.is_deleted = 0
+                ");
+                $stmt->execute([$post_id, $board_short_id]);
+                $post_exists = $stmt->fetchColumn();
+                
+                if ($post_exists) {
+                    return '<a href="reply.php?post_id=' . $post_id . '#post-' . $post_id . '" class="ref-link cross-board" title="Post ' . $post_id . ' en /' . htmlspecialchars($board_short_id) . '/">&gt;&gt;/' . htmlspecialchars($board_short_id) . '/' . $post_id . '</a>';
+                } else {
+                    return '<span class="ref-link dead-link" title="Post inexistente">&gt;&gt;/' . htmlspecialchars($board_short_id) . '/' . $post_id . '</span>';
+                }
+            } else {
+                return '<span class="ref-link dead-link" title="Tablón inexistente">&gt;&gt;/' . htmlspecialchars($board_short_id) . '/' . $post_id . '</span>';
+            }
+        },
+        $line
+    );
+    
+    // Patrón 2: >>/tablón/ (enlace a tablón)
+    $line = preg_replace_callback(
+        '/>>\/([a-zA-Z0-9_]+)\/$/',
+        function($matches) use ($pdo) {
+            $board_short_id = $matches[1];
+            
+            // Verificar que el tablón existe
+            $stmt = $pdo->prepare("SELECT id, name FROM boards WHERE short_id = ?");
+            $stmt->execute([$board_short_id]);
+            $board = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($board) {
+                return '<a href="boards.php?board=' . htmlspecialchars($board_short_id) . '" class="ref-link board-link" title="' . htmlspecialchars($board['name']) . '">&gt;&gt;/' . htmlspecialchars($board_short_id) . '/</a>';
+            } else {
+                return '<span class="ref-link dead-link" title="Tablón inexistente">&gt;&gt;/' . htmlspecialchars($board_short_id) . '/</span>';
+            }
+        },
+        $line
+    );
+    
+    // Patrón 3: >>ID (post del mismo tablón) - comportamiento original mejorado
+    $line = preg_replace_callback(
+        '/>>(\d+)/',
+        function($matches) use ($pdo, $parent_post_id) {
+            $post_id = $matches[1];
+            
+            // Verificar que el post existe
+            $stmt = $pdo->prepare("SELECT id, board_id FROM posts WHERE id = ? AND is_deleted = 0");
+            $stmt->execute([$post_id]);
+            $post = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($post) {
+                if ($parent_post_id) {
+                    // Si estamos en un contexto con post padre, usar ese ID para el enlace
+                    return '<a href="reply.php?post_id=' . $parent_post_id . '#post-' . $post_id . '" class="ref-link">&gt;&gt;' . $post_id . '</a>';
+                } else {
+                    // Comportamiento original para posts principales
+                    return '<a href="reply.php?post_id=' . $post_id . '#post-' . $post_id . '" class="ref-link">&gt;&gt;' . $post_id . '</a>';
+                }
+            } else {
+                return '<span class="ref-link dead-link" title="Post inexistente">&gt;&gt;' . $post_id . '</span>';
+            }
+        },
+        $line
+    );
     
     return $line;
 }

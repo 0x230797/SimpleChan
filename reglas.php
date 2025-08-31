@@ -161,6 +161,30 @@ require_once 'functions.php';
                 </div>
             </article>
 
+            <!-- REFERENCIAS -->
+            <article>
+                <div class="rules-header">
+                    <span class="rules-title">Referencias</span>
+                </div>
+                <div class="rules-message">
+                    <span>Para agregar referencias a otros posts y tablones puedes usar los siguientes formatos:</span>
+                    <br><br>
+                    <div>
+                        <b>Referencias locales:</b> Usa <code>&gt;&gt;ID</code> para referenciar posts dentro del mismo tablón.
+                        <br>
+                        Ej: <code>&gt;&gt;12345</code> → <span class="ref-link" style="cursor:pointer">&gt;&gt;12345</span>
+                        <br><br>
+                        <b>Referencias cruzadas:</b> Usa <code>&gt;&gt;/tablón/ID</code> para referenciar posts en otros tablones.
+                        <br>
+                        Ej: <code>&gt;&gt;/am/54321</code> → <span class="ref-link cross-board" style="cursor:pointer">&gt;&gt;/am/54321</span>
+                        <br><br>
+                        <b>Enlaces a tablones:</b> Usa <code>&gt;&gt;/tablón/</code> para enlazar directamente a un tablón.
+                        <br>
+                        Ej: <code>&gt;&gt;/am/</code> → <span class="ref-link board-link" style="cursor:pointer">&gt;&gt;/am/</span>
+                    </div>
+                </div>
+            </article>
+
             <!-- ADVERTENCIA -->
             <article class="danger">
                 <div class="rules-header">
