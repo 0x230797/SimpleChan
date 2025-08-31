@@ -512,9 +512,7 @@ class AdminView {
         ?>
         <div class="post-image">
             <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
-                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
-                     alt="<?php echo htmlspecialchars($post['image_original_name']); ?>" 
-                     onclick="toggleImageSize(this)">
+                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" title="<?php echo htmlspecialchars($post['image_filename']); ?>">
             <?php else: ?>
                 <img src="assets/imgs/filedeleted.png" alt="Imagen no disponible">
             <?php endif; ?>

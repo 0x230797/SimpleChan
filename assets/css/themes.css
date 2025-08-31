@@ -22,6 +22,7 @@
     
     /* Text colors */
     --text-color: #34345c;
+    --button-text-color: #34345c;
     --text-light: #34345c;
     --link-color: #34345c;
     --link-hover: #e00;
@@ -48,13 +49,13 @@
     --secondary-color: #78526a;
     
     /* Backgrounds */
-    --body-bg: #f7f7f8;
-    --body-bg-image: #f7f7f8;
+    --body-bg: #f9f9f9;
+    --body-bg-image: url('../imgs/girls.png');;
     --content-bg: #fff;
-    --form-bg: #fbfbfb;
-    --reply-bg: #fbfbfb;
-    --input-bg: #fbfbfb;
-    --file-bg: #fbfbfb;
+    --form-bg: #f9f9f9;
+    --reply-bg: #f9f9f9;
+    --input-bg: #f9f9f9;
+    --file-bg: #f9f9f9;
     --button-bg: #d41564;
     --button-hover-bg: #000;
     --boxbar-bg: #FCEFF3;
@@ -67,6 +68,7 @@
     
     /* Text colors */
     --text-color: #34345c;
+    --button-text-color: #fff;
     --text-light: #34345c;
     --link-color: #d41564;
     --link-hover: #000;
@@ -101,6 +103,7 @@
     
     /* Text colors */
     --text-color: #c5c8c6;
+    --button-text-color: #c5c8c6;
     --text-light: #c5c8c6;
     --link-color: #81a2be;
     --link-hover: #5F89AC;

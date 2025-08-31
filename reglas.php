@@ -130,6 +130,11 @@ require_once 'functions.php';
                                 'example' => '<s>tachado</s>'
                             ],
                             [
+                                'name' => 'subrayado',
+                                'syntax' => '_tu texto aquí_',
+                                'example' => '<u>tachado</u>'
+                            ],
+                            [
                                 'name' => 'texto verde',
                                 'syntax' => '"> (sin las comillas) delante del texto',
                                 'example' => '<span class="greentext">&gt;texto verde</span>',

@@ -115,7 +115,7 @@ class ReplyView extends BaseView {
                 // Renderizar solo los componentes del post sin las respuestas limitadas
                 $this->post_renderer->renderPostFileInfo($post);
                 $this->post_renderer->renderPostImage($post);
-                $this->post_renderer->renderPostHeader($post, true);
+                $this->post_renderer->renderPostHeader($post, false, true);
                 $this->post_renderer->renderPostMessage($post);
                 ?>
             </article>
@@ -132,7 +132,7 @@ class ReplyView extends BaseView {
             <?php else: ?>
                 <div class="replies no-b">
                     <?php foreach ($replies as $reply): ?>
-                        <?php $this->post_renderer->renderReply($reply, false); ?>
+                        <?php $this->post_renderer->renderReply($reply, true); ?>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>

@@ -100,9 +100,7 @@ class PostRenderer
         ?>
         <div class="post-image">
             <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
-                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
-                     alt="<?php echo htmlspecialchars($post['image_original_name']); ?>" 
-                     onclick="toggleImageSize(this)">
+                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" title="<?php echo htmlspecialchars($post['image_filename']); ?>" class="clickable-image">
             <?php else: ?>
                 <img src="assets/imgs/filedeleted.png" alt="Imagen no disponible">
             <?php endif; ?>
@@ -195,12 +193,22 @@ class PostRenderer
         // Menú de reporte
         $this->renderReportMenu($post);
     }
-    
+
     /**
      * Renderiza el menú de reporte
      */
     public function renderReportMenu(array $post): void 
     {
+        // Verificar si el post está bloqueado o fijado
+        $is_blocked_or_pinned = $post['is_locked'] || $post['is_pinned'];
+        
+        if ($is_blocked_or_pinned) {
+            ?>
+            <span>[<button class="btn-report btn-disabled" onclick="alert('No puedes reportar una publicación bloqueada o fijada'); return false;">Reportar</button>]</span>
+            <?php
+            return;
+        }
+        
         $form_action = $this->board ? 'boards.php' : 'index.php';
         ?>
         <div class="report-menu-wrapper">
@@ -298,9 +306,19 @@ class PostRenderer
         ?>
         <div class="replies">
             <?php if ($total_replies > 5): ?>
+                <?php
+                // Contar imágenes en las respuestas omitidas
+                $omitted_replies = array_slice($replies, 0, -5);
+                $omitted_images = 0;
+                foreach ($omitted_replies as $omitted_reply) {
+                    if (!empty($omitted_reply['image_filename'])) {
+                        $omitted_images++;
+                    }
+                }
+                ?>
                 <p class="replies-omitted">
-                    <?php echo ($total_replies - 5); ?> respuesta(s) omitida(s). 
-                    <a href="reply.php?post_id=<?php echo $post['id']; ?>">Ver todas</a>
+                    Se omitieron <?php echo ($total_replies - 5); ?> respuestas<?php if ($omitted_images > 0): ?> y <?php echo $omitted_images; ?> imagenes<?php endif; ?>. 
+                    <a href="reply.php?post_id=<?php echo $post['id']; ?>">Haga clic aquí</a> para verlas todas.
                 </p>
             <?php endif; ?>
             <?php foreach ($last_replies as $reply): ?>

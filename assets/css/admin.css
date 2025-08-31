@@ -66,7 +66,6 @@
 
 .post-admin .post-image img {
     display: block;
-    border: var(--border-style);
 }
 
 .post-admin .post-message {
