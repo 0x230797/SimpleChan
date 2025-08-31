@@ -338,8 +338,6 @@ function get_posts_for_index($limit = 100) {
         WHERE is_deleted = 0 
         AND parent_id IS NULL
         AND name != 'Administrador'
-        AND is_locked = 0
-        AND is_pinned = 0
         ORDER BY updated_at DESC 
         LIMIT " . $limit
     );
@@ -370,9 +368,7 @@ function get_posts_by_board($board_id, $limit = 50, $offset = 0, $order_column =
             WHERE board_id = ? 
             AND parent_id IS NULL 
             AND is_deleted = 0 
-            AND is_locked = 0 
-            AND is_pinned = 0 
-            ORDER BY $order_column DESC 
+            ORDER BY is_pinned DESC, $order_column DESC 
             LIMIT ? OFFSET ?";
 
     $stmt = $pdo->prepare($sql);
@@ -393,8 +389,6 @@ function count_posts_by_board($board_id) {
         WHERE board_id = ? 
         AND is_deleted = 0 
         AND parent_id IS NULL
-        AND is_locked = 0 
-        AND is_pinned = 0
     ");
     $stmt->execute([$board_id]);
     return $stmt->fetchColumn();
@@ -474,8 +468,6 @@ function get_recent_posts_with_board_name_filtered($limit) {
         WHERE p.is_deleted = 0 
         AND p.parent_id IS NULL
         AND p.name != 'Administrador'
-        AND p.is_locked = 0
-        AND p.is_pinned = 0
         ORDER BY p.updated_at DESC
         LIMIT :limit
     ");
@@ -500,11 +492,8 @@ function get_replied_posts_with_board_name_filtered($limit) {
         WHERE p.is_deleted = 0 
         AND p.parent_id IS NULL 
         AND r.is_deleted = 0
-        AND p.name != 'Administrador'
-        AND p.is_locked = 0
-        AND p.is_pinned = 0
         GROUP BY p.id
-        ORDER BY MAX(r.created_at) DESC
+        ORDER BY p.is_pinned DESC, MAX(r.created_at) DESC
         LIMIT :limit
     ");
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);

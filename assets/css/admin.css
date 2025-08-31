@@ -58,10 +58,9 @@
 }
 
 .post-admin .post-image {
-    float: none;
+    float: none !important;
     margin: 0 0 var(--spacing-md) 0;
     max-width: 200px;
-    flex-shrink: 0;
 }
 
 .post-admin .post-image img {

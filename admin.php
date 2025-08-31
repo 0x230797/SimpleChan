@@ -66,6 +66,21 @@ class AdminController {
             $redirect = $this->deleteImage();
         }
         
+        // Desbloquear post
+        if (isset($_POST['unlock_post'])) {
+            $redirect = $this->unlockPost();
+        }
+        
+        // Fijar post
+        if (isset($_POST['pin_post'])) {
+            $redirect = $this->pinPost();
+        }
+        
+        // Desfijar post
+        if (isset($_POST['unpin_post'])) {
+            $redirect = $this->unpinPost();
+        }
+        
         // Redirigir si es necesario
         if ($redirect) {
             $this->redirect('admin.php');
@@ -201,6 +216,66 @@ class AdminController {
             return true;
         } else {
             $this->addError('Error al eliminar la imagen del post.');
+            return false;
+        }
+    }
+    
+    /**
+     * Desbloquea un post
+     */
+    private function unlockPost() {
+        $post_id = (int)($_POST['post_id'] ?? 0);
+        
+        if ($post_id <= 0) {
+            $this->addError('ID de post inválido.');
+            return false;
+        }
+        
+        if (unlock_post($post_id)) {
+            $this->addSuccess('Post desbloqueado correctamente.');
+            return true;
+        } else {
+            $this->addError('Error al desbloquear el post.');
+            return false;
+        }
+    }
+    
+    /**
+     * Fija un post
+     */
+    private function pinPost() {
+        $post_id = (int)($_POST['post_id'] ?? 0);
+        
+        if ($post_id <= 0) {
+            $this->addError('ID de post inválido.');
+            return false;
+        }
+        
+        if (pin_post($post_id)) {
+            $this->addSuccess('Post fijado correctamente.');
+            return true;
+        } else {
+            $this->addError('Error al fijar el post.');
+            return false;
+        }
+    }
+    
+    /**
+     * Desfija un post
+     */
+    private function unpinPost() {
+        $post_id = (int)($_POST['post_id'] ?? 0);
+        
+        if ($post_id <= 0) {
+            $this->addError('ID de post inválido.');
+            return false;
+        }
+        
+        if (unpin_post($post_id)) {
+            $this->addSuccess('Post desfijado correctamente.');
+            return true;
+        } else {
+            $this->addError('Error al desfijar el post.');
             return false;
         }
     }
@@ -530,6 +605,25 @@ class AdminView {
                 <form method="POST" style="display: inline;">
                     <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="delete_post" onclick="return confirm('¿Eliminar este post?')">Eliminar Post</button>
+                </form>
+            <?php endif; ?>
+            
+            <?php if ($post['is_locked']): ?>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                    <button type="submit" name="unlock_post">Desbloquear</button>
+                </form>
+            <?php endif; ?>
+            
+            <?php if ($post['is_pinned']): ?>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                    <button type="submit" name="unpin_post">Desfijar</button>
+                </form>
+            <?php else: ?>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                    <button type="submit" name="pin_post">Fijar</button>
                 </form>
             <?php endif; ?>
             
