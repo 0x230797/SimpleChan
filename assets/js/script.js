@@ -694,6 +694,7 @@ const ReportManager = {
         Utils.$$('.report-menu').forEach(menu => {
             if (menu.id !== 'report-menu-' + postId) {
                 menu.style.display = 'none';
+                menu.classList.remove('force-visible');
             }
         });
         
@@ -701,7 +702,14 @@ const ReportManager = {
         
         if (menu) {
             const isHidden = menu.style.display === 'none' || menu.style.display === '';
-            menu.style.display = isHidden ? 'block' : 'none';
+            
+            if (isHidden) {
+                menu.style.display = 'block';
+                menu.classList.add('force-visible');
+            } else {
+                menu.style.display = 'none';
+                menu.classList.remove('force-visible');
+            }
         }
     },
 

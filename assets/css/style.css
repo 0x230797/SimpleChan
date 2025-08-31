@@ -361,7 +361,7 @@ article,
 .post-subject {
     margin-bottom: var(--spacing-xs);
     font-size: 13px;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .post-header span {
@@ -724,6 +724,12 @@ u {
     top: 100%;
     left: 0;
     margin-top: 2px;
+}
+
+.report-menu.force-visible {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .report-menu form {
