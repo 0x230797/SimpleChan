@@ -82,6 +82,8 @@
 [data-theme="dark"] {
     /* Colores principales */
     --primary-color: #c5c8c6;
+    --primary-hover: #000;
+    --secondary-color: #78526a;
     
     /* Backgrounds */
     --body-bg: #1d1f21;

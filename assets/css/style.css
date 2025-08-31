@@ -317,6 +317,17 @@ button:hover {
     background: none;
 }
 
+/* Botón deshabilitado */
+.btn-disabled {
+    color: #999 !important;
+    cursor: not-allowed !important;
+}
+
+.btn-disabled:hover {
+    color: #999 !important;
+    background: none !important;
+}
+
 /* ================================
    POSTS Y ARTICLES
    ================================ */
@@ -337,6 +348,7 @@ article,
     border: var(--border-style);
     padding: var(--spacing-md);
     overflow: visible;
+    display: flow-root;
 }
 
 .reply-section .post {
@@ -349,6 +361,7 @@ article,
 .post-subject {
     margin-bottom: var(--spacing-xs);
     font-size: 13px;
+    overflow: hidden;
 }
 
 .post-header span {
@@ -376,6 +389,7 @@ article,
     max-width: 200px;
     margin-top: 0;
     margin-bottom: 0;
+    margin-right: var(--spacing-md);
 }
 
 .post .post-image {
@@ -389,9 +403,11 @@ article,
 
 .post.fullsize {
     overflow: visible !important;
+    display: block;
 }
 
 .post-image.fullsize {
+    float: none !important;
     max-height: 100%;
     margin-right: 0;
     margin-bottom: var(--spacing-md);
@@ -406,13 +422,32 @@ article,
     margin: 0 auto;
 }
 
-.post-image.fullsize + .post-message {
+.post.fullsize .post-header,
+.post.fullsize .post-header-file {
     clear: both;
     display: block;
     width: 100%;
     margin-top: var(--spacing-md);
     position: relative;
     z-index: 2;
+}
+
+.post-image.fullsize + .post-message,
+.post.fullsize .post-message {
+    clear: both;
+    display: block;
+    width: 100%;
+    margin-top: var(--spacing-md);
+    position: relative;
+    z-index: 2;
+}
+
+.post.fullsize .post-image.fullsize ~ .post-header,
+.post.fullsize .post-image.fullsize ~ .post-header-file {
+    clear: both;
+    display: block;
+    width: 100%;
+    margin-top: var(--spacing-md);
 }
 
 .rules-message,
@@ -480,8 +515,7 @@ article,
 }
 
 .reply {
-    display: grid;
-    width: max-content;
+    width: auto;
     background-color: var(--reply-bg);
     border: var(--border-style);
     padding: var(--spacing-sm) var(--spacing-md);
@@ -677,8 +711,11 @@ u {
     background: var(--form-bg);
     border: var(--border-style);
     padding: var(--spacing-md);
-    min-width: 150px;
-    width: 150px!important;
+    min-width: 200px;
+    width: 200px !important;
+    top: 100%;
+    left: 0;
+    margin-top: 2px;
 }
 
 .report-menu form {

@@ -3,6 +3,9 @@ session_start();
 require_once 'config.php';
 require_once 'functions.php';
 
+// Ejecutar migración de updated_at (solo se ejecuta una vez)
+initialize_updated_at_field();
+
 /**
  * CatalogController
  * Maneja la lógica del catálogo (carga de boards, posts, banners, etc.)
@@ -49,29 +52,21 @@ class CatalogController {
     private function loadPosts(): void {
         $order_by = $_GET['order_by'] ?? 'recientes'; // Valor predeterminado: recientes
 
-        // Debug: mostrar qué parámetro se está recibiendo
-        error_log("Catalog Debug - order_by recibido: " . $order_by);
-
         switch ($order_by) {
-            case 'actualizacion':
+            case 'actualizacion': // Compatibilidad hacia atrás
+            case 'recientes':
+            default:
                 $order_column = 'updated_at';
                 break;
             case 'respuestas':
                 $order_column = '(SELECT COUNT(*) FROM posts WHERE parent_id = posts.id)';
                 break;
-            case 'recientes':
-            default:
+            case 'creacion':
                 $order_column = 'created_at';
                 break;
         }
 
-        // Debug: mostrar qué columna se está usando para ordenar
-        error_log("Catalog Debug - order_column: " . $order_column);
-
         $this->posts = get_posts_by_board($this->board_id, 100, 0, $order_column);
-        
-        // Debug: mostrar cuántos posts se obtuvieron
-        error_log("Catalog Debug - posts obtenidos: " . count($this->posts));
     }
 
     /** Obtiene todos los boards organizados por categoría */
@@ -215,9 +210,9 @@ class CatalogView {
                 <div>
                     <label for="by-select">Ordenar hilos por:</label>
                     <select id="by-select">
-                        <option value="recientes" <?= ($_GET['order_by'] ?? 'recientes') === 'recientes' ? 'selected' : '' ?>>Recientes</option>
-                        <option value="actualizacion" <?= ($_GET['order_by'] ?? '') === 'actualizacion' ? 'selected' : '' ?>>Actualización</option>
-                        <option value="respuestas" <?= ($_GET['order_by'] ?? '') === 'respuestas' ? 'selected' : '' ?>>Respuestas</option>
+                        <option value="recientes" <?= ($_GET['order_by'] ?? 'recientes') === 'recientes' ? 'selected' : '' ?>>Actividad (bump order)</option>
+                        <option value="creacion" <?= ($_GET['order_by'] ?? '') === 'creacion' ? 'selected' : '' ?>>Fecha de creación</option>
+                        <option value="respuestas" <?= ($_GET['order_by'] ?? '') === 'respuestas' ? 'selected' : '' ?>>Número de respuestas</option>
                     </select>
                 </div>
                 <li>[<a href="boards.php?board=<?= htmlspecialchars($this->board['short_id']) ?>">Volver al tablón</a>]</li>

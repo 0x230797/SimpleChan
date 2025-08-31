@@ -3,6 +3,9 @@ session_start();
 require_once 'config.php';
 require_once 'functions.php';
 
+// Ejecutar migración de updated_at (solo se ejecuta una vez)
+initialize_updated_at_field();
+
 // Verificar si el usuario está baneado
 $ban_info = is_user_banned();
 if ($ban_info) {
@@ -89,8 +92,8 @@ $data = loadPageData();
 
 function loadPageData() {
     return [
-        'posts' => get_posts(),
-        'popular_posts' => get_recent_and_replied_posts(8),
+        'posts' => get_posts_for_index(),
+        'popular_posts' => get_recent_and_replied_posts_for_index(8),
         'boards_by_category' => organizeBoardsByCategory(),
         'site_stats' => get_site_stats()
     ];

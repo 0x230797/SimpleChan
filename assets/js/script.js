@@ -698,8 +698,10 @@ const ReportManager = {
         });
         
         const menu = Utils.$('#report-menu-' + postId);
+        
         if (menu) {
-            menu.style.display = menu.style.display === 'none' || menu.style.display === '' ? 'block' : 'none';
+            const isHidden = menu.style.display === 'none' || menu.style.display === '';
+            menu.style.display = isHidden ? 'block' : 'none';
         }
     },
 

@@ -266,10 +266,18 @@ function create_post($name, $subject, $message, $image_filename, $image_original
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
-        return $stmt->execute([
+        $result = $stmt->execute([
             $name, $subject, $message, $image_filename, 
             $image_original_name, $image_size, $image_dimensions, get_user_ip(), $parent_id, $board_id
         ]);
+
+        // Si es una respuesta, actualizar el updated_at del post padre para hacer "bump"
+        if ($result && $parent_id) {
+            $bump_stmt = $pdo->prepare("UPDATE posts SET updated_at = NOW() WHERE id = ?");
+            $bump_stmt->execute([$parent_id]);
+        }
+
+        return $result;
     } catch (PDOException $e) {
         error_log("Error al crear post: " . $e->getMessage());
         return false;
@@ -306,8 +314,33 @@ function get_posts($limit = 100) {
     
     $stmt = $pdo->query("
         SELECT * FROM posts 
+        WHERE is_deleted = 0 AND parent_id IS NULL
+        ORDER BY is_pinned DESC, updated_at DESC 
+        LIMIT " . $limit
+    );
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Obtiene posts para el index (excluyendo admin, bloqueados y fijados)
+ * @param int $limit Número máximo de posts
+ * @return array Lista de posts filtrados
+ */
+function get_posts_for_index($limit = 100) {
+    global $pdo;
+    
+    // Validar que el límite sea un entero positivo
+    $limit = max(1, min(100, (int)$limit));
+    
+    $stmt = $pdo->query("
+        SELECT * FROM posts 
         WHERE is_deleted = 0 
-        ORDER BY is_pinned DESC, created_at DESC 
+        AND parent_id IS NULL
+        AND name != 'Administrador'
+        AND is_locked = 0
+        AND is_pinned = 0
+        ORDER BY updated_at DESC 
         LIMIT " . $limit
     );
     
@@ -322,7 +355,7 @@ function get_posts($limit = 100) {
  * @return array Lista de posts del tablón
  */
 // Validar el valor de $order_column para evitar inyecciones SQL
-function get_posts_by_board($board_id, $limit = 50, $offset = 0, $order_column = 'created_at') {
+function get_posts_by_board($board_id, $limit = 50, $offset = 0, $order_column = 'updated_at') {
     global $pdo;
 
     // Lista de columnas permitidas para ordenar
@@ -330,13 +363,10 @@ function get_posts_by_board($board_id, $limit = 50, $offset = 0, $order_column =
 
     // Validar que $order_column sea una de las permitidas
     if (!in_array($order_column, $allowed_columns)) {
-        $order_column = 'created_at'; // Valor predeterminado
+        $order_column = 'updated_at'; // Valor predeterminado - ordenar por bump
     }
 
-    $sql = "SELECT * FROM posts WHERE board_id = ? AND parent_id IS NULL ORDER BY $order_column DESC LIMIT ? OFFSET ?";
-
-    // Depurar la consulta SQL
-    error_log("Consulta SQL: $sql");
+    $sql = "SELECT * FROM posts WHERE board_id = ? AND parent_id IS NULL ORDER BY is_pinned DESC, $order_column DESC LIMIT ? OFFSET ?";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$board_id, $limit, $offset]);
@@ -398,6 +428,80 @@ function get_recent_and_replied_posts($limit = 8) {
 }
 
 /**
+ * Obtiene posts recientes y con respuestas recientes (filtrados para index)
+ * @param int $limit Número máximo de posts
+ * @return array Lista de posts populares filtrados
+ */
+function get_recent_and_replied_posts_for_index($limit = 8) {
+    global $pdo;
+
+    // Posts recientes con nombre del tablón (filtrados)
+    $recent_posts = get_recent_posts_with_board_name_filtered($limit);
+    
+    // Posts con respuestas recientes (filtrados)
+    $replied_posts = get_replied_posts_with_board_name_filtered($limit);
+
+    // Combinar y eliminar duplicados
+    $combined_posts = array_merge($recent_posts, $replied_posts);
+    $unique_posts = array_unique($combined_posts, SORT_REGULAR);
+
+    return array_slice($unique_posts, 0, $limit);
+}
+
+/**
+ * Obtiene posts recientes con nombre del tablón (filtrados)
+ * @param int $limit Límite de posts
+ * @return array Lista de posts recientes filtrados
+ */
+function get_recent_posts_with_board_name_filtered($limit) {
+    global $pdo;
+    
+    $stmt = $pdo->prepare("
+        SELECT p.*, b.name AS board_name 
+        FROM posts p
+        JOIN boards b ON p.board_id = b.id
+        WHERE p.is_deleted = 0 
+        AND p.parent_id IS NULL
+        AND p.name != 'Administrador'
+        AND p.is_locked = 0
+        AND p.is_pinned = 0
+        ORDER BY p.updated_at DESC
+        LIMIT :limit
+    ");
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Obtiene posts con respuestas recientes (filtrados)
+ * @param int $limit Límite de posts
+ * @return array Lista de posts con respuestas filtrados
+ */
+function get_replied_posts_with_board_name_filtered($limit) {
+    global $pdo;
+    
+    $stmt = $pdo->prepare("
+        SELECT p.*, b.name AS board_name 
+        FROM posts p
+        JOIN boards b ON p.board_id = b.id
+        JOIN posts r ON p.id = r.parent_id
+        WHERE p.is_deleted = 0 
+        AND p.parent_id IS NULL 
+        AND r.is_deleted = 0
+        AND p.name != 'Administrador'
+        AND p.is_locked = 0
+        AND p.is_pinned = 0
+        GROUP BY p.id
+        ORDER BY MAX(r.created_at) DESC
+        LIMIT :limit
+    ");
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
  * Obtiene posts recientes con nombre del tablón
  * @param int $limit Límite de posts
  * @return array Lista de posts recientes
@@ -410,7 +514,7 @@ function get_recent_posts_with_board_name($limit) {
         FROM posts p
         JOIN boards b ON p.board_id = b.id
         WHERE p.is_deleted = 0 AND p.parent_id IS NULL
-        ORDER BY p.created_at DESC
+        ORDER BY p.is_pinned DESC, p.updated_at DESC
         LIMIT :limit
     ");
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -433,7 +537,7 @@ function get_replied_posts_with_board_name($limit) {
         JOIN posts r ON p.id = r.parent_id
         WHERE p.is_deleted = 0 AND p.parent_id IS NULL AND r.is_deleted = 0
         GROUP BY p.id
-        ORDER BY MAX(r.created_at) DESC
+        ORDER BY p.is_pinned DESC, MAX(r.created_at) DESC
         LIMIT :limit
     ");
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -1263,7 +1367,7 @@ function search_posts($query, $board_id = null, $limit = 50) {
         $params[] = $board_id;
     }
     
-    $sql .= " ORDER BY p.created_at DESC LIMIT ?";
+    $sql .= " ORDER BY p.is_pinned DESC, p.created_at DESC LIMIT ?";
     $params[] = $limit;
     
     $stmt = $pdo->prepare($sql);
@@ -1293,7 +1397,7 @@ function search_posts($query, $board_id = null, $limit = 50) {
             $params_replies[] = $board_id;
         }
         
-        $sql_replies .= " ORDER BY replies.created_at DESC LIMIT ?";
+        $sql_replies .= " ORDER BY parent.is_pinned DESC, replies.created_at DESC LIMIT ?";
         $params_replies[] = $remaining_limit;
         
         $stmt_replies = $pdo->prepare($sql_replies);
@@ -1333,6 +1437,52 @@ function search_posts_by_ip($ip_address, $limit = 100) {
     $stmt->execute([$ip_address, $limit]);
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// ===================================
+// UTILIDADES DE MIGRACIÓN
+// ===================================
+
+/**
+ * Inicializa el campo updated_at para posts existentes
+ * Solo se ejecuta una vez para migrar datos existentes
+ * @return bool Éxito de la operación
+ */
+function initialize_updated_at_field() {
+    global $pdo;
+    
+    try {
+        // Verificar si ya se ha ejecutado la migración
+        $check_stmt = $pdo->query("SELECT COUNT(*) FROM posts WHERE updated_at IS NOT NULL AND updated_at != '0000-00-00 00:00:00'");
+        $has_updated_at = $check_stmt->fetchColumn() > 0;
+        
+        if ($has_updated_at) {
+            return true; // Ya se ha ejecutado la migración
+        }
+        
+        // Actualizar posts principales para que updated_at = created_at
+        $stmt1 = $pdo->query("UPDATE posts SET updated_at = created_at WHERE parent_id IS NULL");
+        
+        // Para posts con respuestas, establecer updated_at como la fecha de la respuesta más reciente
+        $stmt2 = $pdo->query("
+            UPDATE posts p1 
+            SET updated_at = (
+                SELECT MAX(p2.created_at) 
+                FROM posts p2 
+                WHERE p2.parent_id = p1.id AND p2.is_deleted = 0
+            )
+            WHERE p1.parent_id IS NULL 
+            AND EXISTS (
+                SELECT 1 FROM posts p3 
+                WHERE p3.parent_id = p1.id AND p3.is_deleted = 0
+            )
+        ");
+        
+        return true;
+    } catch (PDOException $e) {
+        error_log("Error al inicializar updated_at: " . $e->getMessage());
+        return false;
+    }
 }
 
 ?>

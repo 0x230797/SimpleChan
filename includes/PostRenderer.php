@@ -181,7 +181,7 @@ class PostRenderer
             // Botón responder
             if ($is_main_post) {
                 if ($post['is_locked']) {
-                    echo '<span>[<a href="#" class="btn-reply" onclick="alert(\'No puedes responder a una publicación bloqueada\'); window.location.reload(); return false;">Responder</a></span>]';
+                    echo '<span>[<a class="btn-reply btn-disabled">Responder</a>]</span>';
                 } else {
                     echo '<span>[<a href="reply.php?post_id=' . $post['id'] . '" class="btn-reply">Responder</a>]</span>';
                 }
@@ -204,7 +204,7 @@ class PostRenderer
         
         if ($is_blocked_or_pinned) {
             ?>
-            <span>[<button class="btn-report btn-disabled" onclick="alert('No puedes reportar una publicación bloqueada o fijada'); return false;">Reportar</button>]</span>
+            <span>[<button class="btn-report btn-disabled">Reportar</button>]</span>
             <?php
             return;
         }

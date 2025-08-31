@@ -13,6 +13,9 @@ session_start();
 require_once 'config.php';
 require_once 'functions.php';
 require_once 'includes/RedirectHandler.php';
+
+// Ejecutar migración de updated_at (solo se ejecuta una vez)
+initialize_updated_at_field();
 require_once 'includes/BoardController.php';
 require_once 'includes/BoardView.php';
 
