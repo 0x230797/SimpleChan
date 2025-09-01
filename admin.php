@@ -22,6 +22,12 @@ class AdminController {
             $this->logout();
         }
         
+        // Manejar auto-refresh manteniendo la sección actual
+        if (isset($_POST['auto_refresh']) && isset($_POST['current_section'])) {
+            // No procesar otras acciones durante el auto-refresh
+            return;
+        }
+        
         // Procesar peticiones POST
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->handlePostRequests();
@@ -890,6 +896,222 @@ class AdminView {
                     }
                 }
             </script>
+            
+            <script>
+            // ===================================
+            // AUTO-REFRESH EN TIEMPO REAL
+            // ===================================
+            
+            let refreshInterval;
+            let countdownInterval;
+            let isAutoRefreshEnabled = true;
+            let currentSection = 'estadisticas'; // Sección por defecto
+            let nextRefreshTime = 10;
+            
+            // Detectar sección actual desde la URL o elemento activo
+            function getCurrentSection() {
+                const hash = window.location.hash.substring(1);
+                if (hash) {
+                    return hash;
+                }
+                
+                // Si no hay hash, buscar la sección visible
+                const visibleSection = document.querySelector('.admin-section:not([style*="display:none"]):not([style*="display: none"])');
+                if (visibleSection) {
+                    return visibleSection.id;
+                }
+                
+                return 'estadisticas'; // Por defecto
+            }
+            
+            // Actualizar contenido manteniendo la sección actual
+            function refreshAdminContent() {
+                if (!isAutoRefreshEnabled) return;
+                
+                // Reiniciar countdown
+                nextRefreshTime = 10;
+                
+                // Guardar la sección actual
+                currentSection = getCurrentSection();
+                
+                // Crear formulario temporal para la recarga
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.style.display = 'none';
+                
+                // Agregar campo para indicar que es un refresh automático
+                const refreshField = document.createElement('input');
+                refreshField.type = 'hidden';
+                refreshField.name = 'auto_refresh';
+                refreshField.value = '1';
+                form.appendChild(refreshField);
+                
+                // Agregar campo para mantener la sección actual
+                const sectionField = document.createElement('input');
+                sectionField.type = 'hidden';
+                sectionField.name = 'current_section';
+                sectionField.value = currentSection;
+                form.appendChild(sectionField);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+            
+            // Función para mostrar sección y actualizar URL
+            function showSection(sectionId) {
+                // Ocultar todas las secciones
+                const sections = document.querySelectorAll('.admin-section');
+                sections.forEach(section => {
+                    section.style.display = 'none';
+                });
+                
+                // Mostrar la sección seleccionada
+                const targetSection = document.getElementById(sectionId);
+                if (targetSection) {
+                    targetSection.style.display = 'block';
+                    currentSection = sectionId;
+                    
+                    // Actualizar URL sin recargar la página
+                    history.pushState(null, '', '#' + sectionId);
+                }
+                
+                // Actualizar navegación activa
+                const navLinks = document.querySelectorAll('.admin-nav a');
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + sectionId) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+            
+            // Controles de auto-refresh
+            function toggleAutoRefresh() {
+                isAutoRefreshEnabled = !isAutoRefreshEnabled;
+                const button = document.getElementById('autoRefreshToggle');
+                const status = document.getElementById('refreshStatus');
+                
+                if (isAutoRefreshEnabled) {
+                    button.textContent = 'Pausar Auto-Refresh';
+                    button.className = 'refresh-btn active';
+                    status.textContent = 'Auto-refresh activo';
+                    status.style.backgroundColor = 'var(--success-bg)';
+                    status.style.color = 'var(--success-text)';
+                    status.style.borderColor = 'var(--success-border)';
+                    startAutoRefresh();
+                } else {
+                    button.textContent = 'Activar Auto-Refresh';
+                    button.className = 'refresh-btn inactive';
+                    status.textContent = 'Auto-refresh pausado';
+                    status.style.backgroundColor = 'var(--error-bg)';
+                    status.style.color = 'var(--error-text)';
+                    status.style.borderColor = 'var(--error-border)';
+                    stopAutoRefresh();
+                }
+            }
+            
+            function startAutoRefresh() {
+                if (refreshInterval) clearInterval(refreshInterval);
+                if (countdownInterval) clearInterval(countdownInterval);
+                
+                nextRefreshTime = 10;
+                refreshInterval = setInterval(refreshAdminContent, 10000); // 10 segundos
+                
+                // Iniciar countdown
+                countdownInterval = setInterval(updateCountdown, 1000);
+                updateCountdown(); // Actualizar inmediatamente
+            }
+            
+            function stopAutoRefresh() {
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                    refreshInterval = null;
+                }
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                }
+            }
+            
+            function updateCountdown() {
+                const status = document.getElementById('refreshStatus');
+                if (isAutoRefreshEnabled && status) {
+                    nextRefreshTime--;
+                    if (nextRefreshTime <= 0) {
+                        nextRefreshTime = 10;
+                        status.textContent = 'Actualizando...';
+                    } else {
+                        status.textContent = `Próxima actualización en ${nextRefreshTime}s`;
+                    }
+                }
+            }
+            
+            function manualRefresh() {
+                const button = document.querySelector('.refresh-btn.manual');
+                const originalText = button.textContent;
+                
+                // Dar feedback visual
+                button.textContent = 'Actualizando...';
+                button.disabled = true;
+                
+                // Realizar refresh
+                refreshAdminContent();
+            }
+            
+            // Inicializar al cargar la página
+            document.addEventListener('DOMContentLoaded', function() {
+                // Mostrar sección inicial (desde URL, parámetro POST, o por defecto)
+                let urlSection = getCurrentSection();
+                
+                // Si viene de un auto-refresh, usar la sección guardada
+                <?php if (isset($_POST['current_section'])): ?>
+                urlSection = '<?php echo htmlspecialchars($_POST['current_section']); ?>';
+                <?php endif; ?>
+                
+                showSection(urlSection);
+                
+                // Iniciar auto-refresh
+                startAutoRefresh();
+                
+                // Manejar cambios en el historial del navegador
+                window.addEventListener('popstate', function() {
+                    const section = getCurrentSection();
+                    showSection(section);
+                });
+                
+                // Pausar auto-refresh cuando el usuario está escribiendo
+                const inputs = document.querySelectorAll('input, textarea');
+                inputs.forEach(input => {
+                    input.addEventListener('focus', () => {
+                        stopAutoRefresh();
+                        const status = document.getElementById('refreshStatus');
+                        if (status) {
+                            status.textContent = 'Auto-refresh pausado (escribiendo)';
+                            status.style.backgroundColor = '#fff3cd';
+                            status.style.color = '#856404';
+                            status.style.borderColor = '#ffeaa7';
+                        }
+                    });
+                    
+                    input.addEventListener('blur', () => {
+                        if (isAutoRefreshEnabled) {
+                            setTimeout(() => {
+                                startAutoRefresh();
+                            }, 2000); // Reanudar después de 2 segundos
+                        }
+                    });
+                });
+            });
+            
+            // Pausar auto-refresh cuando la ventana no está activa
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    stopAutoRefresh();
+                } else if (isAutoRefreshEnabled) {
+                    startAutoRefresh();
+                }
+            });
+            </script>
         </body>
         </html>
         <?php
@@ -901,14 +1123,26 @@ class AdminView {
     private function renderHeader() {
         ?>
         <header>
-            <h1>Panel de Administración</h1>
-            <nav>
-                <a href="index.php">Volver al Tablón</a>
-                <a href="admin.php">Recargar</a>
-                <?php if (is_admin()): ?>
-                    <a href="?logout=1">Cerrar Sesión</a>
-                <?php endif; ?>
-            </nav>
+            <div class="header-left">
+                <h1>Panel de Administración</h1>
+                <span class="refresh-status" id="refreshStatus">Auto-refresh activo</span>
+            </div>
+            <div class="header-right">
+                <div class="refresh-controls">
+                    <button id="autoRefreshToggle" class="refresh-btn active" onclick="toggleAutoRefresh()">
+                        Pausar Auto-Refresh
+                    </button>
+                    <button class="refresh-btn manual" onclick="manualRefresh()">
+                        Actualizar Ahora
+                    </button>
+                </div>
+                <nav>
+                    <a href="index.php">Volver al Tablón</a>
+                    <?php if (is_admin()): ?>
+                        <a href="?logout=1">Cerrar Sesión</a>
+                    <?php endif; ?>
+                </nav>
+            </div>
         </header>
         <?php
     }
