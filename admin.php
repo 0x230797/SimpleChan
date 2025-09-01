@@ -2061,6 +2061,15 @@ VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
                 <h4>Información del Sistema</h4>
                 <div class="system-info">
                     <div class="info-item">
+                        <strong>Zona Horaria:</strong> <?php echo date_default_timezone_get(); ?>
+                    </div>
+                    <div class="info-item">
+                        <strong>Hora Actual:</strong> <?php echo date('Y-m-d H:i:s'); ?>
+                    </div>
+                    <div class="info-item">
+                        <strong>Offset UTC:</strong> <?php echo date('P'); ?>
+                    </div>
+                    <div class="info-item">
                         <strong>Versión PHP:</strong> <?php echo PHP_VERSION; ?>
                     </div>
                     <div class="info-item">

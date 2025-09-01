@@ -709,12 +709,6 @@ footer {
     font-style: italic;
 }
 
-.checkbox-group {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--spacing-sm);
-}
-
 .checkbox-group label {
     display: flex;
     align-items: flex-start;

@@ -25,10 +25,18 @@ define('DB_CHARSET', 'utf8mb4');
 // ============================================================================
 
 // Contraseña de administrador (CAMBIAR EN PRODUCCIÓN)
-define('ADMIN_PASSWORD', 'SimpleChanAdmin230797');
+// define('ADMIN_PASSWORD', 'SimpleChanAdmin230797');
 
 // Modo debug (DESACTIVAR EN PRODUCCIÓN)
 define('DEBUG_MODE', true);
+
+// ============================================================================
+// CONFIGURACIONES DE TIEMPO
+// ============================================================================
+
+// Zona horaria (cambiar según tu ubicación)
+// Ejemplos: 'America/Mexico_City', 'America/Bogota', 'America/Argentina/Buenos_Aires'
+date_default_timezone_set('America/Guayaquil');
 
 // ============================================================================
 // CONFIGURACIONES DE ARCHIVOS
@@ -87,6 +95,10 @@ function initializeDatabase() {
         if (!defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
             $pdo->exec("SET NAMES " . DB_CHARSET);
         }
+        
+        // Configurar zona horaria de MySQL para que coincida con PHP
+        $timezone = date('P'); // Obtener offset de PHP (+02:00, -05:00, etc.)
+        $pdo->exec("SET time_zone = '$timezone'");
         
         return $pdo;
         

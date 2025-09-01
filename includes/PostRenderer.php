@@ -211,13 +211,16 @@ class PostRenderer
             return;
         }
         
-        $form_action = $this->board ? 'boards.php' : 'index.php';
+        // Usar el manejador de reportes centralizado
+        $form_action = 'report_handler.php';
+        $current_url = $_SERVER['REQUEST_URI'];
         ?>
         <div class="report-menu-wrapper">
             <span>[<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]</span>
             <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>">
                 <form method="POST" action="<?php echo $form_action; ?>">
                     <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
+                    <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($current_url); ?>">
                     <?php if ($this->board): ?>
                         <input type="hidden" name="board" value="<?php echo htmlspecialchars($this->board['short_id']); ?>">
                     <?php endif; ?>
