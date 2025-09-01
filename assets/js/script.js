@@ -401,9 +401,9 @@ const FormManager = {
 
         Object.entries(forms).forEach(([formType, elements]) => {
             if (formType === type) {
-                this.toggleSingleForm(elements.form, elements.button, 'Crear ' + formType, 'Cancelar');
+                this.toggleSingleForm(elements.form, elements.button, 'Crear publicación', 'Cancelar');
             } else {
-                this.hideSingleForm(elements.form, elements.button, 'Crear ' + formType);
+                this.hideSingleForm(elements.form, elements.button, 'Crear publicación');
             }
         });
     },
@@ -665,16 +665,31 @@ const MediaManager = {
             bold: `**${selectedText}**`,
             italic: `*${selectedText}*`,
             strike: `~${selectedText}~`,
-            underline: `_${selectedText}_`,
+            subline: `_${selectedText}_`,
             spoiler: `[spoiler]${selectedText}[/spoiler]`,
             ...(isAdmin && {
-                h1: `<h1>${selectedText}</h1>`,
-                h2: `<h2>${selectedText}</h2>`,
-                center: `<div style="text-align:center">${selectedText}</div>`
+                h1: `[H1]${selectedText}[/H1]`,
+                h2: `[H2]${selectedText}[/H2]`,
+                center: `[Centrar]${selectedText}[/Centrar]`,
+                color: () => {
+                    const color = prompt('Ingresa el color (ej: red, #FF0000):');
+                    return color ? `[Color=${color}]${selectedText}[/Color]` : null;
+                },
+                background: () => {
+                    const bgcolor = prompt('Ingresa el color de fondo (ej: yellow, #FFFF00):');
+                    return bgcolor ? `[Fondo=${bgcolor}]${selectedText}[/Fondo]` : null;
+                }
             })
         };
 
-        const formattedText = formats[type];
+        let formattedText;
+        if (typeof formats[type] === 'function') {
+            formattedText = formats[type]();
+            if (!formattedText) return; // Usuario canceló el prompt
+        } else {
+            formattedText = formats[type];
+        }
+
         if (!formattedText) {
             console.warn(`Formato no permitido: ${type}`);
             return;
@@ -1032,3 +1047,14 @@ if (document.readyState === 'loading') {
 } else {
     SimpleChan.init();
 }
+
+// Funciones globales para compatibilidad con onclick
+window.insertFormat = function(type, btn) {
+    const isAdmin = document.body.classList.contains('admin');
+    MediaManager.insertFormat(type, btn, isAdmin);
+};
+
+window.toggleCreateForm = (type) => FormManager.toggleCreateForm(type);
+window.toggleImageSize = (img) => MediaManager.toggleImageSize(img);
+window.searchImageOnGoogle = (imageUrl) => ImageSearch.searchOnBing(imageUrl);
+window.changeTheme = (theme) => ThemeManager.changeTheme(theme);

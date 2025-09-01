@@ -34,6 +34,7 @@ abstract class BaseView
      */
     protected function renderDocumentStart(string $title, string $favicon = 'favicon.ico'): void 
     {
+        $bodyClass = is_admin() ? 'admin' : '';
         ?>
         <!DOCTYPE html>
         <html lang="es">
@@ -45,7 +46,7 @@ abstract class BaseView
             <link rel="stylesheet" href="assets/css/themes.css">
             <link id="site-favicon" rel="shortcut icon" href="assets/favicon/<?php echo $favicon; ?>" type="image/x-icon">
         </head>
-        <body id="top">
+        <body id="top" class="<?php echo $bodyClass; ?>">
         <?php
     }
     

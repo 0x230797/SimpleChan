@@ -337,7 +337,7 @@ function get_posts_for_index($limit = 100) {
         SELECT * FROM posts 
         WHERE is_deleted = 0 
         AND parent_id IS NULL
-        AND name != 'Administrador'
+        AND (name != 'Administrador' OR (name = 'Administrador' AND is_locked = 0 AND is_pinned = 0))
         ORDER BY updated_at DESC 
         LIMIT " . $limit
     );
@@ -368,6 +368,38 @@ function get_posts_by_board($board_id, $limit = 50, $offset = 0, $order_column =
             WHERE board_id = ? 
             AND parent_id IS NULL 
             AND is_deleted = 0 
+            ORDER BY is_pinned DESC, $order_column DESC 
+            LIMIT ? OFFSET ?";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$board_id, $limit, $offset]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Obtiene posts de un tablón específico para el catálogo (con filtro de admin)
+ * @param int $board_id ID del tablón
+ * @param int $limit Límite de posts
+ * @param int $offset Desplazamiento para paginación
+ * @param string $order_column Columna de ordenamiento
+ * @return array Lista de posts del tablón filtrados
+ */
+function get_posts_by_board_for_catalog($board_id, $limit = 50, $offset = 0, $order_column = 'updated_at') {
+    global $pdo;
+
+    // Lista de columnas permitidas para ordenar
+    $allowed_columns = ['created_at', 'updated_at', '(SELECT COUNT(*) FROM posts WHERE parent_id = posts.id)'];
+
+    // Validar que $order_column sea una de las permitidas
+    if (!in_array($order_column, $allowed_columns)) {
+        $order_column = 'updated_at'; // Valor predeterminado - ordenar por bump
+    }
+
+    $sql = "SELECT * FROM posts 
+            WHERE board_id = ? 
+            AND parent_id IS NULL 
+            AND is_deleted = 0 
+            AND (name != 'Administrador' OR (name = 'Administrador' AND is_locked = 0 AND is_pinned = 0))
             ORDER BY is_pinned DESC, $order_column DESC 
             LIMIT ? OFFSET ?";
 
@@ -467,7 +499,7 @@ function get_recent_posts_with_board_name_filtered($limit) {
         JOIN boards b ON p.board_id = b.id
         WHERE p.is_deleted = 0 
         AND p.parent_id IS NULL
-        AND p.name != 'Administrador'
+        AND (p.name != 'Administrador' OR (p.name = 'Administrador' AND p.is_locked = 0 AND p.is_pinned = 0))
         ORDER BY p.updated_at DESC
         LIMIT :limit
     ");
@@ -492,6 +524,7 @@ function get_replied_posts_with_board_name_filtered($limit) {
         WHERE p.is_deleted = 0 
         AND p.parent_id IS NULL 
         AND r.is_deleted = 0
+        AND (p.name != 'Administrador' OR (p.name = 'Administrador' AND p.is_locked = 0 AND p.is_pinned = 0))
         GROUP BY p.id
         ORDER BY p.is_pinned DESC, MAX(r.created_at) DESC
         LIMIT :limit
@@ -713,10 +746,15 @@ function generate_unique_filename($extension) {
  * @return string Texto procesado con HTML
  */
 function parse_references($text, $is_admin = false, $parent_post_id = null) {
-    // 1. Procesar entidades HTML según el tipo de usuario
+    // 1. Aplicar formatos especiales de administrador primero
+    if ($is_admin) {
+        $text = apply_admin_formatting($text, $is_admin);
+    }
+    
+    // 2. Procesar entidades HTML según el tipo de usuario
     $text = process_html_entities($text, $is_admin);
     
-    // 2. Separar por líneas para procesar formato
+    // 3. Separar por líneas para procesar formato
     $lines = preg_split('/\r?\n/', $text);
     
     foreach ($lines as &$line) {
@@ -728,10 +766,10 @@ function parse_references($text, $is_admin = false, $parent_post_id = null) {
         }
     }
     
-    // 3. Unir líneas con <br>
+    // 4. Unir líneas con <br>
     $text = implode('<br>', $lines);
 
-    // 4. Para usuarios normales, eliminar etiquetas HTML avanzadas
+    // 5. Para usuarios normales, eliminar etiquetas HTML avanzadas
     if (!$is_admin) {
         $text = preg_replace('/<\/?(?:h1|h2|div)(?:[^>]*)>/i', '', $text);
     }
@@ -817,6 +855,35 @@ function apply_text_formatting(string $line): string {
     $line = preg_replace('/\[spoiler\](.+?)\[\/spoiler\]/is', '<span class="spoiler">$1</span>', $line);
     
     return $line;
+}
+
+/**
+ * Aplica formatos especiales de administrador
+ * @param string $text Texto a formatear
+ * @param bool $is_admin Si es administrador
+ * @return string Texto formateado
+ */
+function apply_admin_formatting(string $text, bool $is_admin): string {
+    if (!$is_admin) {
+        return $text;
+    }
+    
+    // H1 - Títulos grandes
+    $text = preg_replace('/\[H1\](.+?)\[\/H1\]/is', '<h1 style="color: #FF6600; text-align: center; margin: 10px 0;">$1</h1>', $text);
+    
+    // H2 - Subtítulos
+    $text = preg_replace('/\[H2\](.+?)\[\/H2\]/is', '<h2 style="color: #FF6600; text-align: center; margin: 8px 0;">$1</h2>', $text);
+    
+    // Color - Texto de color
+    $text = preg_replace('/\[Color=([#\w]+)\](.+?)\[\/Color\]/is', '<span style="color: $1;">$2</span>', $text);
+    
+    // Centrar - Texto centrado
+    $text = preg_replace('/\[Centrar\](.+?)\[\/Centrar\]/is', '<div style="text-align: center;">$1</div>', $text);
+    
+    // Fondo - Texto con fondo de color
+    $text = preg_replace('/\[Fondo=([#\w]+)\](.+?)\[\/Fondo\]/is', '<span style="background-color: $1; padding: 2px 4px;">$2</span>', $text);
+    
+    return $text;
 }
 
 /**
@@ -1000,7 +1067,24 @@ function close_open_html_tags(string $line): string {
  */
 function validate_admin_formats(string $message, bool $is_admin): bool {
     if ($is_admin) return true;
-    return !preg_match('/<(h1|h2)>/i', $message);
+    
+    // Verificar si el usuario normal está intentando usar formatos de administrador
+    $admin_patterns = [
+        '/\[H1\]/',
+        '/\[H2\]/', 
+        '/\[Color=/',
+        '/\[Centrar\]/',
+        '/\[Fondo=/',
+        '/<(h1|h2)>/i'
+    ];
+    
+    foreach ($admin_patterns as $pattern) {
+        if (preg_match($pattern, $message)) {
+            return false;
+        }
+    }
+    
+    return true;
 }
 
 // ===================================

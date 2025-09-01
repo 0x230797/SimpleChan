@@ -66,7 +66,7 @@ class CatalogController {
                 break;
         }
 
-        $this->posts = get_posts_by_board($this->board_id, 100, 0, $order_column);
+        $this->posts = get_posts_by_board_for_catalog($this->board_id, 100, 0, $order_column);
     }
 
     /** Obtiene todos los boards organizados por categoría */
