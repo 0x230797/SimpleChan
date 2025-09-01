@@ -2039,4 +2039,113 @@ function initialize_updated_at_field() {
     }
 }
 
+// ===================================
+// CONFIGURACIÓN DEL SITIO
+// ===================================
+
+/**
+ * Obtiene la configuración actual del sitio
+ * @return array Configuración del sitio
+ */
+function get_site_config() {
+    try {
+        global $pdo;
+        
+        // Intentar obtener configuración de la base de datos
+        $stmt = $pdo->query("SELECT config_key, config_value FROM site_config");
+        $config_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $config = [];
+        foreach ($config_rows as $row) {
+            $config[$row['config_key']] = $row['config_value'];
+        }
+        
+        // Valores por defecto si no hay configuración
+        $defaults = [
+            'site_title' => 'SimpleChan',
+            'site_description' => 'Un imageboard simple y funcional',
+            'max_file_size' => 2097152, // 2MB
+            'max_post_length' => 2000,
+            'posts_per_page' => 10,
+            'enable_file_uploads' => 1,
+            'enable_tripcode' => 1,
+            'maintenance_mode' => 0,
+            'allow_anonymous' => 1,
+        ];
+        
+        // Combinar con valores por defecto
+        return array_merge($defaults, $config);
+        
+    } catch (PDOException $e) {
+        error_log("Error al obtener configuración: " . $e->getMessage());
+        
+        // Retornar configuración por defecto si hay error
+        return [
+            'site_title' => 'SimpleChan',
+            'site_description' => 'Un imageboard simple y funcional',
+            'max_file_size' => 2097152,
+            'max_post_length' => 2000,
+            'posts_per_page' => 10,
+            'enable_file_uploads' => 1,
+            'enable_tripcode' => 1,
+            'maintenance_mode' => 0,
+            'allow_anonymous' => 1,
+        ];
+    }
+}
+
+/**
+ * Actualiza la configuración del sitio
+ * @param array $config Nueva configuración
+ * @return bool Éxito de la operación
+ */
+function update_site_config($config) {
+    try {
+        global $pdo;
+        
+        // Crear tabla si no existe
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS site_config (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                config_key VARCHAR(50) NOT NULL UNIQUE,
+                config_value TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        ");
+        
+        // Actualizar cada configuración
+        $stmt = $pdo->prepare("
+            INSERT INTO site_config (config_key, config_value) 
+            VALUES (?, ?) 
+            ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)
+        ");
+        
+        foreach ($config as $key => $value) {
+            // Convertir booleanos a enteros
+            if (is_bool($value)) {
+                $value = $value ? 1 : 0;
+            }
+            
+            $stmt->execute([$key, $value]);
+        }
+        
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Error al actualizar configuración: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Obtiene un valor específico de configuración
+ * @param string $key Clave de configuración
+ * @param mixed $default Valor por defecto
+ * @return mixed Valor de configuración
+ */
+function get_config_value($key, $default = null) {
+    $config = get_site_config();
+    return $config[$key] ?? $default;
+}
+
 ?>

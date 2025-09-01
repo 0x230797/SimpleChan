@@ -116,6 +116,11 @@ class AdminController {
             $redirect = $this->changeStaffPassword();
         }
         
+        // Actualizar configuraciones
+        if (isset($_POST['update_config'])) {
+            $redirect = $this->updateSiteConfig();
+        }
+        
         // Redirigir si es necesario
         if ($redirect) {
             $this->redirect('admin.php');
@@ -622,6 +627,52 @@ class AdminController {
             return true;
         } else {
             $this->addError('Error al cambiar la contraseña.');
+            return false;
+        }
+    }
+    
+    /**
+     * Actualiza la configuración del sitio
+     */
+    private function updateSiteConfig() {
+        $config = [
+            'site_title' => trim($_POST['site_title'] ?? ''),
+            'site_description' => trim($_POST['site_description'] ?? ''),
+            'max_file_size' => (int)($_POST['max_file_size'] ?? 0),
+            'max_post_length' => (int)($_POST['max_post_length'] ?? 0),
+            'posts_per_page' => (int)($_POST['posts_per_page'] ?? 0),
+            'enable_file_uploads' => isset($_POST['enable_file_uploads']),
+            'enable_tripcode' => isset($_POST['enable_tripcode']),
+            'maintenance_mode' => isset($_POST['maintenance_mode']),
+            'allow_anonymous' => isset($_POST['allow_anonymous']),
+        ];
+        
+        // Validaciones básicas
+        if (empty($config['site_title'])) {
+            $this->addError('El título del sitio es requerido.');
+            return false;
+        }
+        
+        if ($config['max_file_size'] < 1024 || $config['max_file_size'] > 10485760) { // 1KB - 10MB
+            $this->addError('El tamaño máximo de archivo debe estar entre 1KB y 10MB.');
+            return false;
+        }
+        
+        if ($config['max_post_length'] < 10 || $config['max_post_length'] > 10000) {
+            $this->addError('La longitud máxima del post debe estar entre 10 y 10000 caracteres.');
+            return false;
+        }
+        
+        if ($config['posts_per_page'] < 5 || $config['posts_per_page'] > 50) {
+            $this->addError('Los posts por página deben estar entre 5 y 50.');
+            return false;
+        }
+        
+        if (update_site_config($config)) {
+            $this->addSuccess('Configuración actualizada correctamente.');
+            return true;
+        } else {
+            $this->addError('Error al actualizar la configuración.');
             return false;
         }
     }
@@ -1669,11 +1720,135 @@ VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
      * Renderiza la sección de configuración
      */
     private function renderConfiguracionSection() {
+        $config = get_site_config();
         ?>
         <section id="configuracion" class="admin-section" style="display:none;">
             <h3>Configuración del Sitio</h3>
-            <p>Funcionalidad en desarrollo - Próximamente se podrá configurar el sitio desde aquí.</p>
+            
+            <form method="post" class="config-form">
+                <div class="config-section">
+                    <h4>Información General</h4>
+                    <div class="form-group">
+                        <label for="site_title">Título del Sitio:</label>
+                        <input type="text" name="site_title" id="site_title" 
+                               value="<?php echo htmlspecialchars($config['site_title'] ?? 'SimpleChan'); ?>" 
+                               required maxlength="100">
+                        <small>Nombre que aparece en el encabezado del sitio</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="site_description">Descripción del Sitio:</label>
+                        <textarea name="site_description" id="site_description" rows="3" maxlength="500"><?php echo htmlspecialchars($config['site_description'] ?? 'Un imageboard simple y funcional'); ?></textarea>
+                        <small>Descripción que aparece en la página principal</small>
+                    </div>
+                </div>
+                
+                <div class="config-section">
+                    <h4>Límites de Contenido</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="max_file_size">Tamaño Máximo de Archivo (bytes):</label>
+                            <input type="number" name="max_file_size" id="max_file_size" 
+                                   value="<?php echo (int)($config['max_file_size'] ?? 2097152); ?>" 
+                                   min="1024" max="10485760" required>
+                            <small>Entre 1KB (1024) y 10MB (10485760)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="max_post_length">Longitud Máxima del Post:</label>
+                            <input type="number" name="max_post_length" id="max_post_length" 
+                                   value="<?php echo (int)($config['max_post_length'] ?? 2000); ?>" 
+                                   min="10" max="10000" required>
+                            <small>Entre 10 y 10000 caracteres</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="posts_per_page">Posts por Página:</label>
+                            <input type="number" name="posts_per_page" id="posts_per_page" 
+                                   value="<?php echo (int)($config['posts_per_page'] ?? 10); ?>" 
+                                   min="5" max="50" required>
+                            <small>Entre 5 y 50 posts</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="config-section">
+                    <h4>Funcionalidades</h4>
+                    <div class="form-row">
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" name="enable_file_uploads" 
+                                       <?php echo !empty($config['enable_file_uploads']) ? 'checked' : ''; ?>>
+                                Permitir Subida de Archivos
+                            </label>
+                            <small>Los usuarios pueden subir imágenes</small>
+                        </div>
+                        
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" name="enable_tripcode" 
+                                       <?php echo !empty($config['enable_tripcode']) ? 'checked' : ''; ?>>
+                                Habilitar Tripcodes
+                            </label>
+                            <small>Permite usar tripcodes para identificación</small>
+                        </div>
+                        
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" name="allow_anonymous" 
+                                       <?php echo !empty($config['allow_anonymous']) ? 'checked' : ''; ?>>
+                                Permitir Posts Anónimos
+                            </label>
+                            <small>Los usuarios pueden postear sin nombre</small>
+                        </div>
+                        
+                        <div class="form-group checkbox-group maintenance-warning">
+                            <label>
+                                <input type="checkbox" name="maintenance_mode" 
+                                       <?php echo !empty($config['maintenance_mode']) ? 'checked' : ''; ?>>
+                                Modo de Mantenimiento
+                            </label>
+                            <small>⚠️ Solo administradores pueden acceder al sitio</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" name="update_config" class="btn-primary">
+                        Guardar Configuración
+                    </button>
+                    <button type="button" onclick="resetConfigForm()" class="btn-secondary">
+                        Restablecer
+                    </button>
+                </div>
+            </form>
+            
+            <div class="config-info">
+                <h4>Información del Sistema</h4>
+                <div class="system-info">
+                    <div class="info-item">
+                        <strong>Versión PHP:</strong> <?php echo PHP_VERSION; ?>
+                    </div>
+                    <div class="info-item">
+                        <strong>Memoria Límite:</strong> <?php echo ini_get('memory_limit'); ?>
+                    </div>
+                    <div class="info-item">
+                        <strong>Tamaño Máximo Upload:</strong> <?php echo ini_get('upload_max_filesize'); ?>
+                    </div>
+                    <div class="info-item">
+                        <strong>Directorio de Uploads:</strong> <?php echo realpath('uploads/') ?: 'uploads/'; ?>
+                    </div>
+                </div>
+            </div>
         </section>
+        
+        <script>
+        function resetConfigForm() {
+            if (confirm('¿Estás seguro de que quieres restablecer todos los cambios?')) {
+                document.querySelector('.config-form').reset();
+            }
+        }
+        </script>
         <?php
     }
     
