@@ -1,10 +1,65 @@
 /* ================================
    ADMIN
    ================================ */
+
+/* Layout principal del admin */
+.admin-container {
+    display: flex;
+    min-height: 100%;
+}
+
+/* Menú lateral */
+.admin-sidebar {
+    width: 250px;
+    background-color: var(--form-bg);
+    border-right: var(--border-style);
+    padding: var(--spacing-lg);
+}
+
+.admin-sidebar h2 {
+    margin: var(--spacing-lg) 0 var(--spacing-sm);
+    font-size: var(--font-size-large);
+    border-bottom: var(--border-style);
+    padding-bottom: var(--spacing-sm);
+    color: var(--primary-color);
+}
+
 .admin-nav ul {
-    text-align: center;
-    display: block;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.admin-nav li {
     margin-bottom: var(--spacing-sm);
+}
+
+.admin-nav a {
+    display: block;
+    padding: var(--spacing-sm);
+    color: var(--text-color);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+}
+
+.admin-nav a:hover {
+    background-color: var(--hover-bg);
+    border-left-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.admin-nav a.active {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-left-color: var(--primary-color);
+}
+
+/* Contenido principal */
+.admin-content {
+    flex: 1;
+    max-width: 100%;
+    padding: var(--spacing-lg);
+    background-color: var(--bg-color);
 }
 
 .admin-section {
@@ -12,6 +67,7 @@
     border: var(--border-style);
     padding: var(--spacing-lg);
     background-color: var(--form-bg);
+    border-radius: 8px;
 }
 
 .admin-section h3 {
@@ -19,10 +75,60 @@
     font-size: var(--font-size-large);
     border-bottom: var(--border-style);
     padding-bottom: var(--spacing-sm);
+    color: var(--primary-color);
 }
 
-.admin-section:hover {
-    border-color: var(--primary-color);
+/* Header fijo */
+.admin header {
+    background-color: var(--form-bg);
+    border-bottom: var(--border-style);
+    padding: var(--spacing-md) var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin header h1 {
+    margin: 0;
+    font-size: var(--font-size-large);
+    color: var(--primary-color);
+}
+
+.admin header nav {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.admin header nav a {
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: var(--text-color);
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.admin header nav a:hover {
+    background-color: var(--hover-bg);
+    color: var(--primary-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .admin-sidebar.open {
+        transform: translateX(0);
+    }
+    
+    .admin-content {
+        margin-left: 0;
+    }
+    
+    .admin header {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
 }
 
 .admin-table {
@@ -78,4 +184,385 @@
 .deleted-label {
     color: #ff0000;
     font-weight: bold;
+}
+
+/* Estilos para las nuevas secciones */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.stat-card {
+    background-color: var(--bg-color);
+    border: var(--border-style);
+    padding: var(--spacing-lg);
+    text-align: center;
+    border-radius: 8px;
+}
+
+.stat-card h4 {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--text-color);
+    font-size: var(--font-size-small);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+    color: var(--primary-color);
+}
+
+.stat-card small {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: var(--muted-color);
+    font-size: var(--font-size-small);
+}
+
+/* Estilos para sección de estadísticas por tablón */
+.stats-section {
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-lg);
+    border-top: var(--border-style);
+}
+
+.stats-section h4 {
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color);
+}
+
+.board-stats {
+    overflow-x: auto;
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--spacing-sm);
+}
+
+.stats-table th,
+.stats-table td {
+    padding: var(--spacing-sm) var(--spacing-md);
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stats-table th {
+    background-color: var(--form-bg);
+    font-weight: bold;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    font-size: var(--font-size-small);
+    letter-spacing: 0.5px;
+}
+
+.stats-table td {
+    color: var(--text-color);
+}
+
+.stats-table tr:hover {
+    background-color: var(--hover-bg);
+}
+
+.stats-table td:nth-child(2) {
+    text-align: center;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.stats-table td:nth-child(3) {
+    text-align: right;
+    font-family: monospace;
+    font-size: var(--font-size-small);
+}
+
+/* Estilos para el formulario de login centrado */
+.admin-login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 120px);
+    padding: var(--spacing-lg);
+}
+
+.admin-login {
+    background-color: var(--form-bg);
+    border: var(--border-style);
+    padding: var(--spacing-xl);
+    border-radius: 8px;
+    max-width: 400px;
+    width: 100%;
+}
+
+.admin-login h2 {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    color: var(--primary-color);
+}
+
+/* Estilos para gestión de usuarios */
+.rank-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rank-admin {
+    background-color: #ff4444;
+    color: white;
+}
+
+.rank-global_mod {
+    background-color: #ff8800;
+    color: white;
+}
+
+.rank-board_mod {
+    background-color: #4488ff;
+    color: white;
+}
+
+.rank-janitor {
+    background-color: #44aa44;
+    color: white;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-badge.active {
+    background-color: #44aa44;
+    color: white;
+}
+
+.status-badge.inactive {
+    background-color: #888;
+    color: white;
+}
+
+.inactive-user {
+    opacity: 0.6;
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-sm);
+    margin: var(--spacing-sm) 0;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.checkbox-label:hover {
+    background-color: var(--hover-bg);
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin: 0;
+}
+
+.user-form .form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.user-form label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.user-form input,
+.user-form select,
+.user-form textarea {
+    width: 100%;
+    padding: var(--spacing-sm);
+    border: var(--border-style);
+    border-radius: 4px;
+    font-size: var(--font-size-small);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+.user-form small {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: #888;
+    font-size: 12px;
+}
+
+.password-form {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    border: var(--border-style);
+    border-radius: 4px;
+    background-color: var(--form-bg);
+}
+
+.password-form h4 {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--primary-color);
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-color-dark);
+}
+
+.btn-secondary {
+    background-color: #666;
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #555;
+}
+
+.btn-edit {
+    background-color: #4488ff;
+    color: white;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 4px;
+}
+
+.btn-password {
+    background-color: #ff8800;
+    color: white;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 4px;
+}
+
+.btn-delete {
+    background-color: #ff4444;
+    color: white;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.btn-view {
+    background-color: #44aa44;
+    color: white;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+.btn-edit:hover,
+.btn-password:hover,
+.btn-delete:hover,
+.btn-view:hover {
+    opacity: 0.8;
+}
+
+/* Estilos para mensajes informativos */
+.info-message {
+    background-color: #f8f9fa;
+    border: 2px solid #17a2b8;
+    border-radius: 8px;
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md) 0;
+}
+
+.info-message h4 {
+    margin: 0 0 var(--spacing-md) 0;
+    color: #17a2b8;
+}
+
+.info-message p {
+    margin: var(--spacing-sm) 0;
+    line-height: 1.5;
+}
+
+.info-message ol {
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+}
+
+.info-message li {
+    margin: var(--spacing-xs) 0;
+}
+
+.info-message pre {
+    background-color: #f1f3f4;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: var(--spacing-md);
+    margin: var(--spacing-md) 0;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.info-message code {
+    background-color: #f1f3f4;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+footer {
+    margin-top: 0!important;
+}
+
+.user-form input {
+    width: auto!important;
 }

@@ -223,10 +223,10 @@ function renderStatsSection($site_stats) {
                     <b>Total de Publicaciones:</b> <?php echo number_format($site_stats['total_posts']); ?>
                 </div>
                 <div class="stat-cell">
-                    <b>Usuarios Únicos:</b> <?php echo number_format($site_stats['unique_users']); ?>
+                    <b>Usuarios Únicos:</b> <?php echo number_format($site_stats['unique_ips']); ?>
                 </div>
                 <div class="stat-cell">
-                    <b>Peso Total de Archivos:</b> <?php echo $site_stats['total_size']; ?>
+                    <b>Peso Total de Archivos:</b> <?php echo format_file_size($site_stats['total_file_size']); ?>
                 </div>
             </div>
         </div>
@@ -259,7 +259,7 @@ function renderMessages($error, $success_message) {
     <link rel="stylesheet" href="assets/css/themes.css">
     <link id="site-favicon" rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
-<body<?php echo is_admin() ? ' class="admin"' : ''; ?>>
+<body>
     <header>
         <a href="index.php">
             <img id="site-logo" src="assets/imgs/logo.png" alt="SimpleChan">
