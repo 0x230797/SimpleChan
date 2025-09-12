@@ -28,7 +28,7 @@ define('DB_CHARSET', 'utf8mb4');
 // define('ADMIN_PASSWORD', 'SimpleChanAdmin230797');
 
 // Modo debug (DESACTIVAR EN PRODUCCIÓN)
-define('DEBUG_MODE', true);
+define('DEBUG_MODE', false);
 
 // ============================================================================
 // CONFIGURACIONES DE TIEMPO
@@ -106,6 +106,42 @@ function initializeDatabase() {
         error_log("Error de conexión a BD: " . $e->getMessage());
         die("Error de conexión a la base de datos. Contacte al administrador.");
     }
+}
+
+/**
+ * Inicializa sesión con opciones seguras y añade cabeceras de seguridad HTTP
+ */
+function initialize_session() {
+    // Evitar re-inicializar
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
+    }
+
+    // Configurar cookies de sesión seguras
+    $cookieParams = session_get_cookie_params();
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    session_set_cookie_params([
+        'lifetime' => $cookieParams['lifetime'],
+        'path' => $cookieParams['path'],
+        'domain' => $cookieParams['domain'],
+        'secure' => $secure,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+
+    ini_set('session.use_strict_mode', '1');
+    session_start();
+
+    // Cabeceras de seguridad basicas
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    // HSTS solo si HTTPS
+    if ($secure) {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
+    }
+    // CSP muy basica — ajustar según recursos usados
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';");
 }
 
 /**

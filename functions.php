@@ -302,12 +302,18 @@ function delete_board($board_id) {
  * @param int $board_id ID del tablón
  * @return bool Éxito de la operación
  */
-function create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id = null, $board_id) {
+function create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id = null, $board_id = null) {
     global $pdo;
 
     // Asegurar que el nombre nunca esté vacío
     if (empty(trim($name))) {
         $name = 'Anónimo';
+    }
+
+    // Validar board_id
+    if ($board_id === null) {
+        error_log('create_post: board_id es requerido');
+        return false;
     }
 
     // Validar formatos reservados antes de crear un post
@@ -765,29 +771,80 @@ function upload_image($file) {
         ];
     }
     
+    // Verificar que provenga de una subida HTTP válida
+    if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        return [
+            'success' => false,
+            'error' => 'Archivo no válido.'
+        ];
+    }
+
+    // Sanitizar nombre original
+    $original_name = basename($file['name']);
+    // Reemplazar caracteres peligrosos y limitar longitud
+    $original_name = preg_replace('/[^\w\.\-\s]/u', '_', $original_name);
+    $original_name = mb_substr($original_name, 0, 200);
+
     // Validar extensión del archivo
-    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $extension = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
     if (!in_array($extension, ALLOWED_EXTENSIONS)) {
         return [
-            'success' => false, 
+            'success' => false,
             'error' => 'Tipo de archivo no permitido.'
         ];
     }
-    
-    // Generar nombre único para el archivo
+
+    // Verificar que el archivo sea realmente una imagen (mitigar uploads con doble extension)
+    $image_info = @getimagesize($file['tmp_name']);
+    if ($image_info === false) {
+        return [
+            'success' => false,
+            'error' => 'El archivo no es una imagen válida.'
+        ];
+    }
+
+    $mime = $image_info['mime'] ?? '';
+    $allowed_mimes = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp'
+    ];
+    if (!in_array($mime, $allowed_mimes)) {
+        return [
+            'success' => false,
+            'error' => 'Tipo de MIME no permitido.'
+        ];
+    }
+
+    // Generar nombre único para el archivo (no basado en el nombre original)
     $filename = generate_unique_filename($extension);
-    $filepath = UPLOAD_DIR . $filename;
-    
-    // Mover archivo subido
+
+    // Asegurar formato de la ruta de uploads
+    $upload_dir = rtrim(UPLOAD_DIR, '/\\') . DIRECTORY_SEPARATOR;
+    if (!is_dir($upload_dir)) {
+        if (!mkdir($upload_dir, 0755, true)) {
+            return [
+                'success' => false,
+                'error' => 'No se pudo crear el directorio de uploads.'
+            ];
+        }
+    }
+
+    $filepath = $upload_dir . $filename;
+
+    // Mover archivo subido de forma segura
     if (move_uploaded_file($file['tmp_name'], $filepath)) {
+        // Forzar permisos seguros
+        @chmod($filepath, 0644);
         return [
             'success' => true,
             'filename' => $filename,
-            'original_name' => $file['name']
+            'original_name' => $original_name
         ];
     } else {
         return [
-            'success' => false, 
+            'success' => false,
             'error' => 'Error al subir el archivo.'
         ];
     }

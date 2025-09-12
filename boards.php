@@ -9,8 +9,8 @@
  * @version 1.0
  */
 
-session_start();
 require_once 'config.php';
+initialize_session();
 require_once 'functions.php';
 require_once 'includes/RedirectHandler.php';
 

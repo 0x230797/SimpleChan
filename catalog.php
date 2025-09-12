@@ -1,6 +1,6 @@
 <?php
-session_start();
 require_once 'config.php';
+initialize_session();
 require_once 'functions.php';
 
 // Ejecutar migración de updated_at (solo se ejecuta una vez)

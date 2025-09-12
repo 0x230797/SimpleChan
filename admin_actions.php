@@ -4,9 +4,9 @@
  * Maneja las acciones administrativas del sistema
  */
 
-session_start();
-
 require_once 'config.php';
+initialize_session();
+
 require_once 'functions.php';
 
 /**
@@ -18,6 +18,10 @@ if (!is_admin()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Verificar token CSRF antes de procesar acciones administrativas
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        redirectToPreviousPage();
+    }
     processAdminActions();
 }
 

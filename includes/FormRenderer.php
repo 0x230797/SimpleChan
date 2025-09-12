@@ -57,7 +57,10 @@ class FormRenderer
      */
     public function renderPostFormFields(bool $is_post = true): void 
     {
-        $this->renderNameField();
+    // Incluir token CSRF en todos los formularios de post/reply
+    echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
+
+    $this->renderNameField();
         
         if ($is_post) {
             $this->renderSubjectField();

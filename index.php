@@ -1,6 +1,6 @@
 <?php
-session_start();
 require_once 'config.php';
+initialize_session();
 require_once 'functions.php';
 
 // Ejecutar migración de updated_at (solo se ejecuta una vez)
@@ -197,7 +197,7 @@ function renderPostImage($post) {
         if (file_exists(UPLOAD_DIR . $post['image_filename'])) {
             ?>
             <div class="post-image">
-                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" alt="<?php echo htmlspecialchars($post['image_original_name']); ?>">
+                <img src="<?php echo htmlspecialchars(UPLOAD_DIR . $post['image_filename'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($post['image_original_name'], ENT_QUOTES, 'UTF-8'); ?>">
             </div>
             <?php
         } else {

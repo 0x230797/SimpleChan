@@ -1,6 +1,6 @@
 <?php
-session_start();
 require_once 'config.php';
+initialize_session();
 require_once 'functions.php';
 
 /**
@@ -39,7 +39,14 @@ class AdminController {
      */
     private function handlePostRequests() {
         $redirect = false;
-        
+        // Verificar CSRF para acciones que cambian estado (excepto login)
+        if (!isset($_POST['admin_login'])) {
+            if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+                $this->addError('Token CSRF inválido.');
+                return;
+            }
+        }
+
         // Login de administrador
         if (isset($_POST['admin_login'])) {
             $this->processAdminLogin();
@@ -1212,6 +1219,7 @@ class AdminView {
         <h2>Iniciar Sesión</h2>
         <section class="admin-login">
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="form-group">
                     <label for="username">Usuario:</label>
                     <input type="text" id="username" name="username" required placeholder="Nombre de usuario">
@@ -1253,6 +1261,7 @@ class AdminView {
         <section id="ban-ip" class="admin-section">
             <h3>Banear IP</h3>
             <form method="POST" class="ban-form">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="form-group">
                     <label for="ip_address">Dirección IP:</label>
                     <input type="text" id="ip_address" name="ip_address" required placeholder="192.168.1.1">
@@ -1308,6 +1317,7 @@ class AdminView {
                                 </td>
                                 <td>
                                     <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="ban_id" value="<?php echo $ban['id']; ?>">
                                         <button type="submit" name="unban_ip" onclick="return confirm('¿Desbanear esta IP?')">Desbanear</button>
                                     </form>
@@ -1410,6 +1420,7 @@ class AdminView {
         <div class="post-actions">
             <?php if (!$post['is_deleted']): ?>
                 <form method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="delete_post" onclick="return confirm('¿Eliminar este post?')">Eliminar Post</button>
                 </form>
@@ -1417,19 +1428,22 @@ class AdminView {
             
             <?php if ($post['is_locked']): ?>
                 <form method="POST" style="display: inline;">
-                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="unlock_post">Desbloquear</button>
                 </form>
             <?php endif; ?>
             
             <?php if ($post['is_pinned']): ?>
                 <form method="POST" style="display: inline;">
-                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="unpin_post">Desfijar</button>
                 </form>
             <?php else: ?>
                 <form method="POST" style="display: inline;">
-                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="pin_post">Fijar</button>
                 </form>
             <?php endif; ?>
@@ -1438,7 +1452,8 @@ class AdminView {
             
             <?php if (!empty($post['image_filename']) && file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
                 <form method="POST" style="display: inline;">
-                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="delete_image" onclick="return confirm('¿Eliminar la imagen de este post?')">Eliminar Imagen</button>
                 </form>
             <?php endif; ?>
@@ -1490,6 +1505,7 @@ class AdminView {
                                 <td><?php echo date('d/m/Y H:i:s', strtotime($report['created_at'])); ?></td>
                                 <td>
                                     <form method="POST" action="admin_actions.php">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="report_id" value="<?php echo $report['id']; ?>">
                                         <button type="submit" name="delete_report" class="btn-delete">Eliminar</button>
                                     </form>
@@ -1537,6 +1553,7 @@ class AdminView {
                                 <td>
                                     <button type="button" class="btn-edit" onclick="editBoard(<?php echo $board['id']; ?>, '<?php echo htmlspecialchars($board['name']); ?>', '<?php echo htmlspecialchars($board['short_id']); ?>', '<?php echo htmlspecialchars($board['description']); ?>')">Editar</button>
                                     <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="board_id" value="<?php echo $board['id']; ?>">
                                         <button type="submit" name="delete_board" class="btn-delete" onclick="return confirm('¿Eliminar este tablón? Todos los posts se perderán.')">Eliminar</button>
                                     </form>
@@ -1559,6 +1576,7 @@ class AdminView {
         <section id="crear-tablon" class="admin-section" style="display:none;">
             <h3>Crear Nuevo Tablón</h3>
             <form method="POST" class="board-form">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="form-group">
                     <label for="board_name">Nombre del Tablón:</label>
                     <input type="text" id="board_name" name="board_name" required placeholder="Ej: Tecnología" maxlength="100">

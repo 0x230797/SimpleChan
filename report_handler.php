@@ -6,8 +6,8 @@
  * y redirige de vuelta a la página original con el resultado.
  */
 
-session_start();
 require_once 'config.php';
+initialize_session();
 require_once 'functions.php';
 
 // Verificar si el usuario está baneado
@@ -38,6 +38,12 @@ function processReport() {
     $details = clean_input($_POST['report_details'] ?? '');
     $reporter_ip = get_user_ip();
     $return_url = $_POST['return_url'] ?? 'index.php';
+
+    // Verificar CSRF
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        redirectWithError($return_url, 'Token CSRF inv\u00e1lido.');
+        return;
+    }
     
     // Validaciones
     if ($post_id <= 0) {
