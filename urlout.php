@@ -114,18 +114,16 @@ class UrlOutView {
     private function renderError(): void {
         ?>
         <section class="box-outer top-box">
-            <div class="box-inner">
-                <div class="boxbar">
-                    <h2>Error</h2>
+            <div class="boxbar">
+                <h2>Error</h2>
+            </div>
+            <div class="boxcontent">
+                <div class="error">
+                    <p><strong><?php echo htmlspecialchars($this->controller->getErrorMessage()); ?></strong></p>
+                    <p>Por favor, verifica el enlace e intenta nuevamente.</p>
                 </div>
-                <div class="boxcontent">
-                    <div class="error">
-                        <p><strong><?php echo htmlspecialchars($this->controller->getErrorMessage()); ?></strong></p>
-                        <p>Por favor, verifica el enlace e intenta nuevamente.</p>
-                    </div>
-                    <br>
-                    <p>[<a href="javascript:history.back()">« Regresar</a>] [<a href="index.php">Inicio</a>]</p>
-                </div>
+                <br>
+                <p>[<a href="javascript:history.back()">« Regresar</a>] [<a href="index.php">Inicio</a>]</p>
             </div>
         </section>
         <?php
@@ -137,36 +135,33 @@ class UrlOutView {
     private function renderRedirection(): void {
         $url = $this->controller->getTargetUrl();
         ?>
-        <section class="box-outer top-box">
-            <div class="box-inner">
-                <div class="boxbar">
-                    <h2>Sitio externo</h2>
-                </div>
-                <div class="boxcontent">
-                    <div class="warning-box">
-                        <p><strong>Estás a punto de salir de SimpleChan</strong></p>
-                        <p>Serás redirigido a un sitio externo:</p>
-                        <p class="target-url" style="word-break: break-all; padding: 8px 0; border-radius: 3px; font-family: monospace;">
-                            <?php echo htmlspecialchars($url); ?>
-                        </p>
-                        <p><small>SimpleChan no se hace responsable del contenido de sitios externos.</small></p>
-                    </div>
-                    
-                    <div class="redirect-actions" style="text-align: center; margin: 20px 0;">
-                        <p><strong id="countdown">Redirección automática en 5 segundos...</strong></p>
-                        <br>
-                        <p>
-                            [<a href="<?php echo htmlspecialchars($url); ?>" class="btn-continue" id="continue-btn">Continuar ahora</a>]
-                            [<a href="javascript:history.back()">Cancelar</a>]
-                        </p>
-                    </div>
+        <div class="box-outer top-box" id="urlout">
+            <div class="boxbar">
+                <h2>Sitio externo</h2>
+            </div>
+            <div class="boxcontent">
+                <div>
+                    <p><strong>Estás a punto de salir de SimpleChan</strong></p>
+                    <p>Serás redirigido a un sitio externo:</p>
+                    <p class="target-url" style="padding: 5px 0; font-family: monospace;">
+                        <?php echo htmlspecialchars($url); ?>
+                    </p>
+                    <p><small>SimpleChan no se hace responsable del contenido de sitios externos.</small></p>
                 </div>
             </div>
-        </section>
+        </div>
+        <div class="redirect-actions" style="text-align: center; margin-top: 20px;">
+            <p><strong id="countdown">Redirección automática en 5 segundos...</strong></p>
+            <br>
+            <p>
+                [<a href="<?php echo htmlspecialchars($url); ?>" class="btn-continue" id="continue-btn">Continuar ahora</a>]
+                [<a href="javascript:history.back()">Cancelar</a>]
+            </p>
+        </div>
 
         <script>
         (function() {
-            let countdown = 5;
+            let countdown = 99999;
             const countdownEl = document.getElementById('countdown');
             const continueBtn = document.getElementById('continue-btn');
             

@@ -1,8 +1,0 @@
-# Protege el directorio de uploads: deshabilita listado y ejecuci\nOptions -Indexes
-
-<FilesMatch "\\.(php|php5|php7|phtml|pl|py|jsp|sh|cgi)$">
-    Require all denied
-</FilesMatch>
-
-# Asegurar que los .php no se ejecuten si el servidor est\u00e1 mal configurado
-AddType text/plain .php .php5 .php7 .phtml

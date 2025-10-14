@@ -1,6 +1,6 @@
 <?php
+session_start();
 require_once 'config.php';
-initialize_session();
 require_once 'functions.php';
 
 // Ejecutar migración de updated_at (solo se ejecuta una vez)
@@ -227,14 +227,12 @@ class CatalogView {
         ?>
         <section>
             <div class="box-outer top-box" id="catalog-threads">
-                <div class="box-inner">
-                    <div class="boxbar"><h2>Catálogo de Publicaciones</h2></div>
-                    <div class="boxcontent">
-                        <div id="c-threads">
-                            <?php foreach ($this->posts as $post): ?>
-                                <?php $this->renderCatalogPost($post); ?>
-                            <?php endforeach; ?>
-                        </div>
+                <div class="boxbar"><h2>Catálogo de Publicaciones</h2></div>
+                <div class="boxcontent">
+                    <div id="c-threads">
+                        <?php foreach ($this->posts as $post): ?>
+                            <?php $this->renderCatalogPost($post); ?>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>

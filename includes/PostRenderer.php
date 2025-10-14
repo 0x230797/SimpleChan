@@ -81,8 +81,8 @@ class PostRenderer
         ?>
         <div class="post-header-file">
             <b>Archivo:</b>
-            <a href="<?php echo htmlspecialchars(UPLOAD_DIR . $post['image_filename'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" title="<?php echo htmlspecialchars(UPLOAD_DIR . $post['image_filename'], ENT_QUOTES, 'UTF-8'); ?>">
-                <?php echo htmlspecialchars($post['image_filename'], ENT_QUOTES, 'UTF-8'); ?>
+            <a href="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" target="_blank" title="<?php echo UPLOAD_DIR . $post['image_filename']; ?>">
+                <?php echo htmlspecialchars($post['image_filename']); ?>
             </a>
             <b><a href="javascript:void(0)" onclick="searchImageOnGoogle('<?php echo UPLOAD_DIR . $post['image_filename']; ?>')" title="Buscar imagen en Google">[S]</a></b>
             (<?php echo format_file_size($post['image_size']) . ', ' . $post['image_dimensions']; ?>)
@@ -101,7 +101,7 @@ class PostRenderer
         ?>
         <div class="post-image">
             <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
-                <img src="<?php echo htmlspecialchars(UPLOAD_DIR . $post['image_filename'], ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo htmlspecialchars($post['image_filename'], ENT_QUOTES, 'UTF-8'); ?>" class="clickable-image">
+                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" title="<?php echo htmlspecialchars($post['image_filename']); ?>" class="clickable-image">
             <?php else: ?>
                 <img src="assets/imgs/filedeleted.png" alt="Imagen no disponible">
             <?php endif; ?>
@@ -146,7 +146,7 @@ class PostRenderer
     public function renderPostName(array $post): void 
     {
         if ($post['name'] === 'Administrador') {
-            echo '<span class="admin-name">Administrador</span>';
+            echo '<span class="admin-name">#Admin</span>';
         } else {
             echo '<span class="post-name">' . htmlspecialchars($post['name']) . '</span>';
         }
@@ -211,17 +211,13 @@ class PostRenderer
             return;
         }
         
-        // Usar el manejador de reportes centralizado
-        $form_action = 'report_handler.php';
-        $current_url = $_SERVER['REQUEST_URI'];
+        $form_action = $this->board ? 'boards.php' : 'index.php';
         ?>
         <div class="report-menu-wrapper">
             <span>[<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]</span>
             <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>">
                 <form method="POST" action="<?php echo $form_action; ?>">
                     <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
-                    <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($current_url); ?>">
-                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                     <?php if ($this->board): ?>
                         <input type="hidden" name="board" value="<?php echo htmlspecialchars($this->board['short_id']); ?>">
                     <?php endif; ?>
@@ -265,7 +261,6 @@ class PostRenderer
         ?>
         <form method="POST" action="admin_actions.php" style="display:inline;">
             <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
             <input type="hidden" name="return_url" value="<?php echo $_SERVER['REQUEST_URI']; ?>">
             <?php if ($post['is_locked']): ?>
                 [<button type="submit" name="unlock_post" class="btn-unlock">Desbloquear</button>]

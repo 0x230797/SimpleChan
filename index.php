@@ -1,6 +1,6 @@
 <?php
+session_start();
 require_once 'config.php';
-initialize_session();
 require_once 'functions.php';
 
 // Ejecutar migración de updated_at (solo se ejecuta una vez)
@@ -117,15 +117,13 @@ function organizeBoardsByCategory() {
 function renderBoardsSection($boards_by_category) {
     ?>
     <div class="box-outer top-box" id="boards">
-        <div class="box-inner">
-            <div class="boxbar">
-                <h2>Tablones</h2>
-            </div>
-            <div class="boxcontent">
-                <?php foreach ($boards_by_category as $category => $boards): ?>
-                    <?php renderBoardCategory($category, $boards); ?>
-                <?php endforeach; ?>
-            </div>
+        <div class="boxbar">
+            <h2>Tablones</h2>
+        </div>
+        <div class="boxcontent">
+            <?php foreach ($boards_by_category as $category => $boards): ?>
+                <?php renderBoardCategory($category, $boards); ?>
+            <?php endforeach; ?>
         </div>
     </div>
     <?php
@@ -160,16 +158,14 @@ function renderBoardCategory($category, $boards) {
 function renderPopularPostsSection($popular_posts) {
     ?>
     <div class="box-outer top-box" id="popular-threads">
-        <div class="box-inner">
-            <div class="boxbar">
-                <h2>Publicaciones Populares</h2>
-            </div>
-            <div class="boxcontent">
-                <div id="c-threads">
-                    <?php foreach ($popular_posts as $post): ?>
-                        <?php renderPopularPost($post); ?>
-                    <?php endforeach; ?>
-                </div>
+        <div class="boxbar">
+            <h2>Publicaciones Populares</h2>
+        </div>
+        <div class="boxcontent">
+            <div id="c-threads">
+                <?php foreach ($popular_posts as $post): ?>
+                    <?php renderPopularPost($post); ?>
+                <?php endforeach; ?>
             </div>
         </div>
     </div>
@@ -197,7 +193,7 @@ function renderPostImage($post) {
         if (file_exists(UPLOAD_DIR . $post['image_filename'])) {
             ?>
             <div class="post-image">
-                <img src="<?php echo htmlspecialchars(UPLOAD_DIR . $post['image_filename'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($post['image_original_name'], ENT_QUOTES, 'UTF-8'); ?>">
+                <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" alt="<?php echo htmlspecialchars($post['image_original_name']); ?>">
             </div>
             <?php
         } else {
@@ -214,20 +210,18 @@ function renderPostImage($post) {
 function renderStatsSection($site_stats) {
     ?>
     <div class="box-outer top-box" id="site-stats">
-        <div class="box-inner">
-            <div class="boxbar">
-                <h2>Estadísticas del Sitio</h2>
+        <div class="boxbar">
+            <h2>Estadísticas del Sitio</h2>
+        </div>
+        <div class="boxcontent">
+            <div class="stat-cell">
+                <b>Total de Publicaciones:</b> <?php echo number_format($site_stats['total_posts']); ?>
             </div>
-            <div class="boxcontent">
-                <div class="stat-cell">
-                    <b>Total de Publicaciones:</b> <?php echo number_format($site_stats['total_posts']); ?>
-                </div>
-                <div class="stat-cell">
-                    <b>Usuarios Únicos:</b> <?php echo number_format($site_stats['unique_ips']); ?>
-                </div>
-                <div class="stat-cell">
-                    <b>Peso Total de Archivos:</b> <?php echo format_file_size($site_stats['total_file_size']); ?>
-                </div>
+            <div class="stat-cell">
+                <b>Usuarios Únicos:</b> <?php echo number_format($site_stats['unique_users']); ?>
+            </div>
+            <div class="stat-cell">
+                <b>Peso Total de Archivos:</b> <?php echo $site_stats['total_size']; ?>
             </div>
         </div>
     </div>
@@ -259,7 +253,7 @@ function renderMessages($error, $success_message) {
     <link rel="stylesheet" href="assets/css/themes.css">
     <link id="site-favicon" rel="shortcut icon" href="assets/favicon/favicon.ico" type="image/x-icon">
 </head>
-<body>
+<body<?php echo is_admin() ? ' class="admin"' : ''; ?>>
     <header>
         <a href="index.php">
             <img id="site-logo" src="assets/imgs/logo.png" alt="SimpleChan">

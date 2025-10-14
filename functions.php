@@ -219,74 +219,6 @@ function get_all_boards() {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-/**
- * Crea un nuevo tablón
- * @param string $name Nombre del tablón
- * @param string $short_id ID corto del tablón
- * @param string $description Descripción del tablón
- * @return bool Éxito de la operación
- */
-function create_board($name, $short_id, $description = '') {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("
-            INSERT INTO boards (name, short_id, description, created_at) 
-            VALUES (?, ?, ?, NOW())
-        ");
-        return $stmt->execute([$name, $short_id, $description]);
-    } catch (PDOException $e) {
-        error_log("Error creating board: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Actualiza un tablón existente
- * @param int $board_id ID del tablón
- * @param string $name Nuevo nombre del tablón
- * @param string $short_id Nuevo ID corto del tablón
- * @param string $description Nueva descripción del tablón
- * @return bool Éxito de la operación
- */
-function update_board($board_id, $name, $short_id, $description = '') {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("
-            UPDATE boards 
-            SET name = ?, short_id = ?, description = ? 
-            WHERE id = ?
-        ");
-        return $stmt->execute([$name, $short_id, $description, $board_id]);
-    } catch (PDOException $e) {
-        error_log("Error updating board: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Elimina un tablón
- * @param int $board_id ID del tablón
- * @return bool Éxito de la operación
- */
-function delete_board($board_id) {
-    global $pdo;
-    
-    try {
-        // Primero eliminar todos los posts del tablón
-        $stmt = $pdo->prepare("DELETE FROM posts WHERE board_id = ?");
-        $stmt->execute([$board_id]);
-        
-        // Luego eliminar el tablón
-        $stmt = $pdo->prepare("DELETE FROM boards WHERE id = ?");
-        return $stmt->execute([$board_id]);
-    } catch (PDOException $e) {
-        error_log("Error deleting board: " . $e->getMessage());
-        return false;
-    }
-}
-
 // ===================================
 // GESTIÓN DE POSTS
 // ===================================
@@ -302,18 +234,12 @@ function delete_board($board_id) {
  * @param int $board_id ID del tablón
  * @return bool Éxito de la operación
  */
-function create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id = null, $board_id = null) {
+function create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id = null, $board_id) {
     global $pdo;
 
     // Asegurar que el nombre nunca esté vacío
     if (empty(trim($name))) {
         $name = 'Anónimo';
-    }
-
-    // Validar board_id
-    if ($board_id === null) {
-        error_log('create_post: board_id es requerido');
-        return false;
     }
 
     // Validar formatos reservados antes de crear un post
@@ -771,80 +697,29 @@ function upload_image($file) {
         ];
     }
     
-    // Verificar que provenga de una subida HTTP válida
-    if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
-        return [
-            'success' => false,
-            'error' => 'Archivo no válido.'
-        ];
-    }
-
-    // Sanitizar nombre original
-    $original_name = basename($file['name']);
-    // Reemplazar caracteres peligrosos y limitar longitud
-    $original_name = preg_replace('/[^\w\.\-\s]/u', '_', $original_name);
-    $original_name = mb_substr($original_name, 0, 200);
-
     // Validar extensión del archivo
-    $extension = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     if (!in_array($extension, ALLOWED_EXTENSIONS)) {
         return [
-            'success' => false,
+            'success' => false, 
             'error' => 'Tipo de archivo no permitido.'
         ];
     }
-
-    // Verificar que el archivo sea realmente una imagen (mitigar uploads con doble extension)
-    $image_info = @getimagesize($file['tmp_name']);
-    if ($image_info === false) {
-        return [
-            'success' => false,
-            'error' => 'El archivo no es una imagen válida.'
-        ];
-    }
-
-    $mime = $image_info['mime'] ?? '';
-    $allowed_mimes = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp'
-    ];
-    if (!in_array($mime, $allowed_mimes)) {
-        return [
-            'success' => false,
-            'error' => 'Tipo de MIME no permitido.'
-        ];
-    }
-
-    // Generar nombre único para el archivo (no basado en el nombre original)
+    
+    // Generar nombre único para el archivo
     $filename = generate_unique_filename($extension);
-
-    // Asegurar formato de la ruta de uploads
-    $upload_dir = rtrim(UPLOAD_DIR, '/\\') . DIRECTORY_SEPARATOR;
-    if (!is_dir($upload_dir)) {
-        if (!mkdir($upload_dir, 0755, true)) {
-            return [
-                'success' => false,
-                'error' => 'No se pudo crear el directorio de uploads.'
-            ];
-        }
-    }
-
-    $filepath = $upload_dir . $filename;
-
-    // Mover archivo subido de forma segura
+    $filepath = UPLOAD_DIR . $filename;
+    
+    // Mover archivo subido
     if (move_uploaded_file($file['tmp_name'], $filepath)) {
-        // Forzar permisos seguros
-        @chmod($filepath, 0644);
         return [
             'success' => true,
             'filename' => $filename,
-            'original_name' => $original_name
+            'original_name' => $file['name']
         ];
     } else {
         return [
-            'success' => false,
+            'success' => false, 
             'error' => 'Error al subir el archivo.'
         ];
     }
@@ -994,10 +869,10 @@ function apply_admin_formatting(string $text, bool $is_admin): string {
     }
     
     // H1 - Títulos grandes
-    $text = preg_replace('/\[H1\](.+?)\[\/H1\]/is', '<h1 style="color: #FF6600; text-align: center; margin: 10px 0;">$1</h1>', $text);
+    $text = preg_replace('/\[H1\](.+?)\[\/H1\]/is', '<h1>$1</h1>', $text);
     
     // H2 - Subtítulos
-    $text = preg_replace('/\[H2\](.+?)\[\/H2\]/is', '<h2 style="color: #FF6600; text-align: center; margin: 8px 0;">$1</h2>', $text);
+    $text = preg_replace('/\[H2\](.+?)\[\/H2\]/is', '<h2>$1</h2>', $text);
     
     // Color - Texto de color
     $text = preg_replace('/\[Color=([#\w]+)\](.+?)\[\/Color\]/is', '<span style="color: $1;">$2</span>', $text);
@@ -1276,29 +1151,18 @@ function delete_report($report_id) {
  * @return bool True si es administrador
  */
 function is_admin() {
-    // Verificar si hay sesión de staff user
-    if (isset($_SESSION['staff_rank'])) {
-        return $_SESSION['staff_rank'] === 'admin';
-    }
-    
-    // Fallback al sistema original
     if (!isset($_SESSION['admin_token'])) {
         return false;
     }
     
     global $pdo;
-    try {
-        $stmt = $pdo->prepare("
-            SELECT * FROM admin_sessions 
-            WHERE session_token = ? AND expires_at > NOW()
-        ");
-        $stmt->execute([$_SESSION['admin_token']]);
-        
-        return $stmt->fetch() !== false;
-    } catch (PDOException $e) {
-        // Si la tabla no existe, usar verificación simple
-        return $_SESSION['admin_token'] === hash('sha256', ADMIN_PASSWORD . 'simplechan');
-    }
+    $stmt = $pdo->prepare("
+        SELECT * FROM admin_sessions 
+        WHERE session_token = ? AND expires_at > NOW()
+    ");
+    $stmt->execute([$_SESSION['admin_token']]);
+    
+    return $stmt->fetch() !== false;
 }
 
 /**
@@ -1326,239 +1190,6 @@ function create_admin_session() {
 }
 
 // ===================================
-// GESTIÓN DE USUARIOS Y PERMISOS
-// ===================================
-
-/**
- * Rangos de usuario disponibles
- */
-define('USER_RANKS', [
-    'admin' => 'Administrador',
-    'global_mod' => 'Moderador Global', 
-    'board_mod' => 'Moderador de Tablón',
-    'janitor' => 'Conserje'
-]);
-
-/**
- * Crea un nuevo usuario del staff
- * @param string $username Nombre de usuario
- * @param string $password Contraseña
- * @param string $rank Rango del usuario
- * @param array $board_permissions Tablones asignados (para moderadores de tablón)
- * @return bool Éxito de la operación
- */
-function create_staff_user($username, $password, $rank, $board_permissions = []) {
-    global $pdo;
-    
-    try {
-        $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        $board_perms_json = json_encode($board_permissions);
-        
-        $stmt = $pdo->prepare("
-            INSERT INTO staff_users (username, password_hash, rank, board_permissions, created_at) 
-            VALUES (?, ?, ?, ?, NOW())
-        ");
-        return $stmt->execute([$username, $password_hash, $rank, $board_perms_json]);
-    } catch (PDOException $e) {
-        if (strpos($e->getMessage(), "doesn't exist") !== false) {
-            return false;
-        }
-        error_log("Error creating staff user: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Obtiene todos los usuarios del staff
- * @return array Lista de usuarios del staff
- */
-function get_all_staff_users() {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->query("
-            SELECT id, username, rank, board_permissions, is_active, created_at, last_login
-            FROM staff_users 
-            ORDER BY 
-                CASE rank 
-                    WHEN 'admin' THEN 1 
-                    WHEN 'global_mod' THEN 2 
-                    WHEN 'board_mod' THEN 3 
-                    WHEN 'janitor' THEN 4 
-                END,
-                username ASC
-        ");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        // Si la tabla no existe, devolver array vacío
-        if (strpos($e->getMessage(), "doesn't exist") !== false) {
-            return [];
-        }
-        // Para otros errores, reenviar la excepción
-        throw $e;
-    }
-}
-
-/**
- * Obtiene un usuario del staff por ID
- * @param int $user_id ID del usuario
- * @return array|false Datos del usuario o false si no existe
- */
-function get_staff_user($user_id) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM staff_users WHERE id = ?");
-        $stmt->execute([$user_id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        // Si la tabla no existe, devolver false
-        if (strpos($e->getMessage(), "doesn't exist") !== false) {
-            return false;
-        }
-        throw $e;
-    }
-}
-
-/**
- * Obtiene un usuario del staff por nombre de usuario
- * @param string $username Nombre de usuario
- * @return array|false Datos del usuario o false si no existe
- */
-function get_staff_user_by_username($username) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM staff_users WHERE username = ?");
-        $stmt->execute([$username]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        // Si la tabla no existe, devolver false
-        if (strpos($e->getMessage(), "doesn't exist") !== false) {
-            return false;
-        }
-        throw $e;
-    }
-}
-
-/**
- * Actualiza un usuario del staff
- * @param int $user_id ID del usuario
- * @param string $username Nuevo nombre de usuario
- * @param string $rank Nuevo rango
- * @param array $board_permissions Nuevos permisos de tablón
- * @param bool $is_active Estado activo/inactivo
- * @return bool Éxito de la operación
- */
-function update_staff_user($user_id, $username, $rank, $board_permissions = [], $is_active = true) {
-    global $pdo;
-    
-    try {
-        $board_perms_json = json_encode($board_permissions);
-        
-        $stmt = $pdo->prepare("
-            UPDATE staff_users 
-            SET username = ?, rank = ?, board_permissions = ?, is_active = ?
-            WHERE id = ?
-        ");
-        return $stmt->execute([$username, $rank, $board_perms_json, $is_active, $user_id]);
-    } catch (PDOException $e) {
-        error_log("Error updating staff user: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Cambia la contraseña de un usuario del staff
- * @param int $user_id ID del usuario
- * @param string $new_password Nueva contraseña
- * @return bool Éxito de la operación
- */
-function change_staff_password($user_id, $new_password) {
-    global $pdo;
-    
-    try {
-        $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
-        
-        $stmt = $pdo->prepare("UPDATE staff_users SET password_hash = ? WHERE id = ?");
-        return $stmt->execute([$password_hash, $user_id]);
-    } catch (PDOException $e) {
-        error_log("Error changing staff password: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Elimina un usuario del staff
- * @param int $user_id ID del usuario
- * @return bool Éxito de la operación
- */
-function delete_staff_user($user_id) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("DELETE FROM staff_users WHERE id = ?");
-        return $stmt->execute([$user_id]);
-    } catch (PDOException $e) {
-        error_log("Error deleting staff user: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Verifica si un usuario tiene permisos para un tablón específico
- * @param int $user_id ID del usuario
- * @param int $board_id ID del tablón
- * @return bool True si tiene permisos
- */
-function user_has_board_permission($user_id, $board_id) {
-    $user = get_staff_user($user_id);
-    if (!$user || !$user['is_active']) {
-        return false;
-    }
-    
-    // Admins y moderadores globales tienen acceso a todo
-    if (in_array($user['rank'], ['admin', 'global_mod'])) {
-        return true;
-    }
-    
-    // Moderadores de tablón y conserjes verificar permisos específicos
-    if (in_array($user['rank'], ['board_mod', 'janitor'])) {
-        $board_permissions = json_decode($user['board_permissions'], true) ?: [];
-        return in_array($board_id, $board_permissions);
-    }
-    
-    return false;
-}
-
-/**
- * Autentica un usuario del staff
- * @param string $username Nombre de usuario
- * @param string $password Contraseña
- * @return array|false Datos del usuario o false si falla
- */
-function authenticate_staff_user($username, $password) {
-    global $pdo;
-    
-    $stmt = $pdo->prepare("
-        SELECT * FROM staff_users 
-        WHERE username = ? AND is_active = 1
-    ");
-    $stmt->execute([$username]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($user && password_verify($password, $user['password_hash'])) {
-        // Actualizar último login
-        $stmt = $pdo->prepare("UPDATE staff_users SET last_login = NOW() WHERE id = ?");
-        $stmt->execute([$user['id']]);
-        
-        return $user;
-    }
-    
-    return false;
-}
-
-// ===================================
 // ESTADÍSTICAS DEL SITIO
 // ===================================
 
@@ -1567,79 +1198,23 @@ function authenticate_staff_user($username, $password) {
  * @return array Estadísticas del sitio
  */
 function get_site_stats() {
-    try {
-        global $pdo;
-        
-        $stats = [];
-        
-        // Total de posts
-        $stmt = $pdo->query("SELECT COUNT(*) FROM posts WHERE is_deleted = 0");
-        $stats['total_posts'] = $stmt->fetchColumn();
-        
-        // Posts de hoy
-        $stmt = $pdo->query("SELECT COUNT(*) FROM posts WHERE DATE(created_at) = CURDATE() AND is_deleted = 0");
-        $stats['posts_today'] = $stmt->fetchColumn();
-        
-        // Posts de esta semana
-        $stmt = $pdo->query("SELECT COUNT(*) FROM posts WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND is_deleted = 0");
-        $stats['posts_week'] = $stmt->fetchColumn();
-        
-        // Tablones activos (que tienen al menos 1 post)
-        $stmt = $pdo->query("
-            SELECT COUNT(DISTINCT b.id) 
-            FROM boards b 
-            INNER JOIN posts p ON b.id = p.board_id 
-            WHERE p.is_deleted = 0
-        ");
-        $stats['active_boards'] = $stmt->fetchColumn();
-        
-        // Total de tablones
-        $stmt = $pdo->query("SELECT COUNT(*) FROM boards");
-        $stats['total_boards'] = $stmt->fetchColumn();
-        
-        // IPs únicas que han posteado
-        $stmt = $pdo->query("SELECT COUNT(DISTINCT ip_address) FROM posts WHERE is_deleted = 0");
-        $stats['unique_ips'] = $stmt->fetchColumn();
-        
-        // Archivos subidos (imágenes)
-        $stmt = $pdo->query("SELECT COUNT(*) FROM posts WHERE image_filename IS NOT NULL AND image_filename != '' AND is_deleted = 0");
-        $stats['total_files'] = $stmt->fetchColumn();
-        
-        // Calcular tamaño total de archivos
-        $stats['total_file_size'] = calculate_total_file_size();
-        
-        // Posts eliminados
-        $stmt = $pdo->query("SELECT COUNT(*) FROM posts WHERE is_deleted = 1");
-        $stats['deleted_posts'] = $stmt->fetchColumn();
-        
-        // Posts principales (no respuestas)
-        $stmt = $pdo->query("SELECT COUNT(*) FROM posts WHERE parent_id IS NULL AND is_deleted = 0");
-        $stats['main_posts'] = $stmt->fetchColumn();
-        
-        // Respuestas
-        $stmt = $pdo->query("SELECT COUNT(*) FROM posts WHERE parent_id IS NOT NULL AND is_deleted = 0");
-        $stats['replies'] = $stmt->fetchColumn();
-        
-        return $stats;
-        
-    } catch (PDOException $e) {
-        error_log("Error al obtener estadísticas: " . $e->getMessage());
-        
-        // Retornar estadísticas por defecto en caso de error
-        return [
-            'total_posts' => 0,
-            'posts_today' => 0,
-            'posts_week' => 0,
-            'active_boards' => 0,
-            'total_boards' => 0,
-            'unique_ips' => 0,
-            'total_files' => 0,
-            'total_file_size' => 0,
-            'deleted_posts' => 0,
-            'main_posts' => 0,
-            'replies' => 0
-        ];
-    }
+    global $pdo;
+
+    // Total de publicaciones
+    $total_posts = $pdo->query("SELECT COUNT(*) FROM posts")->fetchColumn();
+
+    // Usuarios únicos que han publicado
+    $unique_users = $pdo->query("SELECT COUNT(DISTINCT ip_address) FROM posts")->fetchColumn();
+
+    // Calcular peso total de archivos (mejor implementación)
+    $total_size_bytes = calculate_total_file_size();
+    $total_size_formatted = format_file_size($total_size_bytes);
+
+    return [
+        'total_posts' => $total_posts,
+        'unique_users' => $unique_users,
+        'total_size' => $total_size_formatted
+    ];
 }
 
 /**
@@ -1647,32 +1222,26 @@ function get_site_stats() {
  * @return int Tamaño total en bytes
  */
 function calculate_total_file_size() {
-    try {
-        global $pdo;
-        
-        $total_size = 0;
-        
-        // Obtener todos los archivos de imagen
-        $stmt = $pdo->query("
-            SELECT image_filename FROM posts 
-            WHERE image_filename IS NOT NULL AND image_filename != '' AND is_deleted = 0
-        ");
-        $files = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        // Calcular el tamaño real de cada archivo
-        foreach ($files as $filename) {
-            $upload_dir = defined('UPLOAD_DIR') ? UPLOAD_DIR : 'uploads/';
-            $filepath = $upload_dir . $filename;
-            if (file_exists($filepath)) {
-                $total_size += filesize($filepath);
-            }
+    global $pdo;
+    
+    $total_size = 0;
+    
+    // Obtener todos los archivos de imagen
+    $stmt = $pdo->query("
+        SELECT image_filename FROM posts 
+        WHERE image_filename IS NOT NULL AND image_filename != ''
+    ");
+    $files = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    // Calcular el tamaño real de cada archivo
+    foreach ($files as $filename) {
+        $filepath = UPLOAD_DIR . $filename;
+        if (file_exists($filepath)) {
+            $total_size += filesize($filepath);
         }
-        
-        return $total_size;
-    } catch (PDOException $e) {
-        error_log("Error al calcular tamaño de archivos: " . $e->getMessage());
-        return 0;
     }
+    
+    return $total_size;
 }
 
 /**
@@ -1680,26 +1249,21 @@ function calculate_total_file_size() {
  * @return array Estadísticas por tablón
  */
 function get_board_statistics() {
-    try {
-        global $pdo;
-        
-        $stmt = $pdo->query("
-            SELECT 
-                b.name,
-                b.short_id,
-                COUNT(p.id) as post_count,
-                MAX(p.created_at) as last_post
-            FROM boards b
-            LEFT JOIN posts p ON b.id = p.board_id AND p.is_deleted = 0
-            GROUP BY b.id, b.name, b.short_id
-            ORDER BY post_count DESC
-        ");
-        
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Error al obtener estadísticas de tablones: " . $e->getMessage());
-        return [];
-    }
+    global $pdo;
+    
+    $stmt = $pdo->query("
+        SELECT 
+            b.name,
+            b.short_id,
+            COUNT(p.id) as post_count,
+            MAX(p.created_at) as last_post
+        FROM boards b
+        LEFT JOIN posts p ON b.id = p.board_id AND p.is_deleted = 0
+        GROUP BY b.id, b.name, b.short_id
+        ORDER BY post_count DESC
+    ");
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 /**
@@ -2094,115 +1658,6 @@ function initialize_updated_at_field() {
         error_log("Error al inicializar updated_at: " . $e->getMessage());
         return false;
     }
-}
-
-// ===================================
-// CONFIGURACIÓN DEL SITIO
-// ===================================
-
-/**
- * Obtiene la configuración actual del sitio
- * @return array Configuración del sitio
- */
-function get_site_config() {
-    try {
-        global $pdo;
-        
-        // Intentar obtener configuración de la base de datos
-        $stmt = $pdo->query("SELECT config_key, config_value FROM site_config");
-        $config_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        $config = [];
-        foreach ($config_rows as $row) {
-            $config[$row['config_key']] = $row['config_value'];
-        }
-        
-        // Valores por defecto si no hay configuración
-        $defaults = [
-            'site_title' => 'SimpleChan',
-            'site_description' => 'Un imageboard simple y funcional',
-            'max_file_size' => 2097152, // 2MB
-            'max_post_length' => 2000,
-            'posts_per_page' => 10,
-            'enable_file_uploads' => 1,
-            'enable_tripcode' => 1,
-            'maintenance_mode' => 0,
-            'allow_anonymous' => 1,
-        ];
-        
-        // Combinar con valores por defecto
-        return array_merge($defaults, $config);
-        
-    } catch (PDOException $e) {
-        error_log("Error al obtener configuración: " . $e->getMessage());
-        
-        // Retornar configuración por defecto si hay error
-        return [
-            'site_title' => 'SimpleChan',
-            'site_description' => 'Un imageboard simple y funcional',
-            'max_file_size' => 2097152,
-            'max_post_length' => 2000,
-            'posts_per_page' => 10,
-            'enable_file_uploads' => 1,
-            'enable_tripcode' => 1,
-            'maintenance_mode' => 0,
-            'allow_anonymous' => 1,
-        ];
-    }
-}
-
-/**
- * Actualiza la configuración del sitio
- * @param array $config Nueva configuración
- * @return bool Éxito de la operación
- */
-function update_site_config($config) {
-    try {
-        global $pdo;
-        
-        // Crear tabla si no existe
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS site_config (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                config_key VARCHAR(50) NOT NULL UNIQUE,
-                config_value TEXT,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )
-        ");
-        
-        // Actualizar cada configuración
-        $stmt = $pdo->prepare("
-            INSERT INTO site_config (config_key, config_value) 
-            VALUES (?, ?) 
-            ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)
-        ");
-        
-        foreach ($config as $key => $value) {
-            // Convertir booleanos a enteros
-            if (is_bool($value)) {
-                $value = $value ? 1 : 0;
-            }
-            
-            $stmt->execute([$key, $value]);
-        }
-        
-        return true;
-        
-    } catch (PDOException $e) {
-        error_log("Error al actualizar configuración: " . $e->getMessage());
-        return false;
-    }
-}
-
-/**
- * Obtiene un valor específico de configuración
- * @param string $key Clave de configuración
- * @param mixed $default Valor por defecto
- * @return mixed Valor de configuración
- */
-function get_config_value($key, $default = null) {
-    $config = get_site_config();
-    return $config[$key] ?? $default;
 }
 
 ?>

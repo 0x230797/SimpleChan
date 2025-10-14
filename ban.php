@@ -271,7 +271,7 @@ class BanView {
         ?>
         <div class="ban-notice">
             <h2>Acceso Denegado</h2>
-            <p><strong>Tu IP ha sido baneada.</strong></p>
+            <p><strong>Tu IP ha sido baneada del imageboard.</strong></p>
             
             <div>
                 <?php $this->renderBanStatus(); ?>

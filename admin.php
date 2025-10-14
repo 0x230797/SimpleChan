@@ -1,6 +1,6 @@
 <?php
+session_start();
 require_once 'config.php';
-initialize_session();
 require_once 'functions.php';
 
 /**
@@ -22,12 +22,6 @@ class AdminController {
             $this->logout();
         }
         
-        // Manejar auto-refresh manteniendo la sección actual
-        if (isset($_POST['auto_refresh']) && isset($_POST['current_section'])) {
-            // No procesar otras acciones durante el auto-refresh
-            return;
-        }
-        
         // Procesar peticiones POST
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->handlePostRequests();
@@ -39,14 +33,7 @@ class AdminController {
      */
     private function handlePostRequests() {
         $redirect = false;
-        // Verificar CSRF para acciones que cambian estado (excepto login)
-        if (!isset($_POST['admin_login'])) {
-            if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-                $this->addError('Token CSRF inválido.');
-                return;
-            }
-        }
-
+        
         // Login de administrador
         if (isset($_POST['admin_login'])) {
             $this->processAdminLogin();
@@ -94,46 +81,6 @@ class AdminController {
             $redirect = $this->unpinPost();
         }
         
-        // Crear tablón
-        if (isset($_POST['create_board'])) {
-            $redirect = $this->createBoard();
-        }
-        
-        // Editar tablón
-        if (isset($_POST['edit_board'])) {
-            $redirect = $this->editBoard();
-        }
-        
-        // Eliminar tablón
-        if (isset($_POST['delete_board'])) {
-            $redirect = $this->deleteBoard();
-        }
-        
-        // Crear usuario del staff
-        if (isset($_POST['create_staff_user'])) {
-            $redirect = $this->createStaffUser();
-        }
-        
-        // Editar usuario del staff
-        if (isset($_POST['edit_staff_user'])) {
-            $redirect = $this->editStaffUser();
-        }
-        
-        // Eliminar usuario del staff
-        if (isset($_POST['delete_staff_user'])) {
-            $redirect = $this->deleteStaffUser();
-        }
-        
-        // Cambiar contraseña de usuario
-        if (isset($_POST['change_staff_password'])) {
-            $redirect = $this->changeStaffPassword();
-        }
-        
-        // Actualizar configuraciones
-        if (isset($_POST['update_config'])) {
-            $redirect = $this->updateSiteConfig();
-        }
-        
         // Redirigir si es necesario
         if ($redirect) {
             $this->redirect('admin.php');
@@ -144,42 +91,21 @@ class AdminController {
      * Procesa el login de administrador
      */
     private function processAdminLogin() {
-        $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
-        
-        if (empty($username)) {
-            $this->addError('El nombre de usuario es requerido.');
-            return;
-        }
         
         if (empty($password)) {
             $this->addError('La contraseña es requerida.');
             return;
         }
         
-        // Primero intentar autenticación con el sistema de staff users
-        $staff_user = authenticate_staff_user($username, $password);
-        if ($staff_user) {
-            // Crear sesión de administrador para el nuevo sistema
-            $_SESSION['admin_token'] = bin2hex(random_bytes(32));
-            $_SESSION['staff_user_id'] = $staff_user['id'];
-            $_SESSION['staff_username'] = $staff_user['username'];
-            $_SESSION['staff_rank'] = $staff_user['rank'];
-            
-            $this->addSuccess('Sesión iniciada correctamente como ' . $staff_user['username']);
-            $this->redirect('admin.php');
-            return;
-        }
-        
-        // Fallback al sistema original de admin (solo para administrador principal)
-        if ($username === 'admin' && $password === ADMIN_PASSWORD) {
+        if ($password === ADMIN_PASSWORD) {
             if (create_admin_session()) {
                 $this->addSuccess('Sesión de administrador iniciada correctamente.');
             } else {
                 $this->addError('Error al crear la sesión.');
             }
         } else {
-            $this->addError('Usuario o contraseña incorrectos.');
+            $this->addError('Contraseña incorrecta.');
         }
     }
     
@@ -355,351 +281,13 @@ class AdminController {
     }
     
     /**
-     * Crea un nuevo tablón
-     */
-    private function createBoard() {
-        $name = trim($_POST['board_name'] ?? '');
-        $short_id = trim($_POST['board_short_id'] ?? '');
-        $description = trim($_POST['board_description'] ?? '');
-        
-        if (empty($name)) {
-            $this->addError('El nombre del tablón es requerido.');
-            return false;
-        }
-        
-        if (empty($short_id)) {
-            $this->addError('El ID corto del tablón es requerido.');
-            return false;
-        }
-        
-        // Validar que el short_id solo contenga letras y números
-        if (!preg_match('/^[a-zA-Z0-9]+$/', $short_id)) {
-            $this->addError('El ID corto solo puede contener letras y números.');
-            return false;
-        }
-        
-        // Verificar que no exista un tablón con el mismo nombre o short_id
-        if (get_board_by_name($name)) {
-            $this->addError('Ya existe un tablón con ese nombre.');
-            return false;
-        }
-        
-        if (get_board_by_short_id($short_id)) {
-            $this->addError('Ya existe un tablón con ese ID corto.');
-            return false;
-        }
-        
-        if (create_board($name, $short_id, $description)) {
-            $this->addSuccess('Tablón creado correctamente.');
-            return true;
-        } else {
-            $this->addError('Error al crear el tablón.');
-            return false;
-        }
-    }
-    
-    /**
-     * Edita un tablón existente
-     */
-    private function editBoard() {
-        $board_id = (int)($_POST['board_id'] ?? 0);
-        $name = trim($_POST['board_name'] ?? '');
-        $short_id = trim($_POST['board_short_id'] ?? '');
-        $description = trim($_POST['board_description'] ?? '');
-        
-        if ($board_id <= 0) {
-            $this->addError('ID de tablón inválido.');
-            return false;
-        }
-        
-        if (empty($name)) {
-            $this->addError('El nombre del tablón es requerido.');
-            return false;
-        }
-        
-        if (empty($short_id)) {
-            $this->addError('El ID corto del tablón es requerido.');
-            return false;
-        }
-        
-        // Validar que el short_id solo contenga letras y números
-        if (!preg_match('/^[a-zA-Z0-9]+$/', $short_id)) {
-            $this->addError('El ID corto solo puede contener letras y números.');
-            return false;
-        }
-        
-        // Verificar que el tablón existe
-        $existing_board = get_board_by_id($board_id);
-        if (!$existing_board) {
-            $this->addError('El tablón no existe.');
-            return false;
-        }
-        
-        // Verificar que no haya conflictos con otros tablones
-        $name_conflict = get_board_by_name($name);
-        if ($name_conflict && $name_conflict['id'] != $board_id) {
-            $this->addError('Ya existe otro tablón con ese nombre.');
-            return false;
-        }
-        
-        $short_id_conflict = get_board_by_short_id($short_id);
-        if ($short_id_conflict && $short_id_conflict['id'] != $board_id) {
-            $this->addError('Ya existe otro tablón con ese ID corto.');
-            return false;
-        }
-        
-        if (update_board($board_id, $name, $short_id, $description)) {
-            $this->addSuccess('Tablón editado correctamente.');
-            return true;
-        } else {
-            $this->addError('Error al editar el tablón.');
-            return false;
-        }
-    }
-    
-    /**
-     * Elimina un tablón
-     */
-    private function deleteBoard() {
-        $board_id = (int)($_POST['board_id'] ?? 0);
-        
-        if ($board_id <= 0) {
-            $this->addError('ID de tablón inválido.');
-            return false;
-        }
-        
-        // Verificar que el tablón existe
-        $board = get_board_by_id($board_id);
-        if (!$board) {
-            $this->addError('El tablón no existe.');
-            return false;
-        }
-        
-        // Contar posts en el tablón
-        $post_count = count_posts_by_board($board_id);
-        if ($post_count > 0) {
-            $this->addError("No se puede eliminar el tablón porque contiene {$post_count} posts. Elimina todos los posts primero.");
-            return false;
-        }
-        
-        if (delete_board($board_id)) {
-            $this->addSuccess('Tablón eliminado correctamente.');
-            return true;
-        } else {
-            $this->addError('Error al eliminar el tablón.');
-            return false;
-        }
-    }
-    
-    /**
-     * Crea un nuevo usuario del staff
-     */
-    private function createStaffUser() {
-        $username = trim($_POST['staff_username'] ?? '');
-        $password = $_POST['staff_password'] ?? '';
-        $rank = $_POST['staff_rank'] ?? '';
-        $board_permissions = $_POST['board_permissions'] ?? [];
-        
-        if (empty($username)) {
-            $this->addError('El nombre de usuario es requerido.');
-            return false;
-        }
-        
-        if (empty($password)) {
-            $this->addError('La contraseña es requerida.');
-            return false;
-        }
-        
-        if (!in_array($rank, array_keys(USER_RANKS))) {
-            $this->addError('Rango inválido.');
-            return false;
-        }
-        
-        // Validar que el username no exista
-        $existing_user = get_staff_user_by_username($username);
-        if ($existing_user) {
-            $this->addError('Ya existe un usuario con ese nombre.');
-            return false;
-        }
-        
-        if (create_staff_user($username, $password, $rank, $board_permissions)) {
-            $this->addSuccess('Usuario creado correctamente.');
-            return true;
-        } else {
-            $this->addError('Error al crear el usuario.');
-            return false;
-        }
-    }
-    
-    /**
-     * Edita un usuario del staff
-     */
-    private function editStaffUser() {
-        $user_id = (int)($_POST['staff_user_id'] ?? 0);
-        $username = trim($_POST['staff_username'] ?? '');
-        $rank = $_POST['staff_rank'] ?? '';
-        $board_permissions = $_POST['board_permissions'] ?? [];
-        $is_active = isset($_POST['is_active']) ? 1 : 0;
-        
-        if ($user_id <= 0) {
-            $this->addError('ID de usuario inválido.');
-            return false;
-        }
-        
-        if (empty($username)) {
-            $this->addError('El nombre de usuario es requerido.');
-            return false;
-        }
-        
-        if (!in_array($rank, array_keys(USER_RANKS))) {
-            $this->addError('Rango inválido.');
-            return false;
-        }
-        
-        // Verificar que el usuario existe
-        $existing_user = get_staff_user($user_id);
-        if (!$existing_user) {
-            $this->addError('El usuario no existe.');
-            return false;
-        }
-        
-        // Verificar que no haya conflicto con el username
-        $username_conflict = get_staff_user_by_username($username);
-        if ($username_conflict && $username_conflict['id'] != $user_id) {
-            $this->addError('Ya existe otro usuario con ese nombre.');
-            return false;
-        }
-        
-        if (update_staff_user($user_id, $username, $rank, $board_permissions, $is_active)) {
-            $this->addSuccess('Usuario editado correctamente.');
-            return true;
-        } else {
-            $this->addError('Error al editar el usuario.');
-            return false;
-        }
-    }
-    
-    /**
-     * Elimina un usuario del staff
-     */
-    private function deleteStaffUser() {
-        $user_id = (int)($_POST['staff_user_id'] ?? 0);
-        
-        if ($user_id <= 0) {
-            $this->addError('ID de usuario inválido.');
-            return false;
-        }
-        
-        // Verificar que el usuario existe
-        $user = get_staff_user($user_id);
-        if (!$user) {
-            $this->addError('El usuario no existe.');
-            return false;
-        }
-        
-        if (delete_staff_user($user_id)) {
-            $this->addSuccess('Usuario eliminado correctamente.');
-            return true;
-        } else {
-            $this->addError('Error al eliminar el usuario.');
-            return false;
-        }
-    }
-    
-    /**
-     * Cambia la contraseña de un usuario del staff
-     */
-    private function changeStaffPassword() {
-        $user_id = (int)($_POST['staff_user_id'] ?? 0);
-        $new_password = $_POST['new_password'] ?? '';
-        
-        if ($user_id <= 0) {
-            $this->addError('ID de usuario inválido.');
-            return false;
-        }
-        
-        if (empty($new_password)) {
-            $this->addError('La nueva contraseña es requerida.');
-            return false;
-        }
-        
-        if (strlen($new_password) < 6) {
-            $this->addError('La contraseña debe tener al menos 6 caracteres.');
-            return false;
-        }
-        
-        // Verificar que el usuario existe
-        $user = get_staff_user($user_id);
-        if (!$user) {
-            $this->addError('El usuario no existe.');
-            return false;
-        }
-        
-        if (change_staff_password($user_id, $new_password)) {
-            $this->addSuccess('Contraseña cambiada correctamente.');
-            return true;
-        } else {
-            $this->addError('Error al cambiar la contraseña.');
-            return false;
-        }
-    }
-    
-    /**
-     * Actualiza la configuración del sitio
-     */
-    private function updateSiteConfig() {
-        $config = [
-            'site_title' => trim($_POST['site_title'] ?? ''),
-            'site_description' => trim($_POST['site_description'] ?? ''),
-            'max_file_size' => (int)($_POST['max_file_size'] ?? 0),
-            'max_post_length' => (int)($_POST['max_post_length'] ?? 0),
-            'posts_per_page' => (int)($_POST['posts_per_page'] ?? 0),
-            'enable_file_uploads' => isset($_POST['enable_file_uploads']),
-            'enable_tripcode' => isset($_POST['enable_tripcode']),
-            'maintenance_mode' => isset($_POST['maintenance_mode']),
-            'allow_anonymous' => isset($_POST['allow_anonymous']),
-        ];
-        
-        // Validaciones básicas
-        if (empty($config['site_title'])) {
-            $this->addError('El título del sitio es requerido.');
-            return false;
-        }
-        
-        if ($config['max_file_size'] < 1024 || $config['max_file_size'] > 10485760) { // 1KB - 10MB
-            $this->addError('El tamaño máximo de archivo debe estar entre 1KB y 10MB.');
-            return false;
-        }
-        
-        if ($config['max_post_length'] < 10 || $config['max_post_length'] > 10000) {
-            $this->addError('La longitud máxima del post debe estar entre 10 y 10000 caracteres.');
-            return false;
-        }
-        
-        if ($config['posts_per_page'] < 5 || $config['posts_per_page'] > 50) {
-            $this->addError('Los posts por página deben estar entre 5 y 50.');
-            return false;
-        }
-        
-        if (update_site_config($config)) {
-            $this->addSuccess('Configuración actualizada correctamente.');
-            return true;
-        } else {
-            $this->addError('Error al actualizar la configuración.');
-            return false;
-        }
-    }
-    
-    /**
      * Obtiene todos los datos necesarios para el panel
      */
     public function getData() {
         return [
             'posts' => is_admin() ? get_all_posts() : [],
             'bans' => is_admin() ? get_active_bans() : [],
-            'reports' => is_admin() ? get_all_reports() : [],
-            'boards' => is_admin() ? get_all_boards() : [],
-            'staff_users' => is_admin() ? get_all_staff_users() : []
+            'reports' => is_admin() ? get_all_reports() : []
         ];
     }
     
@@ -763,362 +351,16 @@ class AdminView {
         </head>
         <body class="admin">
             <?php $this->renderHeader(); ?>
-            
-            <?php if (!is_admin()): ?>
-                <main class="admin-login-container">
-                    <?php $this->renderMessages(); ?>
+            <main>
+                <?php $this->renderMessages(); ?>
+                <?php if (!is_admin()): ?>
                     <?php $this->renderLoginForm(); ?>
-                </main>
-            <?php else: ?>
-                <div class="admin-container">
-                    <?php $this->renderSidebar(); ?>
-                    <main class="admin-content">
-                        <?php $this->renderMessages(); ?>
-                        <?php $this->renderAdminPanel(); ?>
-                    </main>
-                </div>
-            <?php endif; ?>
-            
+                <?php else: ?>
+                    <?php $this->renderAdminPanel(); ?>
+                <?php endif; ?>
+            </main>
             <?php $this->renderFooter(); ?>
             <script src="assets/js/script.js"></script>
-            <script>
-                // JavaScript para el menú lateral
-                function showSection(sectionId) {
-                    // Ocultar todas las secciones
-                    const sections = document.querySelectorAll('.admin-section');
-                    sections.forEach(section => {
-                        section.style.display = 'none';
-                    });
-                    
-                    // Mostrar la sección seleccionada
-                    const targetSection = document.getElementById(sectionId);
-                    if (targetSection) {
-                        targetSection.style.display = 'block';
-                    }
-                    
-                    // Actualizar menú activo
-                    const navLinks = document.querySelectorAll('.admin-nav a');
-                    navLinks.forEach(link => {
-                        link.classList.remove('active');
-                    });
-                    
-                    const activeLink = document.querySelector(`[href="#${sectionId}"]`);
-                    if (activeLink) {
-                        activeLink.classList.add('active');
-                    }
-                    
-                    return false; // Prevenir navegación
-                }
-                
-                // Mostrar la primera sección por defecto
-                document.addEventListener('DOMContentLoaded', function() {
-                    showSection('ban-ip');
-                });
-                
-                // Función para establecer IP en el formulario de ban
-                function setBanIp(ip) {
-                    document.getElementById('ip_address').value = ip;
-                    showSection('ban-ip');
-                }
-                
-                // Funciones para gestión de tablones
-                function editBoard(id, name, shortId, description) {
-                    document.getElementById('edit_board_id').value = id;
-                    document.getElementById('edit_board_name').value = name;
-                    document.getElementById('edit_board_short_id').value = shortId;
-                    document.getElementById('edit_board_description').value = description;
-                    document.getElementById('edit-board-form').style.display = 'block';
-                    showSection('editar-tablon');
-                }
-                
-                function cancelEdit() {
-                    document.getElementById('edit-board-form').style.display = 'none';
-                }
-                
-                // Funciones para gestión de usuarios
-                function editStaffUser(id, username, rank, boardPerms, isActive) {
-                    document.getElementById('edit_staff_user_id').value = id;
-                    document.getElementById('edit_staff_username').value = username;
-                    document.getElementById('edit_staff_rank').value = rank;
-                    document.getElementById('edit_is_active').checked = isActive == 1;
-                    
-                    // Limpiar checkboxes
-                    const checkboxes = document.querySelectorAll('#edit-board-permissions-group input[type="checkbox"]');
-                    checkboxes.forEach(cb => cb.checked = false);
-                    
-                    // Marcar tablones asignados
-                    if (boardPerms && boardPerms.length > 0) {
-                        boardPerms.forEach(boardId => {
-                            const checkbox = document.getElementById('edit-board-' + boardId);
-                            if (checkbox) checkbox.checked = true;
-                        });
-                    }
-                    
-                    toggleEditBoardPermissions();
-                    document.getElementById('edit-user-form').style.display = 'block';
-                    document.getElementById('change-password-form').style.display = 'none';
-                    showSection('editar-usuario');
-                }
-                
-                function cancelEditUser() {
-                    document.getElementById('edit-user-form').style.display = 'none';
-                }
-                
-                function showChangePassword(userId, username) {
-                    document.getElementById('password_staff_user_id').value = userId;
-                    document.getElementById('edit-user-form').style.display = 'none';
-                    document.getElementById('change-password-form').style.display = 'block';
-                    showSection('editar-usuario');
-                }
-                
-                function cancelChangePassword() {
-                    document.getElementById('change-password-form').style.display = 'none';
-                }
-                
-                function toggleBoardPermissions() {
-                    const rank = document.getElementById('staff_rank').value;
-                    const group = document.getElementById('board-permissions-group');
-                    
-                    if (rank === 'board_mod' || rank === 'janitor') {
-                        group.style.display = 'block';
-                    } else {
-                        group.style.display = 'none';
-                        // Desmarcar todos los checkboxes
-                        const checkboxes = group.querySelectorAll('input[type="checkbox"]');
-                        checkboxes.forEach(cb => cb.checked = false);
-                    }
-                }
-                
-                function toggleEditBoardPermissions() {
-                    const rank = document.getElementById('edit_staff_rank').value;
-                    const group = document.getElementById('edit-board-permissions-group');
-                    
-                    if (rank === 'board_mod' || rank === 'janitor') {
-                        group.style.display = 'block';
-                    } else {
-                        group.style.display = 'none';
-                        // Desmarcar todos los checkboxes
-                        const checkboxes = group.querySelectorAll('input[type="checkbox"]');
-                        checkboxes.forEach(cb => cb.checked = false);
-                    }
-                }
-            </script>
-            
-            <script>
-            // ===================================
-            // AUTO-REFRESH EN TIEMPO REAL
-            // ===================================
-            
-            let refreshInterval;
-            let countdownInterval;
-            let isAutoRefreshEnabled = true;
-            let currentSection = 'estadisticas'; // Sección por defecto
-            let nextRefreshTime = 10;
-            
-            // Detectar sección actual desde la URL o elemento activo
-            function getCurrentSection() {
-                const hash = window.location.hash.substring(1);
-                if (hash) {
-                    return hash;
-                }
-                
-                // Si no hay hash, buscar la sección visible
-                const visibleSection = document.querySelector('.admin-section:not([style*="display:none"]):not([style*="display: none"])');
-                if (visibleSection) {
-                    return visibleSection.id;
-                }
-                
-                return 'estadisticas'; // Por defecto
-            }
-            
-            // Actualizar contenido manteniendo la sección actual
-            function refreshAdminContent() {
-                if (!isAutoRefreshEnabled) return;
-                
-                // Reiniciar countdown
-                nextRefreshTime = 10;
-                
-                // Guardar la sección actual
-                currentSection = getCurrentSection();
-                
-                // Crear formulario temporal para la recarga
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.style.display = 'none';
-                
-                // Agregar campo para indicar que es un refresh automático
-                const refreshField = document.createElement('input');
-                refreshField.type = 'hidden';
-                refreshField.name = 'auto_refresh';
-                refreshField.value = '1';
-                form.appendChild(refreshField);
-                
-                // Agregar campo para mantener la sección actual
-                const sectionField = document.createElement('input');
-                sectionField.type = 'hidden';
-                sectionField.name = 'current_section';
-                sectionField.value = currentSection;
-                form.appendChild(sectionField);
-                
-                document.body.appendChild(form);
-                form.submit();
-            }
-            
-            // Función para mostrar sección y actualizar URL
-            function showSection(sectionId) {
-                // Ocultar todas las secciones
-                const sections = document.querySelectorAll('.admin-section');
-                sections.forEach(section => {
-                    section.style.display = 'none';
-                });
-                
-                // Mostrar la sección seleccionada
-                const targetSection = document.getElementById(sectionId);
-                if (targetSection) {
-                    targetSection.style.display = 'block';
-                    currentSection = sectionId;
-                    
-                    // Actualizar URL sin recargar la página
-                    history.pushState(null, '', '#' + sectionId);
-                }
-                
-                // Actualizar navegación activa
-                const navLinks = document.querySelectorAll('.admin-nav a');
-                navLinks.forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href') === '#' + sectionId) {
-                        link.classList.add('active');
-                    }
-                });
-            }
-            
-            // Controles de auto-refresh
-            function toggleAutoRefresh() {
-                isAutoRefreshEnabled = !isAutoRefreshEnabled;
-                const button = document.getElementById('autoRefreshToggle');
-                const status = document.getElementById('refreshStatus');
-                
-                if (isAutoRefreshEnabled) {
-                    button.textContent = 'Pausar Auto-Refresh';
-                    button.className = 'refresh-btn active';
-                    status.textContent = 'Auto-refresh activo';
-                    status.style.backgroundColor = 'var(--success-bg)';
-                    status.style.color = 'var(--success-text)';
-                    status.style.borderColor = 'var(--success-border)';
-                    startAutoRefresh();
-                } else {
-                    button.textContent = 'Activar Auto-Refresh';
-                    button.className = 'refresh-btn inactive';
-                    status.textContent = 'Auto-refresh pausado';
-                    status.style.backgroundColor = 'var(--error-bg)';
-                    status.style.color = 'var(--error-text)';
-                    status.style.borderColor = 'var(--error-border)';
-                    stopAutoRefresh();
-                }
-            }
-            
-            function startAutoRefresh() {
-                if (refreshInterval) clearInterval(refreshInterval);
-                if (countdownInterval) clearInterval(countdownInterval);
-                
-                nextRefreshTime = 10;
-                refreshInterval = setInterval(refreshAdminContent, 10000); // 10 segundos
-                
-                // Iniciar countdown
-                countdownInterval = setInterval(updateCountdown, 1000);
-                updateCountdown(); // Actualizar inmediatamente
-            }
-            
-            function stopAutoRefresh() {
-                if (refreshInterval) {
-                    clearInterval(refreshInterval);
-                    refreshInterval = null;
-                }
-                if (countdownInterval) {
-                    clearInterval(countdownInterval);
-                    countdownInterval = null;
-                }
-            }
-            
-            function updateCountdown() {
-                const status = document.getElementById('refreshStatus');
-                if (isAutoRefreshEnabled && status) {
-                    nextRefreshTime--;
-                    if (nextRefreshTime <= 0) {
-                        nextRefreshTime = 10;
-                        status.textContent = 'Actualizando...';
-                    } else {
-                        status.textContent = `Próxima actualización en ${nextRefreshTime}s`;
-                    }
-                }
-            }
-            
-            function manualRefresh() {
-                const button = document.querySelector('.refresh-btn.manual');
-                const originalText = button.textContent;
-                
-                // Dar feedback visual
-                button.textContent = 'Actualizando...';
-                button.disabled = true;
-                
-                // Realizar refresh
-                refreshAdminContent();
-            }
-            
-            // Inicializar al cargar la página
-            document.addEventListener('DOMContentLoaded', function() {
-                // Mostrar sección inicial (desde URL, parámetro POST, o por defecto)
-                let urlSection = getCurrentSection();
-                
-                // Si viene de un auto-refresh, usar la sección guardada
-                <?php if (isset($_POST['current_section'])): ?>
-                urlSection = '<?php echo htmlspecialchars($_POST['current_section']); ?>';
-                <?php endif; ?>
-                
-                showSection(urlSection);
-                
-                // Iniciar auto-refresh
-                startAutoRefresh();
-                
-                // Manejar cambios en el historial del navegador
-                window.addEventListener('popstate', function() {
-                    const section = getCurrentSection();
-                    showSection(section);
-                });
-                
-                // Pausar auto-refresh cuando el usuario está escribiendo
-                const inputs = document.querySelectorAll('input, textarea');
-                inputs.forEach(input => {
-                    input.addEventListener('focus', () => {
-                        stopAutoRefresh();
-                        const status = document.getElementById('refreshStatus');
-                        if (status) {
-                            status.textContent = 'Auto-refresh pausado (escribiendo)';
-                            status.style.backgroundColor = '#fff3cd';
-                            status.style.color = '#856404';
-                            status.style.borderColor = '#ffeaa7';
-                        }
-                    });
-                    
-                    input.addEventListener('blur', () => {
-                        if (isAutoRefreshEnabled) {
-                            setTimeout(() => {
-                                startAutoRefresh();
-                            }, 2000); // Reanudar después de 2 segundos
-                        }
-                    });
-                });
-            });
-            
-            // Pausar auto-refresh cuando la ventana no está activa
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden) {
-                    stopAutoRefresh();
-                } else if (isAutoRefreshEnabled) {
-                    startAutoRefresh();
-                }
-            });
-            </script>
         </body>
         </html>
         <?php
@@ -1130,71 +372,15 @@ class AdminView {
     private function renderHeader() {
         ?>
         <header>
-            <div class="header-left">
-                <h1>Panel de Administración</h1>
-                <span class="refresh-status" id="refreshStatus">Auto-refresh activo</span>
-            </div>
-            <div class="header-right">
-                <div class="refresh-controls">
-                    <button id="autoRefreshToggle" class="refresh-btn active" onclick="toggleAutoRefresh()">
-                        Pausar Auto-Refresh
-                    </button>
-                    <button class="refresh-btn manual" onclick="manualRefresh()">
-                        Actualizar Ahora
-                    </button>
-                </div>
-                <nav>
-                    <a href="index.php">Volver al Tablón</a>
-                    <?php if (is_admin()): ?>
-                        <a href="?logout=1">Cerrar Sesión</a>
-                    <?php endif; ?>
-                </nav>
-            </div>
-        </header>
-        <?php
-    }
-    
-    /**
-     * Renderiza el menú lateral
-     */
-    private function renderSidebar() {
-        ?>
-        <aside class="admin-sidebar">
-            <nav class="admin-nav">
-                <h2>Panel de Control</h2>
-                <ul>
-                    <li><a href="#ban-ip" onclick="showSection('ban-ip')">Banear IP</a></li>
-                    <li><a href="#bans-activos" onclick="showSection('bans-activos')">Bans Activos</a></li>
-                    <li><a href="#moderar-posts" onclick="showSection('moderar-posts')">Moderar Posts</a></li>
-                    <li><a href="#reportes-usuarios" onclick="showSection('reportes-usuarios')">Reportes</a></li>
-                </ul>
-                
-                <h2>Gestión de Tablones</h2>
-                <ul>
-                    <li><a href="#gestionar-tablones" onclick="showSection('gestionar-tablones')">Ver Tablones</a></li>
-                    <li><a href="#crear-tablon" onclick="showSection('crear-tablon')">Crear Tablón</a></li>
-                    <li><a href="#editar-tablon" onclick="showSection('editar-tablon')">Editar Tablón</a></li>
-                </ul>
-                
-                <h2>Gestión de Usuarios</h2>
-                <ul>
-                    <li><a href="#gestionar-usuarios" onclick="showSection('gestionar-usuarios')">Ver Usuarios</a></li>
-                    <li><a href="#crear-usuario" onclick="showSection('crear-usuario')">Crear Usuario</a></li>
-                    <li><a href="#editar-usuario" onclick="showSection('editar-usuario')">Editar Usuario</a></li>
-                </ul>
-                
-                <h2>Estadísticas</h2>
-                <ul>
-                    <li><a href="#estadisticas" onclick="showSection('estadisticas')">Estadísticas</a></li>
-                    <li><a href="#logs" onclick="showSection('logs')">Logs del Sistema</a></li>
-                </ul>
-                
-                <h2>Configuración</h2>
-                <ul>
-                    <li><a href="#configuracion" onclick="showSection('configuracion')">Configuración</a></li>
-                </ul>
+            <h1>Panel de Administración</h1>
+            <nav>
+                <a href="index.php">Volver al Tablón</a>
+                <a href="admin.php">Recargar</a>
+                <?php if (is_admin()): ?>
+                    <a href="?logout=1">Cerrar Sesión</a>
+                <?php endif; ?>
             </nav>
-        </aside>
+        </header>
         <?php
     }
     
@@ -1219,14 +405,9 @@ class AdminView {
         <h2>Iniciar Sesión</h2>
         <section class="admin-login">
             <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
-                <div class="form-group">
-                    <label for="username">Usuario:</label>
-                    <input type="text" id="username" name="username" required placeholder="Nombre de usuario">
-                </div>
                 <div class="form-group">
                     <label for="password">Contraseña:</label>
-                    <input type="password" id="password" name="password" required placeholder="Contraseña">
+                    <input type="password" id="password" name="password" required>
                 </div>
                 <button type="submit" name="admin_login">Iniciar Sesión</button>
             </form>
@@ -1238,19 +419,23 @@ class AdminView {
      * Renderiza el panel de administración
      */
     private function renderAdminPanel() {
+        ?>
+        <!-- Navegación entre secciones -->
+        <nav class="admin-nav">
+            <ul>
+                <h2>Herramientas de Moderación</h2>
+                <li><a href="#ban-ip" onclick="showSection('ban-ip')">Banear IP</a></li>
+                <li><a href="#bans-activos" onclick="showSection('bans-activos')">Bans Activos</a></li>
+                <li><a href="#moderar-posts" onclick="showSection('moderar-posts')">Moderar Posts</a></li>
+                <li><a href="#reportes-usuarios" onclick="showSection('reportes-usuarios')">Reportes de Usuarios</a></li>
+            </ul>
+        </nav>
+
+        <?php
         $this->renderBanIpSection();
         $this->renderActiveBansSection();
         $this->renderModeratePostsSection();
         $this->renderReportsSection();
-        $this->renderGestionarTablonesSection();
-        $this->renderCrearTablonSection();
-        $this->renderEditarTablonSection();
-        $this->renderGestionarUsuariosSection();
-        $this->renderCrearUsuarioSection();
-        $this->renderEditarUsuarioSection();
-        $this->renderEstadisticasSection();
-        $this->renderLogsSection();
-        $this->renderConfiguracionSection();
     }
     
     /**
@@ -1261,7 +446,6 @@ class AdminView {
         <section id="ban-ip" class="admin-section">
             <h3>Banear IP</h3>
             <form method="POST" class="ban-form">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="form-group">
                     <label for="ip_address">Dirección IP:</label>
                     <input type="text" id="ip_address" name="ip_address" required placeholder="192.168.1.1">
@@ -1317,7 +501,6 @@ class AdminView {
                                 </td>
                                 <td>
                                     <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="ban_id" value="<?php echo $ban['id']; ?>">
                                         <button type="submit" name="unban_ip" onclick="return confirm('¿Desbanear esta IP?')">Desbanear</button>
                                     </form>
@@ -1420,7 +603,6 @@ class AdminView {
         <div class="post-actions">
             <?php if (!$post['is_deleted']): ?>
                 <form method="POST" style="display: inline;">
-                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="delete_post" onclick="return confirm('¿Eliminar este post?')">Eliminar Post</button>
                 </form>
@@ -1428,22 +610,19 @@ class AdminView {
             
             <?php if ($post['is_locked']): ?>
                 <form method="POST" style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="unlock_post">Desbloquear</button>
                 </form>
             <?php endif; ?>
             
             <?php if ($post['is_pinned']): ?>
                 <form method="POST" style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="unpin_post">Desfijar</button>
                 </form>
             <?php else: ?>
                 <form method="POST" style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="pin_post">Fijar</button>
                 </form>
             <?php endif; ?>
@@ -1452,8 +631,7 @@ class AdminView {
             
             <?php if (!empty($post['image_filename']) && file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
                 <form method="POST" style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                    <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" name="delete_image" onclick="return confirm('¿Eliminar la imagen de este post?')">Eliminar Imagen</button>
                 </form>
             <?php endif; ?>
@@ -1505,7 +683,6 @@ class AdminView {
                                 <td><?php echo date('d/m/Y H:i:s', strtotime($report['created_at'])); ?></td>
                                 <td>
                                     <form method="POST" action="admin_actions.php">
-                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="report_id" value="<?php echo $report['id']; ?>">
                                         <button type="submit" name="delete_report" class="btn-delete">Eliminar</button>
                                     </form>
@@ -1516,600 +693,6 @@ class AdminView {
                 </table>
             <?php endif; ?>
         </section>
-        <?php
-    }
-    
-    /**
-     * Renderiza la sección de gestión de tablones
-     */
-    private function renderGestionarTablonesSection() {
-        ?>
-        <section id="gestionar-tablones" class="admin-section" style="display:none;">
-            <h3>Gestión de Tablones</h3>
-            <?php if (empty($this->data['boards'])): ?>
-                <p>No hay tablones creados.</p>
-            <?php else: ?>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>ID Corto</th>
-                            <th>Descripción</th>
-                            <th>Posts</th>
-                            <th>Fecha Creación</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($this->data['boards'] as $board): ?>
-                            <tr>
-                                <td><?php echo $board['id']; ?></td>
-                                <td><?php echo htmlspecialchars($board['name']); ?></td>
-                                <td><strong>/<?php echo htmlspecialchars($board['short_id']); ?>/</strong></td>
-                                <td><?php echo htmlspecialchars($board['description']); ?></td>
-                                <td><?php echo number_format(count_posts_by_board($board['id'])); ?></td>
-                                <td><?php echo date('d/m/Y H:i', strtotime($board['created_at'])); ?></td>
-                                <td>
-                                    <button type="button" class="btn-edit" onclick="editBoard(<?php echo $board['id']; ?>, '<?php echo htmlspecialchars($board['name']); ?>', '<?php echo htmlspecialchars($board['short_id']); ?>', '<?php echo htmlspecialchars($board['description']); ?>')">Editar</button>
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
-                                        <input type="hidden" name="board_id" value="<?php echo $board['id']; ?>">
-                                        <button type="submit" name="delete_board" class="btn-delete" onclick="return confirm('¿Eliminar este tablón? Todos los posts se perderán.')">Eliminar</button>
-                                    </form>
-                                    <a href="catalog.php?board=<?php echo htmlspecialchars($board['short_id']); ?>" target="_blank" class="btn-view">Ver</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </section>
-        <?php
-    }
-    
-    /**
-     * Renderiza la sección de crear tablón
-     */
-    private function renderCrearTablonSection() {
-        ?>
-        <section id="crear-tablon" class="admin-section" style="display:none;">
-            <h3>Crear Nuevo Tablón</h3>
-            <form method="POST" class="board-form">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
-                <div class="form-group">
-                    <label for="board_name">Nombre del Tablón:</label>
-                    <input type="text" id="board_name" name="board_name" required placeholder="Ej: Tecnología" maxlength="100">
-                    <small>Nombre completo del tablón (máximo 100 caracteres)</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="board_short_id">ID Corto:</label>
-                    <input type="text" id="board_short_id" name="board_short_id" required placeholder="Ej: tech" maxlength="10" pattern="[a-zA-Z0-9]+">
-                    <small>Solo letras y números, máximo 10 caracteres (será /tech/)</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="board_description">Descripción:</label>
-                    <textarea id="board_description" name="board_description" placeholder="Descripción del tablón..." maxlength="500" rows="3"></textarea>
-                    <small>Descripción opcional del tablón (máximo 500 caracteres)</small>
-                </div>
-                
-                <button type="submit" name="create_board" class="btn-primary">Crear Tablón</button>
-            </form>
-        </section>
-        <?php
-    }
-    
-    /**
-     * Renderiza la sección de editar tablón
-     */
-    private function renderEditarTablonSection() {
-        ?>
-        <section id="editar-tablon" class="admin-section" style="display:none;">
-            <h3>Editar Tablón</h3>
-            <p>Selecciona un tablón de la lista "Ver Tablones" para editarlo aquí.</p>
-            
-            <form method="POST" class="board-form" id="edit-board-form" style="display:none;">
-                <input type="hidden" id="edit_board_id" name="board_id">
-                
-                <div class="form-group">
-                    <label for="edit_board_name">Nombre del Tablón:</label>
-                    <input type="text" id="edit_board_name" name="board_name" required maxlength="100">
-                </div>
-                
-                <div class="form-group">
-                    <label for="edit_board_short_id">ID Corto:</label>
-                    <input type="text" id="edit_board_short_id" name="board_short_id" required maxlength="10" pattern="[a-zA-Z0-9]+">
-                    <small>⚠️ Cambiar el ID corto puede romper enlaces existentes</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="edit_board_description">Descripción:</label>
-                    <textarea id="edit_board_description" name="board_description" maxlength="500" rows="3"></textarea>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" name="edit_board" class="btn-primary">Guardar Cambios</button>
-                    <button type="button" onclick="cancelEdit()" class="btn-secondary">Cancelar</button>
-                </div>
-            </form>
-        </section>
-        <?php
-    }
-    
-    /**
-     * Renderiza la sección de gestión de usuarios
-     */
-    private function renderGestionarUsuariosSection() {
-        ?>
-        <section id="gestionar-usuarios" class="admin-section" style="display:none;">
-            <h3>Gestión de Usuarios del Staff</h3>
-            
-            <?php if (empty($this->data['staff_users'])): ?>
-                <div class="info-message">
-                    <h4>⚠️ Sistema de Usuarios no Configurado</h4>
-                    <p>Para usar el sistema de gestión de usuarios, necesitas crear la tabla <code>staff_users</code> en tu base de datos.</p>
-                    <p><strong>Instrucciones:</strong></p>
-                    <ol>
-                        <li>Accede a phpMyAdmin o tu cliente MySQL</li>
-                        <li>Selecciona la base de datos <code>simplechan_db</code></li>
-                        <li>Ejecuta el siguiente SQL:</li>
-                    </ol>
-                    <pre><code>CREATE TABLE staff_users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    rank ENUM('admin', 'global_mod', 'board_mod', 'janitor') NOT NULL,
-    board_permissions JSON DEFAULT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP NULL,
-    INDEX idx_username (username),
-    INDEX idx_rank (rank),
-    INDEX idx_is_active (is_active)
-);
-
-INSERT INTO staff_users (username, password_hash, rank) 
-VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');</code></pre>
-                    <p><strong>Credenciales por defecto:</strong> Usuario: <code>admin</code> | : <code>password</code></p>
-                </div>
-            <?php else: ?>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Usuario</th>
-                            <th>Rango</th>
-                            <th>Tablones Asignados</th>
-                            <th>Estado</th>
-                            <th>Último Login</th>
-                            <th>Creado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($this->data['staff_users'] as $user): ?>
-                            <tr class="<?php echo $user['is_active'] ? '' : 'inactive-user'; ?>">
-                                <td><?php echo $user['id']; ?></td>
-                                <td><strong><?php echo htmlspecialchars($user['username']); ?></strong></td>
-                                <td>
-                                    <span class="rank-badge rank-<?php echo $user['rank']; ?>">
-                                        <?php echo USER_RANKS[$user['rank']] ?? $user['rank']; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php 
-                                    $board_perms = json_decode($user['board_permissions'], true) ?: [];
-                                    if (in_array($user['rank'], ['admin', 'global_mod'])) {
-                                        echo '<em>Todos los tablones</em>';
-                                    } elseif (empty($board_perms)) {
-                                        echo '<em>Ninguno</em>';
-                                    } else {
-                                        $board_names = [];
-                                        foreach ($board_perms as $board_id) {
-                                            $board = get_board_by_id($board_id);
-                                            if ($board) {
-                                                $board_names[] = '/' . $board['short_id'] . '/';
-                                            }
-                                        }
-                                        echo implode(', ', $board_names);
-                                    }
-                                    ?>
-                                </td>
-                                <td>
-                                    <span class="status-badge <?php echo $user['is_active'] ? 'active' : 'inactive'; ?>">
-                                        <?php echo $user['is_active'] ? 'Activo' : 'Inactivo'; ?>
-                                    </span>
-                                </td>
-                                <td><?php echo $user['last_login'] ? date('d/m/Y H:i', strtotime($user['last_login'])) : 'Nunca'; ?></td>
-                                <td><?php echo date('d/m/Y', strtotime($user['created_at'])); ?></td>
-                                <td>
-                                    <button type="button" class="btn-edit" onclick="editStaffUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>', '<?php echo $user['rank']; ?>', <?php echo htmlspecialchars(json_encode($board_perms)); ?>, <?php echo $user['is_active']; ?>)">Editar</button>
-                                    <button type="button" class="btn-password" onclick="showChangePassword(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>')">Contraseña</button>
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="staff_user_id" value="<?php echo $user['id']; ?>">
-                                        <button type="submit" name="delete_staff_user" class="btn-delete" onclick="return confirm('¿Eliminar este usuario?')">Eliminar</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </section>
-        <?php
-    }
-    
-    /**
-     * Renderiza la sección de crear usuario
-     */
-    private function renderCrearUsuarioSection() {
-        ?>
-        <section id="crear-usuario" class="admin-section" style="display:none;">
-            <h3>Crear Nuevo Usuario del Staff</h3>
-            <form method="POST" class="user-form">
-                <div class="form-group">
-                    <label for="staff_username">Nombre de Usuario:</label>
-                    <input type="text" id="staff_username" name="staff_username" required placeholder="usuario123" maxlength="50">
-                    <small>Nombre único del usuario (máximo 50 caracteres)</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="staff_password">Contraseña:</label>
-                    <input type="password" id="staff_password" name="staff_password" required minlength="6">
-                    <small>Mínimo 6 caracteres</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="staff_rank">Rango:</label>
-                    <select id="staff_rank" name="staff_rank" required onchange="toggleBoardPermissions()">
-                        <option value="">Seleccionar rango...</option>
-                        <?php foreach (USER_RANKS as $rank => $label): ?>
-                            <option value="<?php echo $rank; ?>"><?php echo $label; ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group" id="board-permissions-group" style="display:none;">
-                    <label>Tablones Asignados:</label>
-                    <div class="checkbox-group">
-                        <?php if (!empty($this->data['boards'])): ?>
-                            <?php foreach ($this->data['boards'] as $board): ?>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="board_permissions[]" value="<?php echo $board['id']; ?>">
-                                    /<?php echo htmlspecialchars($board['short_id']); ?>/ - <?php echo htmlspecialchars($board['name']); ?>
-                                </label>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p><em>No hay tablones disponibles</em></p>
-                        <?php endif; ?>
-                    </div>
-                    <small>Solo aplica para Moderadores de Tablón y Conserjes</small>
-                </div>
-                
-                <button type="submit" name="create_staff_user" class="btn-primary">Crear Usuario</button>
-            </form>
-        </section>
-        <?php
-    }
-    
-    /**
-     * Renderiza la sección de editar usuario
-     */
-    private function renderEditarUsuarioSection() {
-        ?>
-        <section id="editar-usuario" class="admin-section" style="display:none;">
-            <h3>Editar Usuario del Staff</h3>
-            <p>Selecciona un usuario de la lista "Ver Usuarios" para editarlo aquí.</p>
-            
-            <form method="POST" class="user-form" id="edit-user-form" style="display:none;">
-                <input type="hidden" id="edit_staff_user_id" name="staff_user_id">
-                
-                <div class="form-group">
-                    <label for="edit_staff_username">Nombre de Usuario:</label>
-                    <input type="text" id="edit_staff_username" name="staff_username" required maxlength="50">
-                </div>
-                
-                <div class="form-group">
-                    <label for="edit_staff_rank">Rango:</label>
-                    <select id="edit_staff_rank" name="staff_rank" required onchange="toggleEditBoardPermissions()">
-                        <?php foreach (USER_RANKS as $rank => $label): ?>
-                            <option value="<?php echo $rank; ?>"><?php echo $label; ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group" id="edit-board-permissions-group">
-                    <label>Tablones Asignados:</label>
-                    <div class="checkbox-group">
-                        <?php if (!empty($this->data['boards'])): ?>
-                            <?php foreach ($this->data['boards'] as $board): ?>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="board_permissions[]" value="<?php echo $board['id']; ?>" id="edit-board-<?php echo $board['id']; ?>">
-                                    /<?php echo htmlspecialchars($board['short_id']); ?>/ - <?php echo htmlspecialchars($board['name']); ?>
-                                </label>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="edit_is_active" name="is_active" checked>
-                        Usuario activo
-                    </label>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" name="edit_staff_user" class="btn-primary">Guardar Cambios</button>
-                    <button type="button" onclick="cancelEditUser()" class="btn-secondary">Cancelar</button>
-                </div>
-            </form>
-            
-            <!-- Formulario para cambiar contraseña -->
-            <form method="POST" class="password-form" id="change-password-form" style="display:none;">
-                <h4>Cambiar Contraseña</h4>
-                <input type="hidden" id="password_staff_user_id" name="staff_user_id">
-                
-                <div class="form-group">
-                    <label for="new_password">Nueva Contraseña:</label>
-                    <input type="password" id="new_password" name="new_password" required minlength="6">
-                    <small>Mínimo 6 caracteres</small>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" name="change_staff_password" class="btn-primary">Cambiar Contraseña</button>
-                    <button type="button" onclick="cancelChangePassword()" class="btn-secondary">Cancelar</button>
-                </div>
-            </form>
-        </section>
-        <?php
-    }
-    
-    /**
-     * Renderiza la sección de estadísticas
-     */
-    private function renderEstadisticasSection() {
-        $stats = get_site_stats();
-        ?>
-        <section id="estadisticas" class="admin-section" style="display:none;">
-            <h3>Estadísticas del Sitio</h3>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h4>Posts Totales</h4>
-                    <p class="stat-number"><?php echo number_format($stats['total_posts'] ?? 0); ?></p>
-                    <small>Posts activos en el sitio</small>
-                </div>
-                <div class="stat-card">
-                    <h4>Posts Hoy</h4>
-                    <p class="stat-number"><?php echo number_format($stats['posts_today'] ?? 0); ?></p>
-                    <small>Actividad del día</small>
-                </div>
-                <div class="stat-card">
-                    <h4>Posts Esta Semana</h4>
-                    <p class="stat-number"><?php echo number_format($stats['posts_week'] ?? 0); ?></p>
-                    <small>Últimos 7 días</small>
-                </div>
-                <div class="stat-card">
-                    <h4>Tablones Activos</h4>
-                    <p class="stat-number"><?php echo number_format($stats['active_boards'] ?? 0); ?> / <?php echo number_format($stats['total_boards'] ?? 0); ?></p>
-                    <small>Con contenido / Total</small>
-                </div>
-                <div class="stat-card">
-                    <h4>IPs Únicas</h4>
-                    <p class="stat-number"><?php echo number_format($stats['unique_ips'] ?? 0); ?></p>
-                    <small>Usuarios que han posteado</small>
-                </div>
-                <div class="stat-card">
-                    <h4>Archivos Subidos</h4>
-                    <p class="stat-number"><?php echo number_format($stats['total_files'] ?? 0); ?></p>
-                    <small>Imágenes totales</small>
-                </div>
-                <div class="stat-card">
-                    <h4>Espacio Usado</h4>
-                    <p class="stat-number"><?php echo format_file_size($stats['total_file_size'] ?? 0); ?></p>
-                    <small>Almacenamiento</small>
-                </div>
-                <div class="stat-card">
-                    <h4>Posts Principales</h4>
-                    <p class="stat-number"><?php echo number_format($stats['main_posts'] ?? 0); ?></p>
-                    <small>Hilos creados</small>
-                </div>
-                <div class="stat-card">
-                    <h4>Respuestas</h4>
-                    <p class="stat-number"><?php echo number_format($stats['replies'] ?? 0); ?></p>
-                    <small>Respuestas a hilos</small>
-                </div>
-                <div class="stat-card">
-                    <h4>Posts Eliminados</h4>
-                    <p class="stat-number"><?php echo number_format($stats['deleted_posts'] ?? 0); ?></p>
-                    <small>Contenido moderado</small>
-                </div>
-            </div>
-            
-            <div class="stats-section">
-                <h4>Estadísticas por Tablón</h4>
-                <div class="board-stats">
-                    <?php
-                    $board_stats = get_board_statistics();
-                    if (!empty($board_stats)) {
-                        echo '<table class="stats-table">';
-                        echo '<thead><tr><th>Tablón</th><th>Posts</th><th>Último Post</th></tr></thead>';
-                        echo '<tbody>';
-                        foreach ($board_stats as $board) {
-                            $last_post = $board['last_post'] ? date('d/m/Y H:i', strtotime($board['last_post'])) : 'Nunca';
-                            echo '<tr>';
-                            echo '<td>/' . htmlspecialchars($board['short_id']) . '/ - ' . htmlspecialchars($board['name']) . '</td>';
-                            echo '<td>' . number_format($board['post_count']) . '</td>';
-                            echo '<td>' . $last_post . '</td>';
-                            echo '</tr>';
-                        }
-                        echo '</tbody></table>';
-                    } else {
-                        echo '<p>No hay tablones con estadísticas disponibles.</p>';
-                    }
-                    ?>
-                </div>
-            </div>
-        </section>
-        <?php
-    }
-    
-    /**
-     * Renderiza la sección de logs
-     */
-    private function renderLogsSection() {
-        ?>
-        <section id="logs" class="admin-section" style="display:none;">
-            <h3>Logs del Sistema</h3>
-            <p>Funcionalidad en desarrollo - Próximamente se mostrará el historial de acciones administrativas.</p>
-        </section>
-        <?php
-    }
-    
-    /**
-     * Renderiza la sección de configuración
-     */
-    private function renderConfiguracionSection() {
-        $config = get_site_config();
-        ?>
-        <section id="configuracion" class="admin-section" style="display:none;">
-            <h3>Configuración del Sitio</h3>
-            
-            <form method="post" class="config-form">
-                <div class="config-section">
-                    <h4>Información General</h4>
-                    <div class="form-group">
-                        <label for="site_title">Título del Sitio:</label>
-                        <input type="text" name="site_title" id="site_title" 
-                               value="<?php echo htmlspecialchars($config['site_title'] ?? 'SimpleChan'); ?>" 
-                               required maxlength="100">
-                        <small>Nombre que aparece en el encabezado del sitio</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="site_description">Descripción del Sitio:</label>
-                        <textarea name="site_description" id="site_description" rows="3" maxlength="500"><?php echo htmlspecialchars($config['site_description'] ?? 'Un imageboard simple y funcional'); ?></textarea>
-                        <small>Descripción que aparece en la página principal</small>
-                    </div>
-                </div>
-                
-                <div class="config-section">
-                    <h4>Límites de Contenido</h4>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="max_file_size">Tamaño Máximo de Archivo (bytes):</label>
-                            <input type="number" name="max_file_size" id="max_file_size" 
-                                   value="<?php echo (int)($config['max_file_size'] ?? 2097152); ?>" 
-                                   min="1024" max="10485760" required>
-                            <small>Entre 1KB (1024) y 10MB (10485760)</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="max_post_length">Longitud Máxima del Post:</label>
-                            <input type="number" name="max_post_length" id="max_post_length" 
-                                   value="<?php echo (int)($config['max_post_length'] ?? 2000); ?>" 
-                                   min="10" max="10000" required>
-                            <small>Entre 10 y 10000 caracteres</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="posts_per_page">Posts por Página:</label>
-                            <input type="number" name="posts_per_page" id="posts_per_page" 
-                                   value="<?php echo (int)($config['posts_per_page'] ?? 10); ?>" 
-                                   min="5" max="50" required>
-                            <small>Entre 5 y 50 posts</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="config-section">
-                    <h4>Funcionalidades</h4>
-                    <div class="form-row">
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" name="enable_file_uploads" 
-                                       <?php echo !empty($config['enable_file_uploads']) ? 'checked' : ''; ?>>
-                                Permitir Subida de Archivos
-                            </label>
-                            <small>Los usuarios pueden subir imágenes</small>
-                        </div>
-                        
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" name="enable_tripcode" 
-                                       <?php echo !empty($config['enable_tripcode']) ? 'checked' : ''; ?>>
-                                Habilitar Tripcodes
-                            </label>
-                            <small>Permite usar tripcodes para identificación</small>
-                        </div>
-                        
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" name="allow_anonymous" 
-                                       <?php echo !empty($config['allow_anonymous']) ? 'checked' : ''; ?>>
-                                Permitir Posts Anónimos
-                            </label>
-                            <small>Los usuarios pueden postear sin nombre</small>
-                        </div>
-                        
-                        <div class="form-group checkbox-group maintenance-warning">
-                            <label>
-                                <input type="checkbox" name="maintenance_mode" 
-                                       <?php echo !empty($config['maintenance_mode']) ? 'checked' : ''; ?>>
-                                Modo de Mantenimiento
-                            </label>
-                            <small>⚠️ Solo administradores pueden acceder al sitio</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" name="update_config" class="btn-primary">
-                        Guardar Configuración
-                    </button>
-                    <button type="button" onclick="resetConfigForm()" class="btn-secondary">
-                        Restablecer
-                    </button>
-                </div>
-            </form>
-            
-            <div class="config-info">
-                <h4>Información del Sistema</h4>
-                <div class="system-info">
-                    <div class="info-item">
-                        <strong>Zona Horaria:</strong> <?php echo date_default_timezone_get(); ?>
-                    </div>
-                    <div class="info-item">
-                        <strong>Hora Actual:</strong> <?php echo date('Y-m-d H:i:s'); ?>
-                    </div>
-                    <div class="info-item">
-                        <strong>Offset UTC:</strong> <?php echo date('P'); ?>
-                    </div>
-                    <div class="info-item">
-                        <strong>Versión PHP:</strong> <?php echo PHP_VERSION; ?>
-                    </div>
-                    <div class="info-item">
-                        <strong>Memoria Límite:</strong> <?php echo ini_get('memory_limit'); ?>
-                    </div>
-                    <div class="info-item">
-                        <strong>Tamaño Máximo Upload:</strong> <?php echo ini_get('upload_max_filesize'); ?>
-                    </div>
-                    <div class="info-item">
-                        <strong>Directorio de Uploads:</strong> <?php echo realpath('uploads/') ?: 'uploads/'; ?>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <script>
-        function resetConfigForm() {
-            if (confirm('¿Estás seguro de que quieres restablecer todos los cambios?')) {
-                document.querySelector('.config-form').reset();
-            }
-        }
-        </script>
         <?php
     }
     

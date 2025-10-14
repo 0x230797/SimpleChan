@@ -107,22 +107,3 @@ CREATE TABLE admin_sessions (
     INDEX idx_session_token (session_token),
     INDEX idx_expires_at (expires_at)
 );
-
--- Tabla de usuarios del staff
-CREATE TABLE staff_users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    rank ENUM('admin', 'global_mod', 'board_mod', 'janitor') NOT NULL,
-    board_permissions JSON DEFAULT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP NULL,
-    INDEX idx_username (username),
-    INDEX idx_rank (rank),
-    INDEX idx_is_active (is_active)
-);
-
--- Insertar usuario administrador por defecto
-INSERT INTO staff_users (username, password_hash, rank) 
-VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');

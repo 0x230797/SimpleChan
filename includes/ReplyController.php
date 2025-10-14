@@ -48,24 +48,16 @@ class ReplyController {
 
         // Procesar nueva respuesta
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
-            if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-                $error = 'Token CSRF inv\u00e1lido.';
-            } else {
-                $error = $this->processNewReply($post_id);
-            }
+            $error = $this->processNewReply($post_id);
         }
 
         // Procesar reporte
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_report'])) {
-            if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-                $error = 'Token CSRF inv\u00e1lido.';
+            $result = $this->processReport();
+            if ($result['success']) {
+                $this->redirectWithSuccess('reply.php?post_id=' . $post_id . '&report_success=1');
             } else {
-                $result = $this->processReport();
-                if ($result['success']) {
-                    $this->redirectWithSuccess('reply.php?post_id=' . $post_id . '&report_success=1');
-                } else {
-                    $error = $result['error'];
-                }
+                $error = $result['error'];
             }
         }
 

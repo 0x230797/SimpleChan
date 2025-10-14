@@ -4,8 +4,8 @@
  * Muestra las reglas y formatos de texto del sitio
  */
 
+session_start();
 require_once 'config.php';
-initialize_session();
 require_once 'functions.php';
 ?>
 

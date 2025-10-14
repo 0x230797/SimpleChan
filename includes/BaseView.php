@@ -40,7 +40,6 @@ abstract class BaseView
         <html lang="es">
         <head>
             <meta charset="UTF-8">
-            <meta name="csrf-token" content="<?php echo htmlspecialchars(generate_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title><?php echo htmlspecialchars($title); ?> - SimpleChan</title>
             <link rel="stylesheet" href="assets/css/style.css">
@@ -57,31 +56,6 @@ abstract class BaseView
     protected function renderDocumentEnd(): void 
     {
         ?>
-        <script>
-        // Auto-inject CSRF token into POST forms that don't include it server-side
-        (function(){
-            try {
-                var tokenMeta = document.querySelector('meta[name="csrf-token"]');
-                if (!tokenMeta) return;
-                var token = tokenMeta.getAttribute('content');
-                document.addEventListener('DOMContentLoaded', function(){
-                    var forms = document.querySelectorAll('form[method="POST"], form[method="post"]');
-                    Array.prototype.forEach.call(forms, function(f){
-                        if (!f.querySelector('input[name="csrf_token"]')) {
-                            var input = document.createElement('input');
-                            input.type = 'hidden';
-                            input.name = 'csrf_token';
-                            input.value = token;
-                            f.appendChild(input);
-                        }
-                    });
-                });
-            } catch (e) {
-                // No interrumpir la página por errores de JS
-                console.error('CSRF injector error', e);
-            }
-        })();
-        </script>
         <script src="assets/js/script.js"></script>
         </body>
         </html>
