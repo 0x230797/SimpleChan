@@ -93,8 +93,9 @@ $data = loadPageData();
 function loadPageData() {
     return [
         'posts' => get_posts_for_index(),
-        'popular_posts' => get_recent_and_replied_posts_for_index(8),
         'boards_by_category' => organizeBoardsByCategory(),
+        'info' => get_info_for_index(),
+        'popular_posts' => get_recent_and_replied_posts_for_index(8),
         'site_stats' => get_site_stats()
     ];
 }
@@ -124,6 +125,33 @@ function renderBoardsSection($boards_by_category) {
             <?php foreach ($boards_by_category as $category => $boards): ?>
                 <?php renderBoardCategory($category, $boards); ?>
             <?php endforeach; ?>
+        </div>
+    </div>
+    <?php
+}
+
+function renderInfoSection($info) {
+    ?>
+    <div class="box-outer top-box" id="info">
+        <div class="boxbar">
+            <h2>Información</h2>
+        </div>
+        <div class="boxcontent">
+            <?php if (!empty($info['announcements'])): ?>
+                <div class="info-section">
+                    <?php foreach ($info['announcements'] as $announcement): ?>
+                        <span><?php echo htmlspecialchars($announcement); ?></span><br>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+            <br>
+            <?php if (!empty($info['news'])): ?>
+                <div class="info-section">
+                    <?php foreach ($info['news'] as $news): ?>
+                        <span><?php echo htmlspecialchars($news); ?></span><br>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
     <?php
@@ -262,6 +290,8 @@ function renderMessages($error, $success_message) {
 
     <main>
         <?php renderMessages($error, $success_message); ?>
+
+        <?php renderInfoSection($data['info']); ?>
         
         <?php renderBoardsSection($data['boards_by_category']); ?>
         

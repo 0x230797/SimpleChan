@@ -47,7 +47,7 @@ class BoardView extends BaseView
      */
     public function render(): void 
     {
-        $title = "//{$this->board['short_id']}/ {$this->board['name']}";
+        $title = "/{$this->board['short_id']}/ {$this->board['name']}";
         
         $this->renderDocumentStart($title);
         $this->renderNavigation();

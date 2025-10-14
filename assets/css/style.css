@@ -647,6 +647,7 @@ u {
 #popular-threads,
 #site-stats,
 #catalog-threads,
+#info,
 #urlout {
     border: var(--border-style-boards);
     padding-bottom: var(--spacing-sm);
@@ -675,10 +676,8 @@ u {
     padding: var(--spacing-md);
 }
 
+#info .boxcontent,
 #urlout .boxcontent {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-    gap: var(--spacing-md);
     padding: var(--spacing-md);
 }
 

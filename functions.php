@@ -1660,4 +1660,20 @@ function initialize_updated_at_field() {
     }
 }
 
+/**
+ * Obtiene la información para la sección de información en el index
+ * @return array Información para el index
+ */
+function get_info_for_index() {
+    return [
+        'announcements' => [
+            'Bienvenidos a SimpleChan',
+            '¡Disfruta de una experiencia de tablón de imágenes sencilla y rápida!',
+        ],
+        'news' => [
+            '14/10/2025 - Publicación del proyecto SimpleChan'
+        ],
+    ];
+}
+
 ?>
