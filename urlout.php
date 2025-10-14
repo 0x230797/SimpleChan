@@ -161,7 +161,7 @@ class UrlOutView {
 
         <script>
         (function() {
-            let countdown = 99999;
+            let countdown = 10; // Segundos para redirección automática
             const countdownEl = document.getElementById('countdown');
             const continueBtn = document.getElementById('continue-btn');
             

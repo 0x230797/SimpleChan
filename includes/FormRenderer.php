@@ -65,12 +65,6 @@ class FormRenderer
         
         $this->renderFormatButtons();
         $this->renderMessageField($is_post);
-        
-        // Agregar vista previa para administradores
-        if (is_admin()) {
-            $this->renderPreviewSection();
-        }
-        
         $this->renderImageUpload($is_post);
         $this->renderSubmitButton($is_post);
     }
@@ -178,82 +172,6 @@ class FormRenderer
         <div class="form-buttons">
             <button type="submit" name="submit_post"><?php echo $text; ?></button>
         </div>
-        <?php
-    }
-    
-    /**
-     * Renderiza la sección de vista previa para administradores
-     */
-    public function renderPreviewSection(): void 
-    {
-        ?>
-        <div class="form-group admin-preview-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span class="form-label">Vista Previa:</span>
-                <button type="button" onclick="updatePreview()" class="btn-preview" style="padding: 5px 10px; font-size: 12px;">
-                    Actualizar Vista Previa
-                </button>
-            </div>
-            <div id="admin-preview" style="background: #f9f9f9; border: 1px solid #ddd; padding: 15px; min-height: 80px; border-radius: 4px;">
-                <p style="color: #666; font-style: italic;">Escribe algo en el mensaje y haz clic en "Actualizar Vista Previa" para ver el resultado.</p>
-            </div>
-        </div>
-        
-        <script>
-        function updatePreview() {
-            const textarea = document.querySelector('textarea[name="message"]');
-            const preview = document.getElementById('admin-preview');
-            
-            if (!textarea || !preview) return;
-            
-            const text = textarea.value.trim();
-            
-            if (text) {
-                // Aplicar formatos de administrador
-                let formattedText = text;
-                
-                // Formatos básicos
-                formattedText = formattedText.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-                formattedText = formattedText.replace(/\*(.+?)\*/g, '<i>$1</i>');
-                formattedText = formattedText.replace(/~(.+?)~/g, '<s>$1</s>');
-                formattedText = formattedText.replace(/_(.+?)_/g, '<u>$1</u>');
-                formattedText = formattedText.replace(/\[spoiler\](.+?)\[\/spoiler\]/gi, '<span style="background: #000; color: #000; cursor: pointer;" onclick="this.style.color=\'inherit\'" title="Haz clic para revelar">$1</span>');
-                
-                // Formatos de administrador
-                formattedText = formattedText.replace(/\[H1\](.+?)\[\/H1\]/gi, '<h1 style="color: #FF6600; text-align: center; margin: 10px 0; font-size: 24px;">$1</h1>');
-                formattedText = formattedText.replace(/\[H2\](.+?)\[\/H2\]/gi, '<h2 style="color: #FF6600; text-align: center; margin: 8px 0; font-size: 20px;">$1</h2>');
-                formattedText = formattedText.replace(/\[Color=([^\\]]+?)\](.+?)\[\/Color\]/gi, '<span style="color: $1;">$2</span>');
-                formattedText = formattedText.replace(/\[Centrar\](.+?)\[\/Centrar\]/gi, '<div style="text-align: center;">$1</div>');
-                formattedText = formattedText.replace(/\[Fondo=([^\\]]+?)\](.+?)\[\/Fondo\]/gi, '<span style="background-color: $1; padding: 2px 4px; border-radius: 2px;">$2</span>');
-                
-                // Referencias (simuladas)
-                formattedText = formattedText.replace(/>>(\d+)/g, '<a href="#post-$1" style="color: #0066cc; text-decoration: none;">&gt;&gt;$1</a>');
-                
-                // Greentext y pinktext
-                formattedText = formattedText.replace(/^>(.*)$/gm, '<span style="color: #789922;">&gt;$1</span>');
-                formattedText = formattedText.replace(/^&lt;(.*)$/gm, '<span style="color: #E0727F;">&lt;$1</span>');
-                
-                // Saltos de línea
-                formattedText = formattedText.replace(/\n/g, '<br>');
-                
-                preview.innerHTML = formattedText;
-            } else {
-                preview.innerHTML = '<p style="color: #666; font-style: italic;">No hay contenido para mostrar.</p>';
-            }
-        }
-        
-        // Auto-actualizar la vista previa cuando se escribe (con debounce)
-        let previewTimeout;
-        document.addEventListener('DOMContentLoaded', function() {
-            const textarea = document.querySelector('textarea[name="message"]');
-            if (textarea) {
-                textarea.addEventListener('input', function() {
-                    clearTimeout(previewTimeout);
-                    previewTimeout = setTimeout(updatePreview, 500); // Actualizar después de 500ms de inactividad
-                });
-            }
-        });
-        </script>
         <?php
     }
 }

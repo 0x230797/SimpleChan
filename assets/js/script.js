@@ -80,7 +80,7 @@ const Utils = {
     /**
      * Animate element
      */
-    animate(element, styles, duration = 300) {
+    animate(element, styles, duration = 0) {
         return new Promise(resolve => {
             element.style.transition = `all ${duration}ms ease`;
             Object.assign(element.style, styles);
@@ -529,21 +529,6 @@ const FormManager = {
                     input.value = '';
                     return;
                 }
-                
-                // Preview
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    let preview = input.parentNode.querySelector('.image-preview');
-                    if (!preview) {
-                        preview = document.createElement('div');
-                        preview.className = 'image-preview';
-                        preview.style.marginTop = '10px';
-                        input.parentNode.appendChild(preview);
-                    }
-                    
-                    preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; max-height: 200px; border: 1px solid #ccc; border-radius: 4px;">`;
-                };
-                reader.readAsDataURL(file);
             });
         });
     },
