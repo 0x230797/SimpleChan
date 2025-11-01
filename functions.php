@@ -614,51 +614,83 @@ function delete_post($post_id) {
 }
 
 /**
- * Bloquea un post
+ * Bloquea/desbloquea un post para evitar más respuestas
  * @param int $post_id ID del post
+ * @param bool $locked Estado de bloqueo (true = bloquear, false = desbloquear)
  * @return bool Éxito de la operación
  */
-function lock_post($post_id) {
+function lock_post($post_id, $locked = true) {
     global $pdo;
     
-    $stmt = $pdo->prepare("UPDATE posts SET is_locked = 1 WHERE id = ?");
-    return $stmt->execute([$post_id]);
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE posts SET is_locked = ?, updated_at = NOW() 
+            WHERE id = ?
+        ");
+        $success = $stmt->execute([$locked ? 1 : 0, $post_id]);
+        
+        if ($success && function_exists('log_admin_action')) {
+            log_admin_action('lock_post', [
+                'post_id' => $post_id,
+                'locked' => $locked
+            ]);
+        }
+        
+        return $success;
+        
+    } catch (PDOException $e) {
+        error_log("Error locking post: " . $e->getMessage());
+        return false;
+    }
 }
 
 /**
- * Desbloquea un post
+ * Desbloquea un post (función de compatibilidad)
  * @param int $post_id ID del post
  * @return bool Éxito de la operación
  */
 function unlock_post($post_id) {
-    global $pdo;
-    
-    $stmt = $pdo->prepare("UPDATE posts SET is_locked = 0 WHERE id = ?");
-    return $stmt->execute([$post_id]);
+    return lock_post($post_id, false);
 }
 
 /**
- * Fija un post
+ * Fija/desfija un post
  * @param int $post_id ID del post
+ * @param bool $pinned Estado de fijado (true = fijar, false = desfijar)
  * @return bool Éxito de la operación
  */
-function pin_post($post_id) {
+function pin_post($post_id, $pinned = true) {
     global $pdo;
     
-    $stmt = $pdo->prepare("UPDATE posts SET is_pinned = 1 WHERE id = ?");
-    return $stmt->execute([$post_id]);
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE posts SET is_pinned = ?, updated_at = NOW() 
+            WHERE id = ?
+        ");
+        $success = $stmt->execute([$pinned ? 1 : 0, $post_id]);
+        
+        if ($success && function_exists('log_admin_action')) {
+            log_admin_action('pin_post', [
+                'post_id' => $post_id,
+                'pinned' => $pinned
+            ]);
+        }
+        
+        return $success;
+        
+    } catch (PDOException $e) {
+        error_log("Error pinning post: " . $e->getMessage());
+        return false;
+    }
 }
 
 /**
- * Desfija un post
+ * Desfija un post (función de compatibilidad)
  * @param int $post_id ID del post
  * @return bool Éxito de la operación
  */
 function unpin_post($post_id) {
-    global $pdo;
-    
-    $stmt = $pdo->prepare("UPDATE posts SET is_pinned = 0 WHERE id = ?");
-    return $stmt->execute([$post_id]);
+    return pin_post($post_id, false);
 }
 
 /**
@@ -1151,11 +1183,24 @@ function delete_report($report_id) {
  * @return bool True si es administrador
  */
 function is_admin() {
-    if (!isset($_SESSION['admin_token'])) {
+    if (!isset($_SESSION['admin_token']) && !isset($_SESSION['user_id'])) {
         return false;
     }
     
     global $pdo;
+    
+    // Verificar nuevo sistema de autenticación
+    if (isset($_SESSION['user_id'])) {
+        $stmt = $pdo->prepare("
+            SELECT u.role FROM users u
+            INNER JOIN user_sessions us ON u.id = us.user_id
+            WHERE us.session_token = ? AND us.expires_at > NOW() AND u.role = 'admin'
+        ");
+        $stmt->execute([$_SESSION['user_token'] ?? '']);
+        return $stmt->fetch() !== false;
+    }
+    
+    // Mantener compatibilidad con sistema anterior
     $stmt = $pdo->prepare("
         SELECT * FROM admin_sessions 
         WHERE session_token = ? AND expires_at > NOW()
@@ -1166,7 +1211,45 @@ function is_admin() {
 }
 
 /**
- * Crea una sesión de administrador
+ * Verifica si el usuario actual es moderador o administrador
+ * @return bool True si es moderador o administrador
+ */
+function is_moderator() {
+    if (!isset($_SESSION['user_id'])) {
+        return is_admin(); // Fallback al sistema anterior
+    }
+    
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT u.role FROM users u
+        INNER JOIN user_sessions us ON u.id = us.user_id
+        WHERE us.session_token = ? AND us.expires_at > NOW() AND u.role IN ('admin', 'moderator')
+    ");
+    $stmt->execute([$_SESSION['user_token'] ?? '']);
+    return $stmt->fetch() !== false;
+}
+
+/**
+ * Obtiene el usuario actual autenticado del sistema admin
+ * @return array|false Datos del usuario o false si no está autenticado
+ */
+function get_current_admin_user() {
+    if (!isset($_SESSION['user_id'])) {
+        return false;
+    }
+    
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT u.* FROM users u
+        INNER JOIN user_sessions us ON u.id = us.user_id
+        WHERE us.session_token = ? AND us.expires_at > NOW()
+    ");
+    $stmt->execute([$_SESSION['user_token'] ?? '']);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Crea una sesión de administrador (compatibilidad)
  * @return bool Éxito de la operación
  */
 function create_admin_session() {
@@ -1187,6 +1270,28 @@ function create_admin_session() {
     }
     
     return false;
+}
+
+/**
+ * Verifica si hay reportes pendientes para mostrar notificación
+ * @return int Número de reportes pendientes
+ */
+function get_pending_reports_count() {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) 
+            FROM reports r 
+            INNER JOIN posts p ON r.post_id = p.id 
+            WHERE p.is_deleted = 0
+        ");
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Error getting pending reports count: " . $e->getMessage());
+        return 0;
+    }
 }
 
 // ===================================
@@ -1602,16 +1707,267 @@ function search_posts_by_ip($ip_address, $limit = 100) {
     global $pdo;
     
     $stmt = $pdo->prepare("
-        SELECT p.*, b.name as board_name 
+        SELECT p.*, b.name as board_name, b.short_id as board_short_id
         FROM posts p
-        LEFT JOIN boards b ON p.board_id = b.id
-        WHERE p.ip_address = ?
-        ORDER BY p.created_at DESC 
+        INNER JOIN boards b ON p.board_id = b.id
+        WHERE p.ip_address = ? AND p.is_deleted = 0
+        ORDER BY p.created_at DESC
         LIMIT ?
     ");
     $stmt->execute([$ip_address, $limit]);
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// ===================================
+// FUNCIONES DE REPORTES
+// ===================================
+
+
+
+/**
+ * Verifica si un post puede ser reportado por la IP actual
+ * @param int $post_id ID del post
+ * @return bool True si puede reportar
+ */
+function can_report_post($post_id) {
+    global $pdo;
+    
+    $reporter_ip = get_user_ip();
+    
+    try {
+        // Verificar si el post existe y no está eliminado
+        $stmt = $pdo->prepare("SELECT id FROM posts WHERE id = ? AND is_deleted = 0");
+        $stmt->execute([$post_id]);
+        if (!$stmt->fetch()) {
+            return false;
+        }
+        
+        // Verificar si ya reportó recientemente
+        $stmt = $pdo->prepare("
+            SELECT id FROM reports 
+            WHERE post_id = ? AND reporter_ip = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+        ");
+        $stmt->execute([$post_id, $reporter_ip]);
+        
+        return !$stmt->fetch();
+        
+    } catch (PDOException $e) {
+        error_log("Error checking report permissions: " . $e->getMessage());
+        return false;
+    }
+}
+
+// ===================================
+// FUNCIONES DE MODERACIÓN MEJORADAS
+// ===================================
+
+
+
+/**
+ * Obtiene posts con filtros para moderación
+ * @param array $filters Filtros a aplicar
+ * @param int $page Página actual
+ * @param int $per_page Posts por página
+ * @return array Posts filtrados con paginación
+ */
+function get_posts_for_moderation($filters = [], $page = 1, $per_page = 30) {
+    global $pdo;
+    
+    try {
+        $offset = ($page - 1) * $per_page;
+        $where_conditions = ['1=1'];
+        $params = [];
+        
+        // Aplicar filtros
+        if (!empty($filters['board_id'])) {
+            $where_conditions[] = 'p.board_id = ?';
+            $params[] = $filters['board_id'];
+        }
+        
+        if (!empty($filters['ip_address'])) {
+            $where_conditions[] = 'p.ip_address LIKE ?';
+            $params[] = '%' . $filters['ip_address'] . '%';
+        }
+        
+        if (!empty($filters['message'])) {
+            $where_conditions[] = 'p.message LIKE ?';
+            $params[] = '%' . $filters['message'] . '%';
+        }
+        
+        if (isset($filters['has_image'])) {
+            if ($filters['has_image']) {
+                $where_conditions[] = 'p.image_filename IS NOT NULL AND p.image_filename != ""';
+            } else {
+                $where_conditions[] = 'p.image_filename IS NULL OR p.image_filename = ""';
+            }
+        }
+        
+        if (isset($filters['is_pinned'])) {
+            $where_conditions[] = 'p.is_pinned = ?';
+            $params[] = $filters['is_pinned'] ? 1 : 0;
+        }
+        
+        if (isset($filters['is_locked'])) {
+            $where_conditions[] = 'p.is_locked = ?';
+            $params[] = $filters['is_locked'] ? 1 : 0;
+        }
+        
+        if (isset($filters['is_deleted'])) {
+            $where_conditions[] = 'p.is_deleted = ?';
+            $params[] = $filters['is_deleted'] ? 1 : 0;
+        } else {
+            // Por defecto, no mostrar eliminados
+            $where_conditions[] = 'p.is_deleted = 0';
+        }
+        
+        $where_clause = implode(' AND ', $where_conditions);
+        
+        // Contar total
+        $count_query = "
+            SELECT COUNT(*) 
+            FROM posts p
+            INNER JOIN boards b ON p.board_id = b.id
+            WHERE $where_clause
+        ";
+        $stmt = $pdo->prepare($count_query);
+        $stmt->execute($params);
+        $total = $stmt->fetchColumn();
+        
+        // Obtener posts
+        $params[] = $per_page;
+        $params[] = $offset;
+        
+        $query = "
+            SELECT p.*, b.name as board_name, b.short_id as board_short_id,
+                   (SELECT COUNT(*) FROM posts WHERE parent_id = p.id AND is_deleted = 0) as reply_count
+            FROM posts p
+            INNER JOIN boards b ON p.board_id = b.id
+            WHERE $where_clause
+            ORDER BY p.created_at DESC
+            LIMIT ? OFFSET ?
+        ";
+        
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return [
+            'posts' => $posts,
+            'total' => $total,
+            'per_page' => $per_page,
+            'current_page' => $page,
+            'total_pages' => ceil($total / $per_page)
+        ];
+        
+    } catch (PDOException $e) {
+        error_log("Error getting posts for moderation: " . $e->getMessage());
+        return [
+            'posts' => [],
+            'total' => 0,
+            'per_page' => $per_page,
+            'current_page' => $page,
+            'total_pages' => 0
+        ];
+    }
+}
+
+// ===================================
+// UTILIDADES PARA EL PANEL ADMIN
+// ===================================
+
+/**
+ * Obtiene estadísticas para el dashboard admin
+ * @return array Estadísticas del panel
+ */
+function get_admin_dashboard_stats() {
+    global $pdo;
+    
+    try {
+        $stats = [];
+        
+        // Posts totales
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM posts WHERE is_deleted = 0");
+        $stmt->execute();
+        $stats['total_posts'] = $stmt->fetchColumn();
+        
+        // Posts hoy
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM posts WHERE DATE(created_at) = CURDATE() AND is_deleted = 0");
+        $stmt->execute();
+        $stats['posts_today'] = $stmt->fetchColumn();
+        
+        // Reportes pendientes
+        $stats['pending_reports'] = get_pending_reports_count();
+        
+        // Bans activos
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM bans WHERE is_active = 1 AND (expires_at IS NULL OR expires_at > NOW())");
+        $stmt->execute();
+        $stats['active_bans'] = $stmt->fetchColumn();
+        
+        // Tablones activos
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM boards");
+        $stmt->execute();
+        $stats['total_boards'] = $stmt->fetchColumn();
+        
+        // Posts más reportados (últimos 7 días)
+        $stmt = $pdo->prepare("
+            SELECT p.id, p.subject, COUNT(r.id) as report_count, b.short_id as board_short_id
+            FROM reports r
+            INNER JOIN posts p ON r.post_id = p.id
+            INNER JOIN boards b ON p.board_id = b.id
+            WHERE r.created_at > DATE_SUB(NOW(), INTERVAL 7 DAY) AND p.is_deleted = 0
+            GROUP BY p.id
+            ORDER BY report_count DESC
+            LIMIT 5
+        ");
+        $stmt->execute();
+        $stats['most_reported_posts'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Actividad reciente
+        $stmt = $pdo->prepare("
+            SELECT action, details, ip_address, created_at
+            FROM admin_logs
+            ORDER BY created_at DESC
+            LIMIT 10
+        ");
+        $stmt->execute();
+        $stats['recent_activity'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return $stats;
+        
+    } catch (PDOException $e) {
+        error_log("Error getting admin dashboard stats: " . $e->getMessage());
+        return [
+            'total_posts' => 0,
+            'posts_today' => 0,
+            'pending_reports' => 0,
+            'active_bans' => 0,
+            'total_boards' => 0,
+            'most_reported_posts' => [],
+            'recent_activity' => []
+        ];
+    }
+}
+
+/**
+ * Genera un enlace seguro para el panel admin
+ * @param string $page Página del panel
+ * @param array $params Parámetros adicionales
+ * @return string URL del panel admin
+ */
+function admin_url($page = 'index.php', $params = []) {
+    $base_url = dirname($_SERVER['PHP_SELF']);
+    if (basename($base_url) !== 'admin') {
+        $base_url .= '/admin';
+    }
+    
+    $url = $base_url . '/' . ltrim($page, '/');
+    
+    if (!empty($params)) {
+        $url .= '?' . http_build_query($params);
+    }
+    
+    return $url;
 }
 
 // ===================================

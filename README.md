@@ -62,10 +62,25 @@ SimpleChan
 ├── uploads/
 │   └── imagens.(.jpg, .jpeg, .png, .gif, .webp)
 │
+├── admin/                    # Sistema administrativo modular
+│   ├── includes/
+│   │   ├── Auth.php         # Sistema de autenticación multi-rol
+│   │   └── AdminController.php # Controlador base
+│   ├── assets/
+│   │   ├── css/admin.css    # Estilos del panel admin
+│   │   └── js/admin.js      # JavaScript para interactividad
+│   ├── setup.php            # Script de instalación
+│   ├── login.php            # Interfaz de login
+│   ├── index.php            # Dashboard con estadísticas
+│   ├── users.php            # Gestión de usuarios y moderadores
+│   ├── posts.php            # Moderación de posts
+│   ├── bans.php             # Gestión de bans
+│   ├── reports.php          # Gestión de reportes
+│   └── settings.php         # Configuración global
+│
 ├── .htaccess
 ├── 404.php
-├── admin_actions.php
-├── admin.php
+├── admin.php                # Redirección al nuevo panel admin
 ├── ban.php
 ├── boards.php
 ├── catalog.php

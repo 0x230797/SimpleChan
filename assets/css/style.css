@@ -303,7 +303,8 @@ button:hover {
 }
 
 /* Botones sin estilos */
-.form-create-post {
+.form-create-post,
+.form-login {
     max-width: var(--max-width);
     margin: 0 auto;
 }
@@ -1055,6 +1056,48 @@ footer {
     text-align: center;
 }
 
+/* ================================
+   CONTROLES DE ADMINISTRACIÓN
+   ================================ */
+
+/* Controles de administración en posts */
+.admin-controls {
+    margin-left: 10px;
+    font-size: 11px;
+}
+
+.admin-link {
+    color: var(--admin-name-color) !important;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 10px;
+}
+
+.admin-link:hover {
+    text-decoration: underline;
+}
+
+/* Estados de posts */
+.post-status {
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.post-status.locked {
+    background-color: #ffcccc;
+    color: #cc0000;
+    border: 1px solid #cc0000;
+}
+
+.post-status.pinned {
+    background-color: #ccffcc;
+    color: #006600;
+    border: 1px solid #006600;
+}
+
 /* Extra small mobile */
 @media (max-width: 400px) {
     #c-threads {
@@ -1063,5 +1106,15 @@ footer {
     
     #popular-threads .c-thread .c-teaser {
         font-size: 11px;
+    }
+    
+    .admin-controls {
+        display: block !important;
+        margin-top: 5px;
+        margin-left: 0;
+    }
+    
+    .post-status {
+        font-size: 9px;
     }
 }

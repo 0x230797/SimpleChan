@@ -259,21 +259,17 @@ class PostRenderer
             return;
         }
         ?>
-        <form method="POST" action="admin_actions.php" style="display:inline;">
-            <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
-            <input type="hidden" name="return_url" value="<?php echo $_SERVER['REQUEST_URI']; ?>">
+        <!-- Controles de moderación - usar el nuevo sistema admin -->
+        <div class="admin-controls" style="display:inline;">
             <?php if ($post['is_locked']): ?>
-                [<button type="submit" name="unlock_post" class="btn-unlock">Desbloquear</button>]
-            <?php else: ?>
-                [<button type="submit" name="lock_post" class="btn-lock">Bloquear</button>]
+                [<span class="post-status locked">Bloqueado</span>]
             <?php endif; ?>
             <?php if ($post['is_pinned']): ?>
-                [<button type="submit" name="unpin_post" class="btn-unpin">Desfijar</button>]
-            <?php else: ?>
-                [<button type="submit" name="pin_post" class="btn-pin">Fijar</button>]
+                [<span class="post-status pinned">Fijado</span>]
             <?php endif; ?>
-            [<button type="submit" name="delete_post" class="btn-delete" onclick="return confirm('¿Estás seguro de que quieres eliminar este post?')">Eliminar</button>]
-        </form>
+            
+            <a href="admin/posts.php?search_id=<?php echo $post['id']; ?>" class="admin-link" target="_blank" title="Moderar en panel admin">[Admin]</a>
+        </div>
         <?php
     }
 
