@@ -244,7 +244,7 @@ class UsersView {
         AdminTemplate::renderHeader('Gestión de Usuarios', $user);
         ?>
         
-        <div style="display: flex; gap: 20px; max-width: 1200px; margin: 20px auto; padding: 0 20px;">
+        <div style="display: flex;margin: 20px auto;">
             <?php AdminTemplate::renderSidebar('users', $user['role']); ?>
             
             <main style="flex: 1;">
@@ -299,7 +299,7 @@ class UsersView {
         <!-- Crear Nuevo Usuario -->
         <div class="box-outer">
             <div class="boxbar">
-                <h3>👥 Crear Nuevo Usuario</h3>
+                <h3>Crear Nuevo Usuario</h3>
             </div>
             <div class="boxcontent">
                 <form method="POST" style="display: grid; gap: 15px;">
@@ -353,7 +353,7 @@ class UsersView {
         <!-- Lista de Usuarios -->
         <div class="box-outer" style="margin-top: 20px;">
             <div class="boxbar">
-                <h3>📋 Usuarios Existentes</h3>
+                <h3>Usuarios Existentes</h3>
             </div>
             <div class="boxcontent">
                 <?php if (empty($this->users)): ?>

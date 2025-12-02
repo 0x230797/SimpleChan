@@ -2026,9 +2026,6 @@ function get_info_for_index() {
             'Bienvenidos a SimpleChan',
             '¡Disfruta de una experiencia de tablón de imágenes sencilla y rápida!',
         ],
-        'news' => [
-            '14/10/2025 - Publicación del proyecto SimpleChan'
-        ],
     ];
 }
 

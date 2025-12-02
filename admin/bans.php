@@ -333,7 +333,7 @@ class BansView {
         AdminTemplate::renderHeader('Gestión de Bans', $user);
         ?>
         
-        <div style="display: flex; gap: 20px; max-width: 1200px; margin: 20px auto; padding: 0 20px;">
+        <div style="display: flex;margin: 20px auto;">
             <?php AdminTemplate::renderSidebar('bans', $user['role']); ?>
             
             <main style="flex: 1;">

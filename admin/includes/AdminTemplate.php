@@ -20,7 +20,7 @@ class AdminTemplate {
             
         </head>
         <body>
-            <main>
+            <main style="width: 100%; max-width: 100%;">
             <div class="box-outer top-box">
                 <div class="boxbar">
                     <h2><?php echo htmlspecialchars($title); ?> - <a href="?logout=1" class="logout-btn">Cerrar Sesión</a></h2>

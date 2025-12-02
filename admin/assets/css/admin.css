@@ -14,3 +14,7 @@
     text-align: center;
     margin-top: 10px;
 }
+
+nav .admin-nav ul li {
+    display: block;
+}

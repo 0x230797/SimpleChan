@@ -144,14 +144,6 @@ function renderInfoSection($info) {
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-            <br>
-            <?php if (!empty($info['news'])): ?>
-                <div class="info-section">
-                    <?php foreach ($info['news'] as $news): ?>
-                        <span><?php echo htmlspecialchars($news); ?></span><br>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
         </div>
     </div>
     <?php

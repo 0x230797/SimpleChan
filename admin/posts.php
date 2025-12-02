@@ -317,7 +317,7 @@ class PostsView {
         AdminTemplate::renderHeader('Moderación de Posts', $user);
         ?>
         
-        <div style="display: flex; gap: 20px; max-width: 1200px; margin: 20px auto; padding: 0 20px;">
+        <div style="display: flex;margin: 20px auto;">
             <?php AdminTemplate::renderSidebar('posts', $user['role']); ?>
             
             <main style="flex: 1;">
