@@ -13,14 +13,17 @@ try {
 }
 
 // Configuraciones generales
-define('ADMIN_PASSWORD', 'admin123'); // Cambiar por una contraseña segura
+define('ADMIN_PASSWORD', getenv('SIMPLECHAN_ADMIN_PASSWORD') ?: 'admin123'); // Solo para retrocompatibilidad
+define('ADMIN_PASSWORD_HASH', getenv('SIMPLECHAN_ADMIN_HASH') ?: ''); // Configurar con password_hash
 define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB
 define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+define('ALLOWED_MIME_TYPES', ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 define('UPLOAD_DIR', 'uploads/');
+define('UPLOAD_PATH', __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR);
 
 // Crear directorio de uploads si no existe
-if (!file_exists(UPLOAD_DIR)) {
-    mkdir(UPLOAD_DIR, 0755, true);
+if (!is_dir(UPLOAD_PATH)) {
+    mkdir(UPLOAD_PATH, 0755, true);
 }
 
 // Función para limpiar entrada
@@ -30,12 +33,19 @@ function clean_input($data) {
 
 // Función para obtener IP del usuario
 function get_user_ip() {
-    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-        return $_SERVER['HTTP_CLIENT_IP'];
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        return $_SERVER['HTTP_X_FORWARDED_FOR'];
-    } else {
-        return $_SERVER['REMOTE_ADDR'];
+    $keys = ['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
+    foreach ($keys as $key) {
+        if (empty($_SERVER[$key])) {
+            continue;
+        }
+        $ip_list = explode(',', $_SERVER[$key]);
+        foreach ($ip_list as $ip) {
+            $ip = trim($ip);
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
     }
+    return '0.0.0.0';
 }
 ?>

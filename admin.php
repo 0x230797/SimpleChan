@@ -5,16 +5,19 @@ require_once 'functions.php';
 
 // Procesar login de admin
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_login'])) {
-    $password = $_POST['password'] ?? '';
-    
-    if ($password === ADMIN_PASSWORD) {
-        if (create_admin_session()) {
-            $success = 'Sesión de administrador iniciada correctamente.';
-        } else {
-            $error = 'Error al crear la sesión.';
-        }
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '', 'admin_login')) {
+        $error = 'La protección CSRF expiró. Recarga la página e inténtalo de nuevo.';
     } else {
-        $error = 'Contraseña incorrecta.';
+        $password = $_POST['password'] ?? '';
+        if (verify_admin_password($password)) {
+            if (create_admin_session()) {
+                $success = 'Sesión de administrador iniciada correctamente.';
+            } else {
+                $error = 'Error al crear la sesión.';
+            }
+        } else {
+            $error = 'Contraseña incorrecta.';
+        }
     }
 }
 
@@ -25,29 +28,41 @@ if (isset($_GET['logout'])) {
     exit;
 }
 
+if (isset($_GET['error']) && $_GET['error'] === 'csrf') {
+    $error = 'La acción fue bloqueada por seguridad. Por favor, vuelve a intentarlo.';
+}
+
 // Procesar acciones de admin
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $redirect = false;
     // Procesar reporte de usuario
     if (isset($_POST['submit_report']) && isset($_POST['report_post_id'])) {
-        $post_id = (int)$_POST['report_post_id'];
-        $reason = clean_input($_POST['report_reason'] ?? '');
-        $details = clean_input($_POST['report_details'] ?? '');
-        $reporter_ip = get_user_ip();
-        if ($post_id > 0 && !empty($reason)) {
-            if (create_report($post_id, $reason, $details, $reporter_ip)) {
-                $success = 'Reporte enviado correctamente.';
-                $redirect = true;
-            } else {
-                $error = 'Error al enviar el reporte.';
-            }
+        if (!validate_csrf_token($_POST['csrf_token'] ?? '', 'report_form')) {
+            $error = 'La protección CSRF expiró. Recarga la página e inténtalo nuevamente.';
         } else {
-            $error = 'Datos de reporte inválidos.';
+            $post_id = (int)$_POST['report_post_id'];
+            $reason = clean_input($_POST['report_reason'] ?? '');
+            $details = clean_input($_POST['report_details'] ?? '');
+            $reporter_ip = get_user_ip();
+            $allowed_reasons = ['spam', 'contenido ilegal', 'acoso', 'otro'];
+            if ($post_id > 0 && in_array($reason, $allowed_reasons, true)) {
+                if (create_report($post_id, $reason, $details, $reporter_ip)) {
+                    $success = 'Reporte enviado correctamente.';
+                    $redirect = true;
+                } else {
+                    $error = 'Error al enviar el reporte.';
+                }
+            } else {
+                $error = 'Datos de reporte inválidos.';
+            }
         }
     }
     // Acciones de admin
     if (is_admin()) {
         if (isset($_POST['delete_post'])) {
+            if (!validate_csrf_token($_POST['csrf_token'] ?? '', 'admin_dashboard')) {
+                $error = 'La protección CSRF expiró. Recarga la página e inténtalo nuevamente.';
+            } else {
             $post_id = (int)($_POST['post_id'] ?? 0);
             if ($post_id > 0 && delete_post($post_id)) {
                 $success = 'Post eliminado correctamente.';
@@ -55,19 +70,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $error = 'Error al eliminar el post.';
             }
+            }
         }
         if (isset($_POST['ban_ip'])) {
-            $ip_address = clean_input($_POST['ip_address'] ?? '');
-            $reason = clean_input($_POST['reason'] ?? '');
-            $duration = isset($_POST['duration']) && !empty($_POST['duration']) ? (int)$_POST['duration'] : null;
-            if (!empty($ip_address) && ban_ip($ip_address, $reason, $duration)) {
-                $success = 'IP baneada correctamente.';
-                $redirect = true;
+            if (!validate_csrf_token($_POST['csrf_token'] ?? '', 'admin_dashboard')) {
+                $error = 'La protección CSRF expiró. Recarga la página e inténtalo nuevamente.';
             } else {
-                $error = 'Error al banear la IP o IP vacía.';
+                $ip_address = clean_input($_POST['ip_address'] ?? '');
+                $reason = clean_input($_POST['reason'] ?? '');
+                $duration = isset($_POST['duration']) && !empty($_POST['duration']) ? max(1, (int)$_POST['duration']) : null;
+                if (!empty($ip_address) && filter_var($ip_address, FILTER_VALIDATE_IP) && ban_ip($ip_address, $reason, $duration)) {
+                    $success = 'IP baneada correctamente.';
+                    $redirect = true;
+                } else {
+                    $error = 'Error al banear la IP o IP vacía.';
+                }
             }
         }
         if (isset($_POST['unban_ip'])) {
+            if (!validate_csrf_token($_POST['csrf_token'] ?? '', 'admin_dashboard')) {
+                $error = 'La protección CSRF expiró. Recarga la página e inténtalo nuevamente.';
+            } else {
             $ban_id = (int)($_POST['ban_id'] ?? 0);
             if ($ban_id > 0 && unban_ip($ban_id)) {
                 $success = 'IP desbaneada correctamente.';
@@ -75,13 +98,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $error = 'Error al desbanear la IP.';
             }
+            }
         }
         if (isset($_POST['delete_image'])) {
+            if (!validate_csrf_token($_POST['csrf_token'] ?? '', 'admin_dashboard')) {
+                $error = 'La protección CSRF expiró. Recarga la página e inténtalo nuevamente.';
+            } else {
             $post_id = (int)($_POST['post_id'] ?? 0);
             if ($post_id > 0) {
                 $post = get_post($post_id);
                 if ($post && $post['image_filename']) {
-                    $image_path = UPLOAD_DIR . $post['image_filename'];
+                        $image_path = UPLOAD_PATH . $post['image_filename'];
                     if (file_exists($image_path)) {
                         unlink($image_path);
                     }
@@ -97,6 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } else {
                 $error = 'ID de post inválido.';
+            }
             }
         }
     }
@@ -155,6 +183,7 @@ if (isset($post_id) && $post_id > 0) {
             <section class="admin-login">
                 <h2>Iniciar Sesión de Administrador</h2>
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token('admin_login'), ENT_QUOTES, 'UTF-8'); ?>">
                     <div class="form-group">
                         <label for="password">Contraseña:</label>
                         <input type="password" id="password" name="password" required>
@@ -171,6 +200,7 @@ if (isset($post_id) && $post_id > 0) {
                 <div class="admin-section">
                     <h3>Banear IP</h3>
                     <form method="POST" class="ban-form">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token('admin_dashboard'), ENT_QUOTES, 'UTF-8'); ?>">
                         <div class="form-group">
                             <label for="ip_address">Dirección IP:</label>
                             <input type="text" id="ip_address" name="ip_address" required placeholder="192.168.1.1">
@@ -220,6 +250,7 @@ if (isset($post_id) && $post_id > 0) {
                                         </td>
                                         <td>
                                             <form method="POST" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token('admin_dashboard'), ENT_QUOTES, 'UTF-8'); ?>">
                                                 <input type="hidden" name="ban_id" value="<?php echo $ban['id']; ?>">
                                                 <button type="submit" name="unban_ip" onclick="return confirm('¿Desbanear esta IP?')">Desbanear</button>
                                             </form>
@@ -266,7 +297,7 @@ if (isset($post_id) && $post_id > 0) {
                                     <?php endif; ?>
                                     
                                     <?php if ($post['image_filename']): ?>
-                                        <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
+                                        <?php if (file_exists(UPLOAD_PATH . $post['image_filename'])): ?>
                                             <div class="post-image">
                                                 <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
                                                      alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
@@ -287,13 +318,15 @@ if (isset($post_id) && $post_id > 0) {
                                     <div class="post-actions">
                                         <?php if (!$post['is_deleted']): ?>
                                         <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token('admin_dashboard'), ENT_QUOTES, 'UTF-8'); ?>">
                                             <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                             <button type="submit" name="delete_post" onclick="return confirm('¿Eliminar este post?')">Eliminar Post</button>
                                         </form>
                                         <?php endif; ?>
-                                        <button type="button" class="btn-ban-ip" onclick="setBanIp('<?php echo htmlspecialchars($post['ip_address']); ?>')">Banear IP</button>
-                                        <?php if (!empty($post['image_filename']) && file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
+                                        <button type="button" class="btn-ban-ip" onclick="setBanIp('<?php echo htmlspecialchars($post['ip_address'], ENT_QUOTES, 'UTF-8'); ?>')">Banear IP</button>
+                                        <?php if (!empty($post['image_filename']) && file_exists(UPLOAD_PATH . $post['image_filename'])): ?>
                                         <form method="POST" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token('admin_dashboard'), ENT_QUOTES, 'UTF-8'); ?>">
                                             <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                             <button type="submit" name="delete_image" onclick="return confirm('¿Eliminar la imagen de este post?')">Eliminar Imagen</button>
                                         </form>
@@ -345,6 +378,7 @@ if (isset($post_id) && $post_id > 0) {
                                         <td><?php echo date('d/m/Y H:i:s', strtotime($report['created_at'])); ?></td>
                                         <td>
                                             <form method="POST" action="admin_actions.php">
+                                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token('admin_actions'), ENT_QUOTES, 'UTF-8'); ?>">
                                                 <input type="hidden" name="report_id" value="<?php echo $report['id']; ?>">
                                                 <button type="submit" name="delete_report" class="btn-delete">Eliminar</button>
                                             </form>

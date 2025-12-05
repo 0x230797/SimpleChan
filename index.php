@@ -12,57 +12,71 @@ if ($ban_info) {
 
 // Procesar envío de post y reporte de usuario
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_report']) && isset($_POST['report_post_id'])) {
-    $post_id = (int)$_POST['report_post_id'];
-    $reason = clean_input($_POST['report_reason'] ?? '');
-    $details = clean_input($_POST['report_details'] ?? '');
-    $reporter_ip = get_user_ip();
-    if ($post_id > 0 && !empty($reason)) {
-        if (create_report($post_id, $reason, $details, $reporter_ip)) {
-            $report_success = true;
-            header('Location: ' . $_SERVER['PHP_SELF'] . '?report_success=1');
-            exit;
-        } else {
-            $error = 'Error al enviar el reporte.';
-        }
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '', 'report_form')) {
+        $error = 'La protección CSRF expiró. Recarga la página e inténtalo de nuevo.';
     } else {
-        $error = 'Datos de reporte inválidos.';
+        $post_id = (int)$_POST['report_post_id'];
+        $reason = clean_input($_POST['report_reason'] ?? '');
+        $details = clean_input($_POST['report_details'] ?? '');
+        $reporter_ip = get_user_ip();
+        $allowed_reasons = ['spam', 'contenido ilegal', 'acoso', 'otro'];
+        if ($post_id > 0 && in_array($reason, $allowed_reasons, true)) {
+            if (create_report($post_id, $reason, $details, $reporter_ip)) {
+                header('Location: ' . $_SERVER['PHP_SELF'] . '?report_success=1');
+                exit;
+            } else {
+                $error = 'Error al enviar el reporte.';
+            }
+        } else {
+            $error = 'Datos de reporte inválidos.';
+        }
     }
 }
 // Redirigir después de procesar un post para evitar reenvío
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_post'])) {
-    $name = clean_input($_POST['name'] ?? '');
-    // Si el nombre está vacío, usar "Anónimo"
-    if (empty(trim($name))) {
-        $name = 'Anónimo';
-    }
-    $subject = clean_input($_POST['subject'] ?? '');
-    $message = clean_input($_POST['message'] ?? '');
-    $parent_id = isset($_POST['parent_id']) ? (int)$_POST['parent_id'] : null;
-    
-    if (empty($message)) {
-        $error = 'El mensaje no puede estar vacío.';
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '', 'post_form')) {
+        $error = 'La protección CSRF expiró. Recarga la página e inténtalo de nuevo.';
     } else {
-        $image_filename = null;
-        $image_original_name = null;
-        
-        // Procesar imagen si se subió una
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $upload_result = upload_image($_FILES['image']);
-            if ($upload_result['success']) {
-                $image_filename = $upload_result['filename'];
-                $image_original_name = $upload_result['original_name'];
-            } else {
-                $error = $upload_result['error'];
-            }
+        $name = clean_input($_POST['name'] ?? '');
+        // Si el nombre está vacío, usar "Anónimo"
+        if (empty(trim($name))) {
+            $name = 'Anónimo';
         }
-        
+        $subject = clean_input($_POST['subject'] ?? '');
+        $message = clean_input($_POST['message'] ?? '');
+        $parent_id = isset($_POST['parent_id']) ? (int)$_POST['parent_id'] : null;
+
+        if (empty($message)) {
+            $error = 'El mensaje no puede estar vacío.';
+        } elseif (mb_strlen($message) > 2000) {
+            $error = 'El mensaje es demasiado largo (máx. 2000 caracteres).';
+        } elseif (mb_strlen($subject) > 120) {
+            $error = 'El asunto es demasiado largo.';
+        }
+
         if (!isset($error)) {
-            if (create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id)) {
-                // Redirigir para evitar reenvío
-                header('Location: ' . $_SERVER['PHP_SELF'] . '?post_success=1');
-                exit;
-            } else {
-                $error = 'Error al crear el post.';
+            $image_filename = null;
+            $image_original_name = null;
+            
+            // Procesar imagen si se subió una
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $upload_result = upload_image($_FILES['image']);
+                if ($upload_result['success']) {
+                    $image_filename = $upload_result['filename'];
+                    $image_original_name = $upload_result['original_name'];
+                } else {
+                    $error = $upload_result['error'];
+                }
+            }
+            
+            if (!isset($error)) {
+                if (create_post($name, $subject, $message, $image_filename, $image_original_name, $parent_id)) {
+                    // Redirigir para evitar reenvío
+                    header('Location: ' . $_SERVER['PHP_SELF'] . '?post_success=1');
+                    exit;
+                } else {
+                    $error = 'Error al crear el post.';
+                }
             }
         }
     }
@@ -99,6 +113,10 @@ $posts = get_posts();
             <div class="success">¡Gracias por reportar! El reporte ha sido enviado al administrador.</div>
         <?php endif; ?>
 
+        <?php if (isset($_GET['post_success']) && $_GET['post_success'] == 1): ?>
+            <div class="success">Publicación creada correctamente.</div>
+        <?php endif; ?>
+
         <!-- Botón para mostrar formulario -->
         <section class="create-post-toggle">
             [ <button onclick="toggleCreatePostForm()" id="toggle-post-btn" class="btn-create-post">
@@ -114,6 +132,7 @@ $posts = get_posts();
             <?php endif; ?>
             
             <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token('post_form'), ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="form-group">
                     <label for="name">Nombre (opcional):</label>
                     <?php if (is_admin()): ?>
@@ -194,6 +213,7 @@ $posts = get_posts();
                                     [<button class="btn-report" onclick="toggleReportMenu(<?php echo $post['id']; ?>)">Reportar</button>]
                                     <nav class="report-menu" id="report-menu-<?php echo $post['id']; ?>" style="display:none;position: absolute;z-index: 10;background: #f7e5e5;border: 1px solid rgb(136 0 0);padding: 10px;min-width: 150px;">
                                         <form method="POST" action="index.php" style="margin:0;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token('report_form'), ENT_QUOTES, 'UTF-8'); ?>">
                                             <input type="hidden" name="report_post_id" value="<?php echo $post['id']; ?>">
                                             <label style="display:block;margin-bottom:5px;">Motivo:</label>
                                             <select name="report_reason" style="width:100%;margin-bottom:5px;">
@@ -215,6 +235,7 @@ $posts = get_posts();
                                 <?php endif; ?>
                                 <?php if (is_admin()): ?>
                                     <form method="POST" action="admin_actions.php" style="display:inline;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token('admin_actions'), ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                         <?php if ($post['is_locked']): ?>
                                             [<button type="submit" name="unlock_post" class="btn-unlock">Desbloquear</button>]
@@ -231,7 +252,7 @@ $posts = get_posts();
                             </div>
                             
                             <?php if (!empty($post['image_filename'])): ?>
-                                <?php if (file_exists(UPLOAD_DIR . $post['image_filename'])): ?>
+                                <?php if (file_exists(UPLOAD_PATH . $post['image_filename'])): ?>
                                     <div class="post-image">
                                         <img src="<?php echo UPLOAD_DIR . $post['image_filename']; ?>" 
                                              alt="<?php echo htmlspecialchars($post['image_original_name']); ?>"
@@ -269,10 +290,16 @@ $posts = get_posts();
                                                 <span class="post-date"><?php echo date('d/m/Y H:i:s', strtotime($reply['created_at'])); ?></span>
                                                 <span class="post-number"><a href="reply.php?post_id=<?php echo $reply['parent_id'] ? $reply['parent_id'] : $reply['id']; ?>&ref=<?php echo $reply['id']; ?>">No. <?php echo $reply['id']; ?></a></span>
                                             </div>
-                                            <?php if ($reply['image_filename']): ?>
-                                                <div class="post-image">
-                                                    <img src="<?php echo UPLOAD_DIR . $reply['image_filename']; ?>" alt="<?php echo htmlspecialchars($reply['image_original_name']); ?>" onclick="toggleImageSize(this)">
-                                                </div>
+                                            <?php if (!empty($reply['image_filename'])): ?>
+                                                <?php if (file_exists(UPLOAD_PATH . $reply['image_filename'])): ?>
+                                                    <div class="post-image">
+                                                        <img src="<?php echo UPLOAD_DIR . $reply['image_filename']; ?>" alt="<?php echo htmlspecialchars($reply['image_original_name']); ?>" onclick="toggleImageSize(this)">
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div class="post-image">
+                                                        <img src="assets/imgs/filedeleted.gif" alt="Imagen no disponible">
+                                                    </div>
+                                                <?php endif; ?>
                                             <?php endif; ?>
                                             <div class="post-message">
                                                 <?php echo parse_references($reply['message'], $reply['name'] === 'Administrador'); ?>

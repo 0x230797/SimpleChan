@@ -1,6 +1,50 @@
 <?php
 require_once 'config.php';
 
+function ensure_session_started() {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+}
+
+function get_csrf_token($form_key = 'default') {
+    ensure_session_started();
+    if (!isset($_SESSION['csrf_tokens'])) {
+        $_SESSION['csrf_tokens'] = [];
+    }
+    $token_data = $_SESSION['csrf_tokens'][$form_key] ?? null;
+    if (!$token_data || $token_data['expires'] < time()) {
+        $_SESSION['csrf_tokens'][$form_key] = [
+            'value' => bin2hex(random_bytes(32)),
+            'expires' => time() + 1800,
+        ];
+    }
+    return $_SESSION['csrf_tokens'][$form_key]['value'];
+}
+
+function validate_csrf_token($token, $form_key = 'default') {
+    ensure_session_started();
+    if (empty($token) || empty($_SESSION['csrf_tokens'][$form_key])) {
+        return false;
+    }
+    $token_data = $_SESSION['csrf_tokens'][$form_key];
+    $is_valid = hash_equals($token_data['value'], $token) && $token_data['expires'] >= time();
+    if ($is_valid) {
+        unset($_SESSION['csrf_tokens'][$form_key]);
+    }
+    return $is_valid;
+}
+
+function verify_admin_password($password) {
+    $hash = defined('ADMIN_PASSWORD_HASH') ? ADMIN_PASSWORD_HASH : '';
+    if (!empty($hash)) {
+        if (password_verify($password, $hash)) {
+            return true;
+        }
+    }
+    return hash_equals(ADMIN_PASSWORD, $password);
+}
+
 // Función para verificar si un usuario está baneado
 function is_user_banned() {
     global $pdo;
@@ -15,6 +59,9 @@ function is_user_banned() {
 
 // Función para subir imagen
 function upload_image($file) {
+    if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        return ['success' => false, 'error' => 'Carga de archivo inválida.'];
+    }
     if ($file['size'] > MAX_FILE_SIZE) {
         return ['success' => false, 'error' => 'El archivo es demasiado grande. Máximo 5MB.'];
     }
@@ -23,9 +70,15 @@ function upload_image($file) {
     if (!in_array($extension, ALLOWED_EXTENSIONS)) {
         return ['success' => false, 'error' => 'Tipo de archivo no permitido.'];
     }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime_type = $finfo->file($file['tmp_name']);
+    if ($mime_type === false || !in_array($mime_type, ALLOWED_MIME_TYPES, true)) {
+        return ['success' => false, 'error' => 'El tipo de archivo no coincide con el contenido.'];
+    }
     
-    $filename = uniqid() . '_' . time() . '.' . $extension;
-    $filepath = UPLOAD_DIR . $filename;
+    $filename = bin2hex(random_bytes(16)) . '.' . $extension;
+    $filepath = UPLOAD_PATH . $filename;
     
     if (move_uploaded_file($file['tmp_name'], $filepath)) {
         return [
@@ -99,19 +152,27 @@ function is_admin() {
     }
     
     global $pdo;
-    $stmt = $pdo->prepare("SELECT * FROM admin_sessions WHERE session_token = ? AND expires_at > NOW()");
+    $stmt = $pdo->prepare("SELECT ip_address FROM admin_sessions WHERE session_token = ? AND expires_at > NOW()");
     $stmt->execute([$_SESSION['admin_token']]);
-    
-    return $stmt->fetch() !== false;
+    $session = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($session && hash_equals($session['ip_address'], get_user_ip())) {
+        return true;
+    }
+    return false;
 }
 
 // Función para crear sesión de admin
 function create_admin_session() {
     global $pdo;
+    ensure_session_started();
     
     $token = bin2hex(random_bytes(32));
     $ip = get_user_ip();
     $expires = date('Y-m-d H:i:s', time() + 3600); // 1 hora
+    $pdo->exec("DELETE FROM admin_sessions WHERE expires_at <= NOW()");
+    $stmt = $pdo->prepare("DELETE FROM admin_sessions WHERE ip_address = ?");
+    $stmt->execute([$ip]);
+    session_regenerate_id(true);
     
     $stmt = $pdo->prepare("INSERT INTO admin_sessions (session_token, ip_address, expires_at) VALUES (?, ?, ?)");
     if ($stmt->execute([$token, $ip, $expires])) {
@@ -137,6 +198,9 @@ function delete_post($post_id) {
 // Función para banear IP
 function ban_ip($ip_address, $reason = '', $duration_hours = null) {
     global $pdo;
+    if (!filter_var($ip_address, FILTER_VALIDATE_IP)) {
+        return false;
+    }
     
     try {
         $expires_at = $duration_hours ? date('Y-m-d H:i:s', time() + ($duration_hours * 3600)) : null;
@@ -156,12 +220,20 @@ function get_all_posts() {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function update_post_image($post_id, $filename, $original_name = null) {
+    global $pdo;
+    $stmt = $pdo->prepare("UPDATE posts SET image_filename = ?, image_original_name = ? WHERE id = ?");
+    return $stmt->execute([$filename, $original_name, $post_id]);
+}
+
 // Función para crear un reporte
 function create_report($post_id, $reason, $details, $reporter_ip) {
     global $pdo;
     try {
+        $safe_reason = mb_substr($reason, 0, 100);
+        $safe_details = mb_substr($details, 0, 500);
         $stmt = $pdo->prepare("INSERT INTO reports (post_id, reason, details, reporter_ip) VALUES (?, ?, ?, ?)");
-        return $stmt->execute([$post_id, $reason, $details, $reporter_ip]);
+        return $stmt->execute([$post_id, $safe_reason, $safe_details, $reporter_ip]);
     } catch (PDOException $e) {
         return false;
     }

@@ -11,6 +11,10 @@ if (!is_admin()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '', 'admin_actions')) {
+        header('Location: admin.php?error=csrf');
+        exit;
+    }
     $post_id = isset($_POST['post_id']) ? (int)$_POST['post_id'] : 0;
     $report_id = isset($_POST['report_id']) ? (int)$_POST['report_id'] : 0;
 
@@ -26,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (isset($_POST['delete_image'])) {
             $post = get_post($post_id);
             if ($post && $post['image_filename']) {
-                $image_path = UPLOAD_DIR . $post['image_filename'];
+                $image_path = UPLOAD_PATH . $post['image_filename'];
                 if (file_exists($image_path)) {
                     unlink($image_path);
                 }
